@@ -1,29 +1,46 @@
-// mood42 - Lo-fi scene with complete artwork
-import { Application, Sprite, Container, Graphics, BlurFilter, Assets } from 'pixi.js'
+// mood42 - The Building: Living apartments with AI characters
+import { Application, Sprite, Container, Graphics, BlurFilter, Text, Assets } from 'pixi.js'
 import gsap from 'gsap'
 
-import { simState, cycleMood, advanceTime } from './sim/state.js'
-import { initTicker, startTicker, togglePause, worldTick, updateClock, updateMoodBar } from './sim/ticker.js'
-import { triggerNextEvent } from './sim/events.js'
+// Simulation imports
+import {
+  initSimulation,
+  simulationTick,
+  getBuildingView,
+  getCharacterDetail,
+  setActiveCharacter,
+  getActiveCharacter,
+  world,
+  initLLM,
+} from './sim/index.js'
+
+// HUD
 import { showToast } from './hud/hud.js'
 
 const app = new Application()
 
-// Complete scene images (character already in the scene)
+// Scene assets
 const ASSETS = {
   sceneFocused: '/assets/scene_focused.png',
   sceneWithdrawn: '/assets/scene_withdrawn.png',
 }
 
-// Scene elements
+// State
+let currentView = 'building' // 'building' or 'apartment'
+let activeApartment = null
 let sceneFocused, sceneWithdrawn
+let buildingContainer, apartmentContainer, hudContainer
 let rainContainer, rainDrops = []
-let effectsContainer
+let memoryPanel, eventLog = []
+let simulationRunning = false
+
+// API Key
+const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
 
 async function init() {
   await app.init({
     resizeTo: window,
-    backgroundColor: 0x080810,
+    backgroundColor: 0x0a0a12,
     antialias: true,
     resolution: Math.min(window.devicePixelRatio, 2),
     autoDensity: true,
@@ -32,54 +49,79 @@ async function init() {
   document.getElementById('app').appendChild(app.canvas)
 
   // Load assets
-  console.log('Loading scenes...')
+  console.log('Loading assets...')
   await Assets.load(Object.values(ASSETS))
-  console.log('Scenes loaded!')
 
-  // Create scene layers
-  createScenes()
-  createEffects()
+  // Initialize simulation with LLM
+  initSimulation(MOONSHOT_API_KEY)
 
-  // Start animation loop
+  // Create layers
+  createBuildingView()
+  createApartmentView()
+  createHUD()
+  createRain()
+
+  // Start in building view
+  showBuildingView()
+
+  // Animation loop
   app.ticker.add(update)
 
-  // Setup simulation
-  initTicker(() => {}, () => {
-    showToast('the light\ngoes off.', 'APT ACROSS · 1:00AM · ALWAYS')
-  })
-  startTicker(5000)
+  // Keyboard controls
   setupKeyboard()
-
-  // Initial toast
-  setTimeout(() => {
-    showToast('apt 4F,\n2nd ave.', 'MOOD42 · WORLD RUNNING · NYC')
-  }, 1000)
-
-  setTimeout(worldTick, 1500)
 
   // Handle resize
   window.addEventListener('resize', handleResize)
   handleResize()
+
+  // Initial toast
+  setTimeout(() => {
+    showToast('the building', '11 PM · NYC · RAINING')
+    addEvent('You approach the building on 2nd Avenue...')
+  }, 500)
+
+  // Start simulation after delay
+  setTimeout(() => {
+    startSimulation()
+  }, 2000)
 }
 
-function createScenes() {
-  // Focused scene (default visible)
+function createBuildingView() {
+  buildingContainer = new Container()
+  buildingContainer.label = 'building'
+  app.stage.addChild(buildingContainer)
+
+  // Building background
+  const buildingBg = new Graphics()
+  buildingBg.label = 'building-bg'
+  buildingContainer.addChild(buildingBg)
+
+  // Windows container
+  const windowsContainer = new Container()
+  windowsContainer.label = 'windows'
+  buildingContainer.addChild(windowsContainer)
+}
+
+function createApartmentView() {
+  apartmentContainer = new Container()
+  apartmentContainer.label = 'apartment'
+  apartmentContainer.visible = false
+  app.stage.addChild(apartmentContainer)
+
+  // Scene sprites
   sceneFocused = Sprite.from(ASSETS.sceneFocused)
   sceneFocused.anchor.set(0.5)
-  sceneFocused.label = 'scene-focused'
-  app.stage.addChild(sceneFocused)
+  apartmentContainer.addChild(sceneFocused)
 
-  // Withdrawn scene (fades in when mood changes)
   sceneWithdrawn = Sprite.from(ASSETS.sceneWithdrawn)
   sceneWithdrawn.anchor.set(0.5)
-  sceneWithdrawn.label = 'scene-withdrawn'
   sceneWithdrawn.alpha = 0
-  app.stage.addChild(sceneWithdrawn)
+  apartmentContainer.addChild(sceneWithdrawn)
 
-  // Breathing animation on both scenes
+  // Breathing animation
   gsap.to([sceneFocused, sceneWithdrawn], {
-    scaleX: 1.012,
-    scaleY: 1.008,
+    scaleX: 1.008,
+    scaleY: 1.005,
     duration: 3.5,
     ease: 'sine.inOut',
     yoyo: true,
@@ -87,80 +129,216 @@ function createScenes() {
   })
 }
 
-function createEffects() {
-  effectsContainer = new Container()
-  effectsContainer.label = 'effects'
-  app.stage.addChild(effectsContainer)
+function createHUD() {
+  hudContainer = new Container()
+  hudContainer.label = 'hud'
+  app.stage.addChild(hudContainer)
 
-  // Rain container
+  // Memory panel (right side)
+  memoryPanel = new Container()
+  memoryPanel.label = 'memory-panel'
+  hudContainer.addChild(memoryPanel)
+}
+
+function createRain() {
   rainContainer = new Container()
   rainContainer.label = 'rain'
-  effectsContainer.addChild(rainContainer)
+  app.stage.addChild(rainContainer)
 
   const rainGraphics = new Graphics()
   rainContainer.addChild(rainGraphics)
 
-  // Initialize raindrops
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 200; i++) {
     rainDrops.push({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      speed: 8 + Math.random() * 12,
-      length: 15 + Math.random() * 25,
-      opacity: 0.1 + Math.random() * 0.3,
+      speed: 6 + Math.random() * 10,
+      length: 12 + Math.random() * 20,
+      opacity: 0.1 + Math.random() * 0.25,
     })
   }
-
-  // Vignette overlay
-  const vignette = new Graphics()
-  vignette.label = 'vignette'
-  effectsContainer.addChild(vignette)
-
-  // Neon glow overlay
-  const neonGlow = new Graphics()
-  neonGlow.label = 'neon-glow'
-  neonGlow.filters = [new BlurFilter({ strength: 40 })]
-  effectsContainer.addChild(neonGlow)
 }
 
-function update(ticker) {
+function showBuildingView() {
+  currentView = 'building'
+  buildingContainer.visible = true
+  apartmentContainer.visible = false
+  drawBuilding()
+}
+
+function showApartmentView(apartment) {
+  currentView = 'apartment'
+  activeApartment = apartment
+  buildingContainer.visible = false
+  apartmentContainer.visible = true
+
+  // Set active character in simulation
+  const charMap = { '3B': 'maya_3b', '2A': 'daniel_2a', '4C': 'iris_4c' }
+  if (charMap[apartment]) {
+    setActiveCharacter(charMap[apartment])
+    const char = getActiveCharacter()
+    if (char) {
+      showToast(`apt ${apartment}`, `${char.name.toUpperCase()} · ${char.state.mood.toUpperCase()}`)
+      addEvent(`You peer into ${char.name}'s window...`)
+    }
+  }
+
+  handleResize()
+}
+
+function drawBuilding() {
   const W = app.screen.width
   const H = app.screen.height
 
-  // Update scene visibility based on mood
-  updateSceneMood()
+  const buildingBg = buildingContainer.children.find(c => c.label === 'building-bg')
+  const windowsContainer = buildingContainer.children.find(c => c.label === 'windows')
+
+  // Clear previous
+  buildingBg.clear()
+  windowsContainer.removeChildren()
+
+  // Building dimensions
+  const buildingWidth = Math.min(W * 0.6, 500)
+  const buildingHeight = H * 0.75
+  const buildingX = (W - buildingWidth) / 2
+  const buildingY = H * 0.12
+
+  // Building facade
+  buildingBg.rect(buildingX - 20, buildingY - 20, buildingWidth + 40, buildingHeight + 40)
+  buildingBg.fill({ color: 0x1a1a24 })
+
+  buildingBg.rect(buildingX, buildingY, buildingWidth, buildingHeight)
+  buildingBg.fill({ color: 0x12121a })
+
+  // Get building state
+  const buildingView = getBuildingView()
+
+  // Window layout
+  const floors = [
+    { y: 0, apartments: ['4A', '4B', '4C'] },
+    { y: 1, apartments: ['3A', '3B', '3C'] },
+    { y: 2, apartments: ['2A', '2B', '2C'] },
+  ]
+
+  const windowWidth = buildingWidth * 0.25
+  const windowHeight = buildingHeight * 0.22
+  const gapX = (buildingWidth - windowWidth * 3) / 4
+  const gapY = (buildingHeight - windowHeight * 3) / 4
+
+  floors.forEach((floor, floorIdx) => {
+    floor.apartments.forEach((apt, aptIdx) => {
+      const wx = buildingX + gapX + aptIdx * (windowWidth + gapX)
+      const wy = buildingY + gapY + floorIdx * (windowHeight + gapY)
+
+      // Find if this apartment is occupied
+      const occupied = ['3B', '2A', '4C'].includes(apt)
+      const charMap = { '3B': 'maya_3b', '2A': 'daniel_2a', '4C': 'iris_4c' }
+      const charId = charMap[apt]
+      const char = charId ? world.characters.get(charId) : null
+
+      // Window frame
+      const windowG = new Graphics()
+      windowG.rect(wx, wy, windowWidth, windowHeight)
+      windowG.fill({ color: 0x0a0a10 })
+
+      // Window glow if occupied and lit
+      if (char && char.state.energy > 0.2) {
+        const glowColor = char.state.mood === 'focused' ? 0xe8c89a :
+                          char.state.mood === 'anxious' ? 0x8888ff :
+                          char.state.mood === 'lonely' ? 0x6688aa : 0xccaa77
+
+        // Inner glow
+        windowG.rect(wx + 4, wy + 4, windowWidth - 8, windowHeight - 8)
+        windowG.fill({ color: glowColor, alpha: 0.3 + char.state.energy * 0.3 })
+
+        // Silhouette hint
+        const silhouette = new Graphics()
+        silhouette.circle(wx + windowWidth / 2, wy + windowHeight * 0.6, windowWidth * 0.15)
+        silhouette.fill({ color: 0x000000, alpha: 0.4 })
+        windowsContainer.addChild(silhouette)
+      }
+
+      windowsContainer.addChild(windowG)
+
+      // Label
+      const label = new Text({
+        text: apt,
+        style: {
+          fontFamily: 'monospace',
+          fontSize: 12,
+          fill: occupied ? 0x888899 : 0x444455,
+        }
+      })
+      label.x = wx + 6
+      label.y = wy + 6
+      windowsContainer.addChild(label)
+
+      // Character name if occupied
+      if (char) {
+        const nameLabel = new Text({
+          text: char.name.toLowerCase(),
+          style: {
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fill: 0x666677,
+          }
+        })
+        nameLabel.x = wx + 6
+        nameLabel.y = wy + windowHeight - 18
+        windowsContainer.addChild(nameLabel)
+      }
+
+      // Click handler
+      if (occupied) {
+        windowG.eventMode = 'static'
+        windowG.cursor = 'pointer'
+        windowG.on('pointerdown', () => {
+          showApartmentView(apt)
+        })
+      }
+    })
+  })
+
+  // Building address
+  const address = new Text({
+    text: '127 2ND AVE',
+    style: {
+      fontFamily: 'monospace',
+      fontSize: 14,
+      fill: 0x555566,
+      letterSpacing: 2,
+    }
+  })
+  address.x = buildingX
+  address.y = buildingY + buildingHeight + 15
+  windowsContainer.addChild(address)
+}
+
+function update() {
+  const W = app.screen.width
+  const H = app.screen.height
 
   // Update rain
   updateRain(W, H)
 
-  // Update overlays
-  updateOverlays(W, H)
-}
+  // Update apartment view if active
+  if (currentView === 'apartment') {
+    updateApartmentView()
+  }
 
-function updateSceneMood() {
-  const mood = simState.characterMood
-  const targetFocused = (mood === 'FOCUSED' || mood === 'GOOD') ? 1 : 0
-  const targetWithdrawn = (mood === 'WITHDRAWN' || mood === 'ANXIOUS') ? 1 : 0
-
-  // Smooth crossfade between scenes
-  sceneFocused.alpha += (targetFocused - sceneFocused.alpha) * 0.03
-  sceneWithdrawn.alpha += (targetWithdrawn - sceneWithdrawn.alpha) * 0.03
+  // Update memory panel
+  updateMemoryPanel()
 }
 
 function updateRain(W, H) {
-  if (!simState.raining) {
-    rainContainer.alpha = Math.max(0, rainContainer.alpha - 0.02)
-    return
-  }
-
-  rainContainer.alpha = Math.min(simState.rainIntensity, rainContainer.alpha + 0.02)
+  rainContainer.alpha = 0.6
 
   const rainGraphics = rainContainer.children[0]
   rainGraphics.clear()
 
   rainDrops.forEach(drop => {
     drop.y += drop.speed
-    drop.x -= drop.speed * 0.12
+    drop.x -= drop.speed * 0.1
 
     if (drop.y > H) {
       drop.y = -20
@@ -168,63 +346,220 @@ function updateRain(W, H) {
     }
 
     rainGraphics.moveTo(drop.x, drop.y)
-    rainGraphics.lineTo(drop.x - drop.length * 0.12, drop.y + drop.length)
+    rainGraphics.lineTo(drop.x - drop.length * 0.1, drop.y + drop.length)
     rainGraphics.stroke({
-      color: 0xa0b9dc,
-      alpha: drop.opacity * simState.rainIntensity,
+      color: 0x8899bb,
+      alpha: drop.opacity,
       width: 1,
     })
   })
 }
 
-function updateOverlays(W, H) {
-  // Update vignette
-  const vignette = effectsContainer.children.find(c => c.label === 'vignette')
-  if (vignette) {
-    vignette.clear()
-    // Dark edges for cinematic feel
-    for (let i = 0; i < 5; i++) {
-      const alpha = 0.12 * (1 - i / 5)
-      vignette.rect(0, 0, W, H * 0.08 * (5 - i) / 5)
-      vignette.fill({ color: 0x000000, alpha })
-      vignette.rect(0, H - H * 0.12 * (5 - i) / 5, W, H * 0.12 * (5 - i) / 5)
-      vignette.fill({ color: 0x000000, alpha: alpha * 0.7 })
+function updateApartmentView() {
+  const char = getActiveCharacter()
+  if (!char) return
+
+  // Crossfade based on mood
+  const isFocused = char.state.mood === 'focused' || char.state.mood === 'content'
+  const targetFocused = isFocused ? 1 : 0
+  const targetWithdrawn = isFocused ? 0 : 1
+
+  sceneFocused.alpha += (targetFocused - sceneFocused.alpha) * 0.03
+  sceneWithdrawn.alpha += (targetWithdrawn - sceneWithdrawn.alpha) * 0.03
+}
+
+function updateMemoryPanel() {
+  const W = app.screen.width
+  const H = app.screen.height
+
+  memoryPanel.removeChildren()
+
+  // Background
+  const panelBg = new Graphics()
+  panelBg.rect(W - 320, 0, 320, H)
+  panelBg.fill({ color: 0x000000, alpha: 0.7 })
+  memoryPanel.addChild(panelBg)
+
+  // Title
+  let y = 20
+  const title = new Text({
+    text: currentView === 'building' ? 'THE BUILDING' : `APT ${activeApartment}`,
+    style: { fontFamily: 'monospace', fontSize: 14, fill: 0x888899, letterSpacing: 2 }
+  })
+  title.x = W - 300
+  title.y = y
+  memoryPanel.addChild(title)
+  y += 30
+
+  // Time
+  const timeText = new Text({
+    text: `${formatTime(world.timeOfDay)} · DAY ${world.day}`,
+    style: { fontFamily: 'monospace', fontSize: 12, fill: 0x666677 }
+  })
+  timeText.x = W - 300
+  timeText.y = y
+  memoryPanel.addChild(timeText)
+  y += 40
+
+  // Character info if in apartment
+  if (currentView === 'apartment') {
+    const char = getActiveCharacter()
+    if (char) {
+      // Name and mood
+      const charInfo = new Text({
+        text: `${char.name.toUpperCase()}\n${char.state.mood} · ${Math.round(char.state.energy * 100)}% energy`,
+        style: { fontFamily: 'monospace', fontSize: 12, fill: 0xaaaaaa, lineHeight: 18 }
+      })
+      charInfo.x = W - 300
+      charInfo.y = y
+      memoryPanel.addChild(charInfo)
+      y += 50
+
+      // Current action
+      if (char.state.currentAction) {
+        const action = new Text({
+          text: `→ ${char.state.currentAction}`,
+          style: { fontFamily: 'monospace', fontSize: 11, fill: 0x88aa88, wordWrap: true, wordWrapWidth: 280 }
+        })
+        action.x = W - 300
+        action.y = y
+        memoryPanel.addChild(action)
+        y += 30
+      }
+
+      // Recent memories
+      const memTitle = new Text({
+        text: 'MEMORIES',
+        style: { fontFamily: 'monospace', fontSize: 10, fill: 0x555566, letterSpacing: 1 }
+      })
+      memTitle.x = W - 300
+      memTitle.y = y
+      memoryPanel.addChild(memTitle)
+      y += 20
+
+      const recentMems = char.memories.slice(-6).reverse()
+      recentMems.forEach(mem => {
+        const memText = new Text({
+          text: `· ${mem.text}`,
+          style: {
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fill: mem.type === 'reflection' ? 0xaaaacc : 0x777788,
+            wordWrap: true,
+            wordWrapWidth: 280,
+          }
+        })
+        memText.x = W - 300
+        memText.y = y
+        memoryPanel.addChild(memText)
+        y += memText.height + 8
+      })
     }
   }
 
-  // Update neon glow
-  const neonGlow = effectsContainer.children.find(c => c.label === 'neon-glow')
-  if (neonGlow) {
-    const time = performance.now() * 0.001
-    const flicker = 0.7 + 0.3 * Math.sin(time * 5)
+  // Event log at bottom
+  y = H - 180
+  const logTitle = new Text({
+    text: 'EVENTS',
+    style: { fontFamily: 'monospace', fontSize: 10, fill: 0x555566, letterSpacing: 1 }
+  })
+  logTitle.x = W - 300
+  logTitle.y = y
+  memoryPanel.addChild(logTitle)
+  y += 20
 
-    neonGlow.clear()
-    // Red neon glow (upper right)
-    neonGlow.circle(W * 0.8, H * 0.25, W * 0.1)
-    neonGlow.fill({ color: 0xff4d6d, alpha: 0.06 * flicker })
+  eventLog.slice(-5).forEach(evt => {
+    const evtText = new Text({
+      text: evt,
+      style: { fontFamily: 'monospace', fontSize: 10, fill: 0x666677, wordWrap: true, wordWrapWidth: 280 }
+    })
+    evtText.x = W - 300
+    evtText.y = y
+    memoryPanel.addChild(evtText)
+    y += evtText.height + 6
+  })
 
-    // Blue neon glow (upper left)
-    neonGlow.circle(W * 0.15, H * 0.2, W * 0.08)
-    neonGlow.fill({ color: 0x4d9fff, alpha: 0.04 * flicker })
+  // Controls hint
+  const controls = new Text({
+    text: currentView === 'apartment' ? '[ESC] back · [SPACE] pause · [T] +1hr' : '[CLICK] enter apartment',
+    style: { fontFamily: 'monospace', fontSize: 10, fill: 0x444455 }
+  })
+  controls.x = W - 300
+  controls.y = H - 30
+  memoryPanel.addChild(controls)
+}
+
+function addEvent(text) {
+  const time = formatTime(world.timeOfDay)
+  eventLog.push(`[${time}] ${text}`)
+  if (eventLog.length > 20) eventLog.shift()
+}
+
+function formatTime(minutes) {
+  const h = Math.floor(minutes / 60) % 24
+  const m = minutes % 60
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${m.toString().padStart(2, '0')} ${period}`
+}
+
+async function startSimulation() {
+  simulationRunning = true
+  addEvent('Simulation started...')
+
+  // Run tick every 3 seconds
+  const runTick = async () => {
+    if (!simulationRunning) return
+
+    try {
+      const state = await simulationTick({ verbose: false })
+
+      // Check for new memories/events
+      for (const [id, char] of world.characters) {
+        const lastMem = char.memories[char.memories.length - 1]
+        if (lastMem && lastMem.tick === world.tick) {
+          if (lastMem.type === 'reflection') {
+            addEvent(`${char.name} reflects: "${lastMem.text.slice(0, 60)}..."`)
+          } else if (lastMem.type === 'dialogue') {
+            addEvent(`${char.name}: ${lastMem.text.slice(0, 50)}...`)
+          }
+        }
+      }
+
+      // Redraw building if in building view
+      if (currentView === 'building') {
+        drawBuilding()
+      }
+    } catch (err) {
+      console.error('Tick error:', err)
+    }
+
+    // Next tick
+    setTimeout(runTick, 3000)
   }
+
+  runTick()
 }
 
 function handleResize() {
   const W = window.innerWidth
   const H = window.innerHeight
 
-  // Scale scenes to cover viewport
-  const scaleScene = (sprite) => {
-    if (!sprite || !sprite.texture) return
-    const scale = Math.max(W / sprite.texture.width, H / sprite.texture.height)
-    sprite.scale.set(scale * 1.02) // Slight overscale for animation headroom
-    sprite.position.set(W / 2, H / 2)
+  if (currentView === 'building') {
+    drawBuilding()
+  } else {
+    // Scale apartment scenes
+    const scaleScene = (sprite) => {
+      if (!sprite?.texture) return
+      const scale = Math.max((W - 320) / sprite.texture.width, H / sprite.texture.height)
+      sprite.scale.set(scale * 1.02)
+      sprite.position.set((W - 320) / 2, H / 2)
+    }
+    scaleScene(sceneFocused)
+    scaleScene(sceneWithdrawn)
   }
 
-  scaleScene(sceneFocused)
-  scaleScene(sceneWithdrawn)
-
-  // Reinit rain for new dimensions
+  // Reset rain
   rainDrops.forEach(drop => {
     drop.x = Math.random() * W
     drop.y = Math.random() * H
@@ -233,38 +568,39 @@ function handleResize() {
 
 function setupKeyboard() {
   window.addEventListener('keydown', (e) => {
-    switch (e.key.toLowerCase()) {
-      case 'e':
-        const evt = triggerNextEvent()
-        showToast(evt.name, evt.sub)
-        updateMoodBar()
-        break
-
-      case 't':
-        advanceTime(60)
-        if (simState.time % (24 * 60) < 60) {
-          simState.oneAmLightOff = false
+    switch (e.key) {
+      case 'Escape':
+        if (currentView === 'apartment') {
+          showBuildingView()
+          showToast('the building', 'NYC · RAINING')
         }
-        updateClock()
-        break
-
-      case 'r':
-        simState.raining = !simState.raining
-        if (simState.raining) {
-          gsap.to(simState, { rainIntensity: 0.7, duration: 3 })
-        } else {
-          gsap.to(simState, { rainIntensity: 0, duration: 2 })
-        }
-        break
-
-      case 'm':
-        cycleMood()
-        updateMoodBar()
         break
 
       case ' ':
         e.preventDefault()
-        togglePause()
+        simulationRunning = !simulationRunning
+        addEvent(simulationRunning ? 'Resumed' : 'Paused')
+        if (simulationRunning) startSimulation()
+        break
+
+      case 't':
+      case 'T':
+        // Advance time by 1 hour (12 ticks)
+        for (let i = 0; i < 12; i++) {
+          simulationTick({ verbose: false })
+        }
+        addEvent('Time advanced 1 hour')
+        if (currentView === 'building') drawBuilding()
+        break
+
+      case '1':
+        showApartmentView('2A') // Daniel
+        break
+      case '2':
+        showApartmentView('3B') // Maya
+        break
+      case '3':
+        showApartmentView('4C') // Iris
         break
     }
   })

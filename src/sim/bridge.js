@@ -5,7 +5,8 @@
  */
 
 import { simState, setMood, MOODS } from './state.js'
-import { world, getCharacter, getTimeString, tick as simTick, getSimulationState, initializeLLM } from './engine.js'
+import { tick as simTick, getSimulationState, initializeLLM } from './engine.js'
+import { world, getCharacter, getTimeString } from './world.js'
 import { initializeBuilding, getAllCharacters, BUILDING_LAYOUT, isWindowLit } from './building.js'
 
 let initialized = false
