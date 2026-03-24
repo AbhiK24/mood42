@@ -1,11 +1,31 @@
 {
   "name": "mood42",
   "version": "1.0.0",
+  "type": "module",
   "description": "Living apartment window — NYC, 11pm, raining",
   "scripts": {
-    "start": "npx serve -s . -l $PORT",
-    "dev": "npx serve -s . -l 3000"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite preview --port $PORT --host"
   },
-  "keywords": ["generative", "art", "animation", "pixi"],
-  "license": "MIT"
+  "keywords": [
+    "generative",
+    "art",
+    "animation",
+    "pixi"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbhiK24/mood42.git"
+  },
+  "dependencies": {
+    "gsap": "^3.14.2",
+    "pixi.js": "^8.17.1"
+  },
+  "devDependencies": {
+    "terser": "^5.46.1",
+    "vite": "^8.0.2"
+  }
 }
