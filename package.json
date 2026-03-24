@@ -1,0 +1,11 @@
+{
+  "name": "mood42",
+  "version": "1.0.0",
+  "description": "Living apartment window — NYC, 11pm, raining",
+  "scripts": {
+    "start": "npx serve -s . -l $PORT",
+    "dev": "npx serve -s . -l 3000"
+  },
+  "keywords": ["generative", "art", "animation", "pixi"],
+  "license": "MIT"
+}
