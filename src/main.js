@@ -76,11 +76,11 @@ function createScenes() {
   sceneWithdrawn.alpha = 0
   app.stage.addChild(sceneWithdrawn)
 
-  // Subtle breathing/sway animation on both scenes
+  // Breathing animation on both scenes
   gsap.to([sceneFocused, sceneWithdrawn], {
-    scaleX: 1.002,
-    scaleY: 1.001,
-    duration: 4,
+    scaleX: 1.012,
+    scaleY: 1.008,
+    duration: 3.5,
     ease: 'sine.inOut',
     yoyo: true,
     repeat: -1,
