@@ -1,4 +1,4 @@
-// mood42 - Lo-fi scene with generated artwork
+// mood42 - Lo-fi scene with complete artwork
 import { Application, Sprite, Container, Graphics, BlurFilter, Assets } from 'pixi.js'
 import gsap from 'gsap'
 
@@ -9,17 +9,16 @@ import { showToast } from './hud/hud.js'
 
 const app = new Application()
 
-// Asset URLs
+// Complete scene images (character already in the scene)
 const ASSETS = {
-  background: '/assets/scene_background.png',
-  characterFocused: '/assets/character_focused.png',
-  characterWithdrawn: '/assets/character_withdrawn.png',
+  sceneFocused: '/assets/scene_focused.png',
+  sceneWithdrawn: '/assets/scene_withdrawn.png',
 }
 
 // Scene elements
-let background, characterFocused, characterWithdrawn
+let sceneFocused, sceneWithdrawn
 let rainContainer, rainDrops = []
-let breatheTimeline
+let effectsContainer
 
 async function init() {
   await app.init({
@@ -33,20 +32,18 @@ async function init() {
   document.getElementById('app').appendChild(app.canvas)
 
   // Load assets
-  console.log('Loading assets...')
+  console.log('Loading scenes...')
   await Assets.load(Object.values(ASSETS))
-  console.log('Assets loaded!')
+  console.log('Scenes loaded!')
 
   // Create scene layers
-  createBackground()
-  createCharacter()
-  createRain()
-  createOverlays()
+  createScenes()
+  createEffects()
 
   // Start animation loop
   app.ticker.add(update)
 
-  // Setup
+  // Setup simulation
   initTicker(() => {}, () => {
     showToast('the light\ngoes off.', 'APT ACROSS · 1:00AM · ALWAYS')
   })
@@ -65,47 +62,41 @@ async function init() {
   handleResize()
 }
 
-function createBackground() {
-  background = Sprite.from(ASSETS.background)
-  background.anchor.set(0.5)
-  app.stage.addChild(background)
-}
+function createScenes() {
+  // Focused scene (default visible)
+  sceneFocused = Sprite.from(ASSETS.sceneFocused)
+  sceneFocused.anchor.set(0.5)
+  sceneFocused.label = 'scene-focused'
+  app.stage.addChild(sceneFocused)
 
-function createCharacter() {
-  // Container for character sprites
-  const characterContainer = new Container()
-  characterContainer.label = 'character'
-  app.stage.addChild(characterContainer)
+  // Withdrawn scene (fades in when mood changes)
+  sceneWithdrawn = Sprite.from(ASSETS.sceneWithdrawn)
+  sceneWithdrawn.anchor.set(0.5)
+  sceneWithdrawn.label = 'scene-withdrawn'
+  sceneWithdrawn.alpha = 0
+  app.stage.addChild(sceneWithdrawn)
 
-  // Focused pose
-  characterFocused = Sprite.from(ASSETS.characterFocused)
-  characterFocused.anchor.set(0.5, 1) // Bottom center
-  characterFocused.label = 'focused'
-  characterContainer.addChild(characterFocused)
-
-  // Withdrawn pose
-  characterWithdrawn = Sprite.from(ASSETS.characterWithdrawn)
-  characterWithdrawn.anchor.set(0.5, 1)
-  characterWithdrawn.label = 'withdrawn'
-  characterWithdrawn.alpha = 0
-  characterContainer.addChild(characterWithdrawn)
-
-  // Breathing animation
-  breatheTimeline = gsap.timeline({ repeat: -1, yoyo: true })
-  breatheTimeline.to([characterFocused, characterWithdrawn], {
-    scaleY: 1.003,
-    scaleX: 0.998,
-    duration: 2,
+  // Subtle breathing/sway animation on both scenes
+  gsap.to([sceneFocused, sceneWithdrawn], {
+    scaleX: 1.002,
+    scaleY: 1.001,
+    duration: 4,
     ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1,
   })
 }
 
-function createRain() {
+function createEffects() {
+  effectsContainer = new Container()
+  effectsContainer.label = 'effects'
+  app.stage.addChild(effectsContainer)
+
+  // Rain container
   rainContainer = new Container()
   rainContainer.label = 'rain'
-  app.stage.addChild(rainContainer)
+  effectsContainer.addChild(rainContainer)
 
-  // Create rain graphics
   const rainGraphics = new Graphics()
   rainContainer.addChild(rainGraphics)
 
@@ -119,33 +110,41 @@ function createRain() {
       opacity: 0.1 + Math.random() * 0.3,
     })
   }
-}
 
-function createOverlays() {
   // Vignette overlay
   const vignette = new Graphics()
   vignette.label = 'vignette'
-  app.stage.addChild(vignette)
+  effectsContainer.addChild(vignette)
 
   // Neon glow overlay
   const neonGlow = new Graphics()
   neonGlow.label = 'neon-glow'
   neonGlow.filters = [new BlurFilter({ strength: 40 })]
-  app.stage.addChild(neonGlow)
+  effectsContainer.addChild(neonGlow)
 }
 
 function update(ticker) {
   const W = app.screen.width
   const H = app.screen.height
 
+  // Update scene visibility based on mood
+  updateSceneMood()
+
   // Update rain
   updateRain(W, H)
 
-  // Update character visibility based on mood
-  updateCharacterMood()
-
   // Update overlays
   updateOverlays(W, H)
+}
+
+function updateSceneMood() {
+  const mood = simState.characterMood
+  const targetFocused = (mood === 'FOCUSED' || mood === 'GOOD') ? 1 : 0
+  const targetWithdrawn = (mood === 'WITHDRAWN' || mood === 'ANXIOUS') ? 1 : 0
+
+  // Smooth crossfade between scenes
+  sceneFocused.alpha += (targetFocused - sceneFocused.alpha) * 0.03
+  sceneWithdrawn.alpha += (targetWithdrawn - sceneWithdrawn.alpha) * 0.03
 }
 
 function updateRain(W, H) {
@@ -178,50 +177,35 @@ function updateRain(W, H) {
   })
 }
 
-function updateCharacterMood() {
-  const mood = simState.characterMood
-  const targetFocused = (mood === 'FOCUSED' || mood === 'GOOD') ? 1 : 0
-  const targetWithdrawn = (mood === 'WITHDRAWN' || mood === 'ANXIOUS') ? 1 : 0
-
-  // Smooth transition between character poses
-  characterFocused.alpha += (targetFocused - characterFocused.alpha) * 0.05
-  characterWithdrawn.alpha += (targetWithdrawn - characterWithdrawn.alpha) * 0.05
-}
-
 function updateOverlays(W, H) {
   // Update vignette
-  const vignette = app.stage.children.find(c => c.label === 'vignette')
+  const vignette = effectsContainer.children.find(c => c.label === 'vignette')
   if (vignette) {
     vignette.clear()
-    // Dark edges
-    const gradient = vignette
-    gradient.rect(0, 0, W, H)
-    gradient.fill({ color: 0x000000, alpha: 0 })
-
-    // Top/bottom darkening
+    // Dark edges for cinematic feel
     for (let i = 0; i < 5; i++) {
-      const alpha = 0.15 * (1 - i / 5)
-      gradient.rect(0, 0, W, H * 0.1 * (5 - i) / 5)
-      gradient.fill({ color: 0x000000, alpha })
-      gradient.rect(0, H - H * 0.15 * (5 - i) / 5, W, H * 0.15 * (5 - i) / 5)
-      gradient.fill({ color: 0x000000, alpha: alpha * 0.7 })
+      const alpha = 0.12 * (1 - i / 5)
+      vignette.rect(0, 0, W, H * 0.08 * (5 - i) / 5)
+      vignette.fill({ color: 0x000000, alpha })
+      vignette.rect(0, H - H * 0.12 * (5 - i) / 5, W, H * 0.12 * (5 - i) / 5)
+      vignette.fill({ color: 0x000000, alpha: alpha * 0.7 })
     }
   }
 
   // Update neon glow
-  const neonGlow = app.stage.children.find(c => c.label === 'neon-glow')
+  const neonGlow = effectsContainer.children.find(c => c.label === 'neon-glow')
   if (neonGlow) {
     const time = performance.now() * 0.001
     const flicker = 0.7 + 0.3 * Math.sin(time * 5)
 
     neonGlow.clear()
     // Red neon glow (upper right)
-    neonGlow.circle(W * 0.75, H * 0.3, W * 0.15)
-    neonGlow.fill({ color: 0xff4d6d, alpha: 0.08 * flicker })
+    neonGlow.circle(W * 0.8, H * 0.25, W * 0.1)
+    neonGlow.fill({ color: 0xff4d6d, alpha: 0.06 * flicker })
 
     // Blue neon glow (upper left)
-    neonGlow.circle(W * 0.2, H * 0.25, W * 0.12)
-    neonGlow.fill({ color: 0x4d9fff, alpha: 0.06 * flicker })
+    neonGlow.circle(W * 0.15, H * 0.2, W * 0.08)
+    neonGlow.fill({ color: 0x4d9fff, alpha: 0.04 * flicker })
   }
 }
 
@@ -229,25 +213,16 @@ function handleResize() {
   const W = window.innerWidth
   const H = window.innerHeight
 
-  // Scale background to cover
-  if (background) {
-    const bgScale = Math.max(W / background.texture.width, H / background.texture.height)
-    background.scale.set(bgScale * 1.05) // Slight overscale for movement
-    background.position.set(W / 2, H / 2)
+  // Scale scenes to cover viewport
+  const scaleScene = (sprite) => {
+    if (!sprite || !sprite.texture) return
+    const scale = Math.max(W / sprite.texture.width, H / sprite.texture.height)
+    sprite.scale.set(scale * 1.02) // Slight overscale for animation headroom
+    sprite.position.set(W / 2, H / 2)
   }
 
-  // Position character
-  if (characterFocused) {
-    const charScale = H / characterFocused.texture.height * 0.85
-    characterFocused.scale.set(charScale)
-    characterFocused.position.set(W * 0.5, H * 0.95)
-  }
-
-  if (characterWithdrawn) {
-    const charScale = H / characterWithdrawn.texture.height * 0.85
-    characterWithdrawn.scale.set(charScale)
-    characterWithdrawn.position.set(W * 0.5, H * 0.95)
-  }
+  scaleScene(sceneFocused)
+  scaleScene(sceneWithdrawn)
 
   // Reinit rain for new dimensions
   rainDrops.forEach(drop => {
