@@ -4,8 +4,9 @@
 
 import { world, advanceWorldTime, getTimeString, logInteraction, getCharacter } from './world.js'
 import { Character } from './character.js'
+import { initLLM, createLLMInterface } from './llm.js'
 
-// LLM interface (to be implemented with Claude API)
+// LLM interface
 let llmInterface = null
 
 /**
@@ -13,6 +14,15 @@ let llmInterface = null
  */
 export function setLLMInterface(llm) {
   llmInterface = llm
+}
+
+/**
+ * Initialize LLM with API key
+ */
+export function initializeLLM(apiKey) {
+  const hasKey = initLLM(apiKey)
+  llmInterface = createLLMInterface()
+  return hasKey
 }
 
 /**

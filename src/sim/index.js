@@ -21,6 +21,7 @@ export {
   saveState,
   loadState,
   setLLMInterface,
+  initializeLLM,
 } from './engine.js'
 
 // Building and characters
@@ -49,3 +50,15 @@ export {
   viewerInteraction,
   getMemoryDive,
 } from './bridge.js'
+
+// LLM integration (Kimi K2)
+export {
+  initLLM,
+  callKimi,
+  generateReflection,
+  generatePlan,
+  generateMessage,
+  rateImportance,
+  generateScenePrompt,
+  createLLMInterface,
+} from './llm.js'

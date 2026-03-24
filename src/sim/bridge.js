@@ -5,7 +5,7 @@
  */
 
 import { simState, setMood, MOODS } from './state.js'
-import { world, getCharacter, getTimeString, tick as simTick, getSimulationState } from './engine.js'
+import { world, getCharacter, getTimeString, tick as simTick, getSimulationState, initializeLLM } from './engine.js'
 import { initializeBuilding, getAllCharacters, BUILDING_LAYOUT, isWindowLit } from './building.js'
 
 let initialized = false
@@ -14,8 +14,12 @@ let activeCharacterId = 'maya_3b' // Default view
 /**
  * Initialize simulation and bridge
  */
-export function initSimulation() {
+export function initSimulation(apiKey = null) {
   if (initialized) return
+
+  // Initialize LLM (will use mock if no key)
+  const hasLLM = initializeLLM(apiKey)
+  console.log(`[Simulation] LLM: ${hasLLM ? 'Kimi K2 connected' : 'Using mock responses'}`)
 
   // Initialize the building with all characters
   initializeBuilding()
