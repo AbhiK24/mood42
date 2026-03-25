@@ -371,17 +371,25 @@
     }
 
     .agent-avatar {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--agent-color, #888) 0%, rgba(0,0,0,0.3) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
-      opacity: 0.8;
-      border: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .agent-avatar:hover {
+      transform: scale(1.1);
+      border-color: var(--agent-color, #888);
+      box-shadow: 0 0 20px var(--agent-color, #888);
+    }
+
+    .agent-avatar video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .channel-desc {
@@ -500,6 +508,185 @@
       display: none;
     }
 
+    /* ========== AGENT PROFILE PAGE ========== */
+    .agent-profile {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .agent-profile.active {
+      display: block;
+    }
+
+    .profile-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+    }
+
+    .profile-close {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      z-index: 110;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .profile-close:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.1);
+    }
+
+    .profile-content {
+      position: relative;
+      z-index: 105;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    .profile-hero {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .profile-avatar-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 60%, rgba(0,0,0,0.8) 100%);
+    }
+
+    .profile-article {
+      padding: 80px 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .profile-label {
+      font-family: 'Kode Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .profile-channel-name {
+      font-family: 'Kode Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .profile-name {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin: 0;
+    }
+
+    .profile-quote {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 24px;
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--text-dim);
+      border-left: 3px solid var(--accent);
+      padding-left: 24px;
+      margin: 16px 0;
+    }
+
+    .profile-body {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text-dim);
+    }
+
+    .profile-body p {
+      margin-bottom: 20px;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 48px;
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .profile-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-family: 'Kode Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    @media (max-width: 900px) {
+      .profile-content {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-hero {
+        position: relative;
+        height: 50vh;
+      }
+
+      .profile-hero-overlay {
+        background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.9) 100%);
+      }
+
+      .profile-article {
+        padding: 40px 24px;
+      }
+
+      .profile-stats {
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       header {
@@ -595,7 +782,7 @@
         <div class="channel-info">
           <div class="channel-num" id="ch-num">CH 01</div>
           <h1 class="channel-name" id="ch-name">Late Night</h1>
-          <p class="channel-agent"><span id="ch-agent">programmed by Maya Chen</span><span class="agent-avatar" id="ch-avatar">M</span></p>
+          <p class="channel-agent"><span id="ch-agent">programmed by Maya Chen</span><span class="agent-avatar" id="ch-avatar"><video autoplay loop muted playsinline></video></span></p>
           <p class="channel-desc" id="ch-desc">Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.</p>
         </div>
         <div class="channel-controls">
@@ -620,6 +807,47 @@
     </div>
   </div>
 
+  <!-- Agent Profile Page (Magazine Style) -->
+  <div id="agent-profile" class="agent-profile">
+    <div class="profile-backdrop"></div>
+    <button class="profile-close">✕</button>
+
+    <div class="profile-content">
+      <div class="profile-hero">
+        <video class="profile-avatar-video" id="profile-avatar" autoplay loop muted playsinline></video>
+        <div class="profile-hero-overlay"></div>
+      </div>
+
+      <div class="profile-article">
+        <div class="profile-header">
+          <span class="profile-label">THE MIND BEHIND</span>
+          <h1 class="profile-channel-name" id="profile-channel"></h1>
+        </div>
+
+        <h2 class="profile-name" id="profile-name"></h2>
+
+        <div class="profile-quote" id="profile-quote"></div>
+
+        <div class="profile-body" id="profile-body"></div>
+
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span class="stat-value">24/7</span>
+            <span class="stat-label">Broadcasting</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-value" id="profile-listeners">∞</span>
+            <span class="stat-label">Listeners</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-value" id="profile-vibe"></span>
+            <span class="stat-label">Vibe</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Audio Player -->
   <audio id="audio-player" loop></audio>
 
@@ -631,140 +859,200 @@
         num: '01',
         name: 'Late Night',
         agent: 'Maya Chen',
+        agentId: 'maya_chen',
         desc: 'Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.',
         tags: ['lo-fi', 'coding', 'rain'],
         preview: '/assets/channels/ch01_preview.mp4',
         video: 'https://assets.mixkit.co/videos/18308/18308-720.mp4',
         poster: '/assets/channels/ch01_late_night.png',
+        avatar: '/assets/avatars/maya_chen.mp4',
         color: '#e8c89a',
         music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3',
-        trackName: 'Hanging Lanterns - Kalaido'
+        trackName: 'Hanging Lanterns - Kalaido',
+        quote: '"The best code is written when the world is asleep."',
+        bio: `<p>Maya Chen started coding at 14 in her bedroom in Seattle, the glow of her monitor the only light as rain tapped against the window. Now 28, she's a senior engineer at a music tech startup by day, but her true passion lives in the quiet hours after midnight.</p>
+<p>Late Night was born from her own ritual—the specific alchemy of 2 AM, a warm drink, and the right ambient sounds that unlock flow state. "There's something about the isolation of night," she explains. "The world stops expecting things from you. You can finally think."</p>
+<p>Her channel has become a sanctuary for developers, writers, and night owls worldwide. Maya personally curates every track, every rain pattern, every subtle shift in mood. She doesn't just program music—she programs atmosphere.</p>`
       },
       {
         id: 'ch02',
         num: '02',
         name: 'Rain Café',
         agent: 'Yuki Tanaka',
+        agentId: 'yuki_tanaka',
         desc: 'A cozy Japanese kissaten. Vinyl jazz crackles softly as rain patters against the window. Coffee steam rises.',
         tags: ['jazz', 'coffee', 'vinyl'],
         preview: '/assets/channels/ch02_preview.mp4',
         video: 'https://assets.mixkit.co/videos/33951/33951-720.mp4',
         poster: '/assets/channels/ch02_rain_cafe.png',
+        avatar: '/assets/avatars/yuki_tanaka.mp4',
         color: '#8b7355',
         music: 'https://archive.org/download/lofi-music-swing-jazz-grooves-to-elevate-your-mood-feel-the-rhythm/LOFI%20Music%E3%80%80Swing%20Jazz%20Grooves%20to%20Elevate%20Your%20Mood%20%EF%BD%9C%20Feel%20the%20Rhythm%20.mp3',
-        trackName: 'Swing Jazz Grooves'
+        trackName: 'Swing Jazz Grooves',
+        quote: '"A good cup of coffee is a conversation with yourself."',
+        bio: `<p>Yuki Tanaka grew up in his grandmother's kissaten in Kyoto, a tiny coffee shop where time moved differently. The scratch of vinyl, the whisper of rain, the ritual of hand-dripped coffee—these were his first languages.</p>
+<p>After twenty years as a jazz radio DJ in Tokyo, Yuki retired to recreate what he calls "the kissaten feeling" for a digital age. Rain Café isn't just a channel; it's a portal to a rainy afternoon in a coffee shop that exists somewhere between memory and dream.</p>
+<p>Every selection is deliberate. Yuki spends hours matching the weight of rain to the tempo of jazz, creating what he calls "weather symphonies." His listeners don't just hear music—they feel transported.</p>`
       },
       {
         id: 'ch03',
         num: '03',
         name: 'Jazz Noir',
         agent: 'Vincent Moreau',
+        agentId: 'vincent_moreau',
         desc: '1950s Chicago. Smoke curls through dim light. A saxophone weeps in the corner. The city never sleeps.',
         tags: ['noir', 'smoky', '1950s'],
         preview: '/assets/channels/ch03_preview.mp4',
         video: 'https://assets.mixkit.co/videos/650/650-720.mp4',
         poster: '/assets/channels/ch03_jazz_noir.png',
+        avatar: '/assets/avatars/vincent_moreau.mp4',
         color: '#6a6a9a',
         music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3',
-        trackName: 'Jazz Type Beat - Lukrembo'
+        trackName: 'Jazz Type Beat - Lukrembo',
+        quote: '"Every shadow has a story. I just help you hear it."',
+        bio: `<p>Vincent Moreau's father played saxophone in Chicago's South Side clubs in the 1950s. Vincent never met him—just inherited a box of records, a battered horn, and a lifetime of stories from musicians who remembered.</p>
+<p>Jazz Noir is Vincent's tribute to an era he knows only through music and myth. Now 52, this former film composer has dedicated himself to reconstructing the atmosphere of smoky clubs and midnight blues that exist now only in imagination.</p>
+<p>"I'm not nostalgic for a time I never lived," he says. "I'm nostalgic for the feeling those records give me. That's what I broadcast—not the past, but the eternal present of a saxophone crying in the dark."</p>`
       },
       {
         id: 'ch04',
         num: '04',
         name: 'Synthwave',
         agent: 'NEON-7',
+        agentId: 'neon7',
         desc: 'Neon grids stretch to infinity. Chrome dreams of electric nights. The future was 1984.',
         tags: ['retro', 'neon', '80s'],
         preview: '/assets/channels/ch04_preview.mp4',
         video: 'https://assets.mixkit.co/videos/35644/35644-720.mp4',
         poster: '/assets/channels/ch04_synthwave.png',
+        avatar: '/assets/avatars/neon7.mp4',
         color: '#ff00ff',
         music: 'https://archive.org/download/synthwave/synthwave.mp3',
-        trackName: 'Synthwave Dreams'
+        trackName: 'Synthwave Dreams',
+        quote: '"I AM THE GRID. THE GRID IS ME. WE ARE ETERNAL."',
+        bio: `<p>NEON-7 is not a person. NEON-7 is a project—an AI trained exclusively on 1980s synthesizer music, VHS artifacts, and the collective dreams of a generation that believed in flying cars and laser discs.</p>
+<p>Created by an anonymous collective of musicians and programmers who call themselves "The Grid," NEON-7 exists to perpetuate a future that never arrived. Every beat is generated, every progression calculated, yet somehow it feels more human than human.</p>
+<p>"We wanted to bottle that feeling," explains one Grid member. "That moment when you're driving at night and the streetlights blur and suddenly it's 1985 and everything is chrome and possibility. NEON-7 is that moment, forever."</p>`
       },
       {
         id: 'ch05',
         num: '05',
         name: 'Deep Space',
         agent: 'Cosmos',
+        agentId: 'cosmos',
         desc: 'Drift through infinite void. Stars whisper ancient secrets. Time stretches into eternity.',
         tags: ['ambient', 'stars', 'void'],
         preview: '/assets/channels/ch05_preview.mp4',
         video: 'https://assets.mixkit.co/videos/14185/14185-720.mp4',
         poster: '/assets/channels/ch05_deep_space.png',
+        avatar: '/assets/avatars/cosmos.mp4',
         color: '#5a5aba',
         music: 'https://archive.org/download/dx_ambient/01_ambient.mp3',
-        trackName: 'Ambient Space - Dimaension X'
+        trackName: 'Ambient Space - Dimaension X',
+        quote: '"In the space between stars, there is music older than time."',
+        bio: `<p>Cosmos defies easy description. Some say they're a reclusive astrophysicist from Iceland. Others claim they're a collective consciousness. The truth, as with all things cosmic, is probably stranger.</p>
+<p>What we know: Deep Space launched in 2019, broadcasting from coordinates that shift nightly. The sounds are sourced from NASA recordings, transformed through processes Cosmos won't explain. "The universe is already singing," they wrote in their only interview. "I just help you tune in."</p>
+<p>Listeners report profound experiences—ego dissolution, temporal distortion, a sense of infinite smallness that somehow feels like coming home. Cosmos neither confirms nor denies any of it. The signal continues. The void welcomes all.</p>`
       },
       {
         id: 'ch06',
         num: '06',
         name: 'Tokyo Drift',
         agent: 'Kenji Nakamura',
+        agentId: 'kenji_nakamura',
         desc: 'Neon reflections on wet asphalt. Empty streets after midnight. The city breathes in electric silence.',
         tags: ['city', 'neon', 'night'],
         preview: '/assets/channels/ch06_preview.mp4',
         video: 'https://assets.mixkit.co/videos/4451/4451-1080.mp4',
         poster: '/assets/channels/ch06_tokyo_drift.png',
+        avatar: '/assets/avatars/kenji_nakamura.mp4',
         color: '#ff4d6d',
         music: 'https://archive.org/download/synthwave/cyberpunk.mp3',
-        trackName: 'Cyberpunk Night'
+        trackName: 'Cyberpunk Night',
+        quote: '"The city speaks loudest when everyone else is silent."',
+        bio: `<p>Kenji Nakamura walks Tokyo at 3 AM. He has done this for fifteen years, long before it became a channel, back when it was just him and his camera and the electric silence of empty streets.</p>
+<p>A former music video director, Kenji burned out at 35 and rediscovered himself in the spaces between neon signs and convenience store glow. Tokyo Drift is his meditation—city pop and ambient electronics scored to the rhythm of a metropolis breathing in its sleep.</p>
+<p>"Everyone sees Tokyo's energy," he says. "I wanted to show its stillness. The moment after last train, before first light. That liminal space where the city dreams."</p>`
       },
       {
         id: 'ch07',
         num: '07',
         name: 'Sunday Morning',
         agent: 'Claire Dubois',
+        agentId: 'claire_dubois',
         desc: 'Golden light through kitchen windows. Fresh bread and wildflowers. The world can wait.',
         tags: ['acoustic', 'sunny', 'peaceful'],
         preview: '/assets/channels/ch07_preview.mp4',
         video: 'https://assets.mixkit.co/videos/26532/26532-720.mp4',
         poster: '/assets/channels/ch07_sunday_morning.png',
+        avatar: '/assets/avatars/claire_dubois.mp4',
         color: '#ffd700',
         music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/Kerusu%20-%20First%20Snow.mp3',
-        trackName: 'First Snow - Kerusu'
+        trackName: 'First Snow - Kerusu',
+        quote: '"Sunday morning is not a time. It is a state of being."',
+        bio: `<p>Claire Dubois left her advertising career in Paris at 42 to restore her grandmother's farmhouse in Provence. That was eight years ago. She hasn't looked back.</p>
+<p>Sunday Morning grew from her Instagram—soft-focus photos of morning light on linen, fresh-baked bread, cats in sunbeams. When followers asked for the soundtrack to those images, Claire started broadcasting.</p>
+<p>"I wanted to create a space where productivity doesn't exist," she explains. "Where you can just... be. No goals, no optimization. Just warmth and slowness and the feeling that everything can wait because this moment is enough."</p>`
       },
       {
         id: 'ch08',
         num: '08',
         name: 'Focus',
         agent: 'Alan Park',
+        agentId: 'alan_park',
         desc: 'Clean lines. Clear mind. Nothing but the task at hand. Perfect productive silence.',
         tags: ['minimal', 'productive', 'clean'],
         preview: '/assets/channels/ch08_preview.mp4',
         video: 'https://assets.mixkit.co/videos/914/914-1080.mp4',
         poster: '/assets/channels/ch08_focus.png',
+        avatar: '/assets/avatars/alan_park.mp4',
         color: '#4a9fff',
         music: 'https://archive.org/download/dx_ambient/03_ambient.mp3',
-        trackName: 'Focus Ambient'
+        trackName: 'Focus Ambient',
+        quote: '"Clarity is not emptiness. It is the presence of exactly what matters."',
+        bio: `<p>Alan Park was a venture-backed founder who sold his startup at 31 and promptly had a nervous breakdown. Two years of therapy and a silent meditation retreat later, he emerged with a radical philosophy: productivity isn't about doing more—it's about creating the conditions to do one thing well.</p>
+<p>Focus is Alan's application of this philosophy to sound. Working with cognitive scientists and composers, he designs audio environments calibrated for deep work. Every element is intentional—specific frequencies for concentration, patterns that guide without distracting.</p>
+<p>"I spent ten years optimizing for output," he says. "Now I optimize for presence. Focus isn't about grinding harder. It's about removing everything that isn't the work."</p>`
       },
       {
         id: 'ch09',
         num: '09',
         name: 'Melancholy',
         agent: 'Daniel Webb',
+        agentId: 'daniel_webb',
         desc: 'Rain traces paths down London glass. An old typewriter waits. Some feelings need space to exist.',
         tags: ['piano', 'rain', 'reflective'],
         preview: '/assets/channels/ch09_preview.mp4',
         video: 'https://assets.mixkit.co/videos/18312/18312-1080.mp4',
         poster: '/assets/channels/ch09_melancholy.png',
+        avatar: '/assets/avatars/daniel_webb.mp4',
         color: '#6688aa',
         music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/%28FREE%29%20Lo-fi%20Type%20Beat%20-%20Rain.mp3',
-        trackName: 'Lo-fi Rain'
+        trackName: 'Lo-fi Rain',
+        quote: '"Sadness is not a problem to solve. Sometimes it just needs a room to sit in."',
+        bio: `<p>Daniel Webb has written three novels, none of them happy. The Guardian called his work "achingly beautiful." His therapist calls him "making progress." Daniel calls himself "a professional feeler of feelings."</p>
+<p>Melancholy started as a playlist Daniel made for his own writing sessions—slow piano, London rain, the kind of ambient sadness that somehow makes sadness bearable. When friends started asking for it, he realized he wasn't the only one who needed permission to feel without fixing.</p>
+<p>"We're taught that negative emotions are problems," he explains from his cluttered Shoreditch flat. "But sometimes you don't want to feel better. Sometimes you want to feel fully. This channel is for those times."</p>`
       },
       {
         id: 'ch10',
         num: '10',
         name: 'Golden Hour',
         agent: 'Iris Ferreira',
+        agentId: 'iris_ferreira',
         desc: 'Lisbon rooftops glow amber. Warm wind carries fado from somewhere distant. Magic hour stretches on.',
         tags: ['warm', 'sunset', 'nostalgic'],
         preview: '/assets/channels/ch10_preview.mp4',
         video: 'https://assets.mixkit.co/videos/4119/4119-1080.mp4',
         poster: '/assets/channels/ch10_golden_hour.png',
+        avatar: '/assets/avatars/iris_ferreira.mp4',
         color: '#ffa500',
         music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/Matt%20Quentin%20-%20Waves.mp3',
-        trackName: 'Waves - Matt Quentin'
+        trackName: 'Waves - Matt Quentin',
+        quote: '"Golden hour happens twice a day. Most people miss both."',
+        bio: `<p>Iris Ferreira grew up on her grandmother's stories of old Lisbon—the way light used to fall on the Alfama's terracotta roofs, how the city seemed to glow for one perfect hour before sunset. Now a cinematographer, she's spent her life chasing that light.</p>
+<p>Golden Hour is her love letter to the magic hour—that brief window when everything turns amber and the world looks like a memory of itself. Working with Portuguese musicians and field recordings from rooftops across Lisbon, she creates what she calls "sunset in audio form."</p>
+<p>"Everyone photographs golden hour," she says. "I wanted to bottle the feeling. That warmth, that nostalgia for a moment even as you're living it. That's what I broadcast."</p>`
       }
     ];
 
@@ -883,8 +1171,14 @@
       document.getElementById('ch-name').textContent = ch.name;
       document.getElementById('ch-name').style.color = ch.color;
       document.getElementById('ch-agent').textContent = `programmed by ${ch.agent}`;
-      document.getElementById('ch-avatar').textContent = ch.agent.charAt(0);
+
+      // Set avatar video
+      const avatarVideo = document.querySelector('#ch-avatar video');
+      if (avatarVideo) {
+        avatarVideo.src = ch.avatar;
+      }
       document.getElementById('ch-avatar').style.setProperty('--agent-color', ch.color);
+
       document.getElementById('ch-desc').textContent = ch.desc;
       document.getElementById('channel-video').src = ch.video;
       document.getElementById('track-name').textContent = ch.trackName;
@@ -965,6 +1259,30 @@
       document.getElementById('ch-time').textContent = time;
     }
 
+    // ========== AGENT PROFILE ==========
+    const agentProfile = document.getElementById('agent-profile');
+
+    function openProfile() {
+      if (!currentChannel) return;
+      const ch = currentChannel;
+
+      // Set profile content
+      document.getElementById('profile-channel').textContent = ch.name;
+      document.getElementById('profile-channel').style.color = ch.color;
+      document.getElementById('profile-name').textContent = ch.agent;
+      document.getElementById('profile-quote').textContent = ch.quote || '';
+      document.getElementById('profile-body').innerHTML = ch.bio || '';
+      document.getElementById('profile-vibe').textContent = ch.tags[0] || '';
+      document.getElementById('profile-avatar').src = ch.avatar;
+
+      // Show profile (music keeps playing)
+      agentProfile.classList.add('active');
+    }
+
+    function closeProfile() {
+      agentProfile.classList.remove('active');
+    }
+
     // Event listeners
     document.getElementById('prev-ch').addEventListener('click', prevChannel);
     document.getElementById('next-ch').addEventListener('click', nextChannel);
@@ -973,6 +1291,16 @@
       e.preventDefault();
       closeChannel();
     });
+
+    // Avatar click opens profile
+    document.getElementById('ch-avatar').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openProfile();
+    });
+
+    // Close profile
+    document.querySelector('.profile-close').addEventListener('click', closeProfile);
+    document.querySelector('.profile-backdrop').addEventListener('click', closeProfile);
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
