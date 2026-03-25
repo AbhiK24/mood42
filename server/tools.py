@@ -638,58 +638,51 @@ def extract_genres_from_query(query: str) -> List[str]:
     return genres if genres else ["ambient"]
 
 
-# Each channel agent has EXCLUSIVE videos - served from R2 CDN
+# EXCLUSIVE CHANNEL VIDEOS - ZERO OVERLAP
+# Each channel has unique videos that NO other channel uses
+# 12 unique videos distributed across 10 channels
 CHANNEL_VIDEOS = {
-    # CH01: Late Night with Maya - rain on windows, moody city nights
+    # CH01: Maya - city timelapse (exclusive)
     "ch01": [
-        {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "timelapse", "night"]},
-        {"id": "ch01_v2", "name": "Liquid Motion", "url": f"{R2_BASE}/video/ch01_liquid_motion.mp4", "tags": ["liquid", "abstract", "flow"]},
+        {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "lo-fi"]},
     ],
-    # CH02: Rain Café with Yuki - cozy rain, warm café vibes (uses ch01 videos temporarily)
+    # CH02: Yuki - liquid motion like coffee steam (exclusive)
     "ch02": [
-        {"id": "ch02_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "timelapse", "night"]},
-        {"id": "ch02_v2", "name": "Liquid Motion", "url": f"{R2_BASE}/video/ch01_liquid_motion.mp4", "tags": ["liquid", "abstract", "flow"]},
+        {"id": "ch02_v1", "name": "Liquid Flow", "url": f"{R2_BASE}/video/ch01_liquid_motion.mp4", "tags": ["liquid", "cozy", "cafe"]},
     ],
-    # CH03: Jazz Noir with Vincent - smoky noir city (uses ch04 videos temporarily)
+    # CH03: Vincent - noir color gradients (exclusive)
     "ch03": [
-        {"id": "ch03_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "grid", "noir"]},
-        {"id": "ch03_v2", "name": "Color Gradient", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "colors", "abstract"]},
+        {"id": "ch03_v1", "name": "Noir Gradients", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "noir", "smoky"]},
     ],
-    # CH04: Synthwave with NEON - retro neon grids
+    # CH04: NEON-7 - neon grid (exclusive)
     "ch04": [
         {"id": "ch04_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "grid", "synthwave"]},
-        {"id": "ch04_v2", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "space", "travel"]},
-        {"id": "ch04_v3", "name": "Color Gradient", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "colors", "abstract"]},
     ],
-    # CH05: Deep Space with Cosmos - cosmic void
+    # CH05: Cosmos - cosmic void + stars (exclusive, 2 videos)
     "ch05": [
-        {"id": "ch05_v1", "name": "Stars in Space", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["space", "stars", "night"]},
-        {"id": "ch05_v2", "name": "Cosmic Journey", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "ambient"]},
+        {"id": "ch05_v1", "name": "Cosmic Void", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "void"]},
+        {"id": "ch05_v2", "name": "Distant Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "space", "infinite"]},
     ],
-    # CH06: Tokyo Drift with Kenji - neon city streets (uses ch04 videos temporarily)
+    # CH06: Kenji - galaxy travel for tokyo night drive (exclusive)
     "ch06": [
-        {"id": "ch06_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "night", "city"]},
-        {"id": "ch06_v2", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["space", "night", "travel"]},
+        {"id": "ch06_v1", "name": "Galaxy Drive", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "night", "drive"]},
     ],
-    # CH07: Sunday Morning with Claire - peaceful nature
+    # CH07: Claire - garden flowers (exclusive)
     "ch07": [
-        {"id": "ch07_v1", "name": "Flowers", "url": f"{R2_BASE}/video/ch07_flowers.mp4", "tags": ["flowers", "nature", "peaceful"]},
-        {"id": "ch07_v2", "name": "Golden Light", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "light", "warm"]},
+        {"id": "ch07_v1", "name": "Garden Flowers", "url": f"{R2_BASE}/video/ch07_flowers.mp4", "tags": ["flowers", "nature", "peaceful"]},
     ],
-    # CH08: Focus with Alan - minimal abstract
+    # CH08: Alan - abstract focus + minimal (exclusive, 2 videos)
     "ch08": [
-        {"id": "ch08_v1", "name": "Minimal Waves", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "abstract", "calm"]},
-        {"id": "ch08_v2", "name": "Abstract Flow", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "motion", "focus"]},
+        {"id": "ch08_v1", "name": "Abstract Flow", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "focus", "minimal"]},
+        {"id": "ch08_v2", "name": "Minimal Motion", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "clean", "simple"]},
     ],
-    # CH09: Melancholy with Daniel - reflective rain (uses ch01 videos temporarily)
+    # CH09: Daniel - ocean sunset for melancholy (exclusive)
     "ch09": [
-        {"id": "ch09_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "reflective"]},
-        {"id": "ch09_v2", "name": "Abstract Flow", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "moody", "motion"]},
+        {"id": "ch09_v1", "name": "Ocean Melancholy", "url": f"{R2_BASE}/video/ch10_ocean_sunset.mp4", "tags": ["ocean", "melancholy", "reflective"]},
     ],
-    # CH10: Golden Hour with Iris - warm sunset
+    # CH10: Iris - golden light (exclusive)
     "ch10": [
-        {"id": "ch10_v1", "name": "Golden Light", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "light", "warm"]},
-        {"id": "ch10_v2", "name": "Ocean Sunset", "url": f"{R2_BASE}/video/ch10_ocean_sunset.mp4", "tags": ["ocean", "sunset", "warm"]},
+        {"id": "ch10_v1", "name": "Golden Light", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "warm", "sunset"]},
     ],
 }
 

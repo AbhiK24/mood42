@@ -173,6 +173,105 @@
         .elapsed.stale { color: #fbbf24; }
         .elapsed.broken { color: #f87171; }
 
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .tab.active {
+            background: #1a1a1a;
+            color: #4ade80;
+            border-color: #4ade80;
+        }
+        .tab:hover:not(.active) {
+            background: #181818;
+            color: #aaa;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Media DB */
+        .media-section {
+            margin-bottom: 32px;
+        }
+        .media-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .media-channel {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .media-channel-header {
+            padding: 12px 16px;
+            background: #0d0d0d;
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .media-channel-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .media-counts {
+            font-size: 11px;
+            color: #666;
+        }
+        .media-list {
+            padding: 12px 16px;
+        }
+        .media-type-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .media-item {
+            font-size: 11px;
+            color: #aaa;
+            padding: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .media-item a {
+            color: #4ade80;
+            text-decoration: none;
+            font-size: 10px;
+        }
+        .media-item a:hover { text-decoration: underline; }
+        .media-item.duplicate {
+            background: rgba(251, 191, 36, 0.1);
+            padding: 4px 8px;
+            margin: 0 -8px;
+            border-radius: 4px;
+        }
+        .duplicate-badge {
+            font-size: 9px;
+            background: #3d2a08;
+            color: #fbbf24;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+
         .status-dot {
             width: 6px;
             height: 6px;
@@ -209,6 +308,13 @@
         <div id="health-badge" class="status-badge">loading...</div>
     </div>
 
+    <div class="tabs">
+        <div class="tab active" data-tab="streams">Live Streams</div>
+        <div class="tab" data-tab="media">Media Database</div>
+    </div>
+
+    <div id="streams-tab" class="tab-content active">
+
     <div class="summary" id="summary">
         <div class="stat-card">
             <div class="label">Streams</div>
@@ -234,6 +340,33 @@
 
     <div class="channels-grid" id="channels-grid">
         <!-- Populated by JS -->
+    </div>
+
+    </div><!-- end streams-tab -->
+
+    <div id="media-tab" class="tab-content">
+        <div class="media-summary">
+            <div class="stat-card">
+                <div class="label">Total Tracks</div>
+                <div class="value ok" id="total-tracks">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Total Videos</div>
+                <div class="value" id="total-videos">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Unique Videos</div>
+                <div class="value" id="unique-videos">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Duplicates</div>
+                <div class="value stale" id="duplicate-count">--</div>
+            </div>
+        </div>
+
+        <div id="media-channels">
+            <!-- Populated by JS -->
+        </div>
     </div>
 
     <div class="refresh-info">
@@ -331,6 +464,86 @@
             // Last update
             document.getElementById('last-update').textContent =
                 `Last update: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+
+                // Fetch media data when switching to media tab
+                if (tab.dataset.tab === 'media') {
+                    fetchMedia();
+                }
+            });
+        });
+
+        // Fetch media database
+        async function fetchMedia() {
+            try {
+                const res = await fetch(`${API_BASE}/api/ops/media`);
+                const data = await res.json();
+                renderMedia(data);
+            } catch (err) {
+                console.error('Failed to fetch media data:', err);
+            }
+        }
+
+        function renderMedia(data) {
+            // Summary stats
+            document.getElementById('total-tracks').textContent = data.summary.total_tracks;
+            document.getElementById('total-videos').textContent = data.summary.total_videos;
+            document.getElementById('unique-videos').textContent = data.summary.unique_video_urls;
+            document.getElementById('duplicate-count').textContent = data.summary.duplicate_videos.length;
+
+            // Build duplicate lookup
+            const duplicateUrls = {};
+            data.summary.duplicate_videos.forEach(d => {
+                duplicateUrls[d.url] = d.channels;
+            });
+
+            // Render channels
+            const container = document.getElementById('media-channels');
+            const channelIds = Object.keys(data.channels).sort();
+
+            container.innerHTML = channelIds.map(chId => {
+                const ch = data.channels[chId];
+                return `
+                    <div class="media-channel">
+                        <div class="media-channel-header">
+                            <span class="media-channel-name">${chId.toUpperCase()}</span>
+                            <span class="media-counts">${ch.track_count} tracks, ${ch.video_count} videos</span>
+                        </div>
+                        <div class="media-list">
+                            <div class="media-type-label">Audio Tracks</div>
+                            ${ch.tracks.map(t => `
+                                <div class="media-item">
+                                    <span>${t.name}</span>
+                                    <a href="${t.url}" target="_blank">▶ play</a>
+                                </div>
+                            `).join('')}
+
+                            <div class="media-type-label" style="margin-top: 12px;">Videos</div>
+                            ${ch.videos.map(v => {
+                                const isDup = duplicateUrls[v.url];
+                                const dupChannels = isDup ? isDup.filter(c => c !== chId) : [];
+                                return `
+                                    <div class="media-item ${isDup ? 'duplicate' : ''}">
+                                        <span>
+                                            ${v.name}
+                                            ${isDup ? `<span class="duplicate-badge">also in ${dupChannels.join(', ')}</span>` : ''}
+                                        </span>
+                                        <a href="${v.url}" target="_blank">▶ play</a>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Initial fetch

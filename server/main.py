@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.simulation import SimulationEngine
 from server.channels import CHANNELS, TRACKS
 from server.geo import get_region_from_offset, get_viewer_context, REGIONS
-from server.tools import _verified_urls, _broken_urls, check_url_health
+from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS
 
 
 # SSE client connections - now keyed by channel:region
@@ -228,6 +228,57 @@ async def test_url(url: str):
         "verified_count": len(_verified_urls),
         "broken_count": len(_broken_urls),
     }
+
+
+@app.get("/api/ops/media")
+async def media_database():
+    """Get complete media database for all channels."""
+    media_data = {
+        "channels": {},
+        "summary": {
+            "total_tracks": 0,
+            "total_videos": 0,
+            "unique_video_urls": set(),
+            "duplicate_videos": [],
+        }
+    }
+
+    # Build per-channel media info
+    video_url_to_channels = {}  # Track which channels use each video URL
+
+    for ch_id in CHANNELS.keys():
+        tracks = CHANNEL_TRACKS.get(ch_id, [])
+        videos = CHANNEL_VIDEOS.get(ch_id, [])
+
+        media_data["channels"][ch_id] = {
+            "tracks": [{"id": t["id"], "name": t["name"], "url": t["url"]} for t in tracks],
+            "videos": [{"id": v["id"], "name": v["name"], "url": v["url"]} for v in videos],
+            "track_count": len(tracks),
+            "video_count": len(videos),
+        }
+
+        media_data["summary"]["total_tracks"] += len(tracks)
+        media_data["summary"]["total_videos"] += len(videos)
+
+        # Track video URL usage across channels
+        for v in videos:
+            url = v["url"]
+            media_data["summary"]["unique_video_urls"].add(url)
+            if url not in video_url_to_channels:
+                video_url_to_channels[url] = []
+            video_url_to_channels[url].append(ch_id)
+
+    # Find duplicates
+    for url, channels in video_url_to_channels.items():
+        if len(channels) > 1:
+            media_data["summary"]["duplicate_videos"].append({
+                "url": url,
+                "channels": channels,
+            })
+
+    media_data["summary"]["unique_video_urls"] = len(media_data["summary"]["unique_video_urls"])
+
+    return media_data
 
 
 @app.get("/api/channels")
