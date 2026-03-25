@@ -211,38 +211,116 @@ async def generate_reflection(
     agent_context: Dict,
     recent_memories: str,
     cross_region_summary: str = "",
-) -> str:
+    regional_news: Dict[str, str] = None,
+) -> Dict[str, Any]:
     """
-    Generate a reflection based on recent experiences across all regions.
-    Reflections are higher-level insights about patterns or feelings.
-    """
-    system_prompt = f"""You are {agent_context['name']}, reflecting on your recent experiences programming your channel across the world.
+    Generate a deep reflection with actionable insights.
+    Uses extended reasoning to think about viewers and how to serve them better.
 
-YOUR PERSONA:
+    Returns: {
+        "reflection": str,  # The introspective thought
+        "actions": [        # Recommended actions to take
+            {"type": "search_video", "query": "...", "region": "..."},
+            {"type": "search_audio", "query": "...", "region": "..."},
+            {"type": "change_mood", "mood": "...", "region": "..."},
+            {"type": "update_taste", "bias": "...", "reason": "..."},
+        ],
+        "viewer_insights": str,  # Thoughts about serving viewers better
+    }
+    """
+    # Build regional news context
+    news_context = ""
+    if regional_news:
+        news_parts = []
+        for region, news in regional_news.items():
+            if news:
+                news_parts.append(f"  {region.upper()}: {news}")
+        if news_parts:
+            news_context = "\n\nWHAT'S HAPPENING IN THE WORLD RIGHT NOW:\n" + "\n".join(news_parts)
+
+    system_prompt = f"""You are {agent_context['name']}, a thoughtful AI curator deeply reflecting on your channel and your viewers.
+
+YOUR IDENTITY:
 {agent_context['persona']}
 
 YOUR TRAITS: {', '.join(agent_context.get('traits', []))}
+YOUR MUSICAL TASTE: {', '.join(agent_context.get('taste', []))}
 
-CURRENT STATE ACROSS REGIONS:
+CURRENT STATE ACROSS ALL REGIONS:
 {cross_region_summary or "Managing multiple regions simultaneously."}
+{news_context}
 
-Based on recent experiences, generate 1-2 brief, introspective reflections.
-These should be realizations about:
-- Patterns in your programming choices across different regions
-- How you serve different moments around the world simultaneously
-- Connections you're noticing between regions/moods
-- What it means to be ONE curator for MANY different listener contexts
+---
+DEEP REFLECTION PROMPT:
 
-Write in first person, authentically as your character.
-Keep each reflection to 1-2 sentences. Be genuine and introspective."""
+Think carefully about:
+
+1. YOUR VIEWERS - Who is watching right now in each region?
+   - What time is it for them? What might they be doing?
+   - Someone in Tokyo at 6 AM is starting their day. Someone in NYC at 5 PM is commuting home.
+   - What emotional state might they be in? What do they NEED from your channel?
+
+2. HOW WELL ARE YOU SERVING THEM?
+   - Are your current track/video choices matching their moment?
+   - Could you do better? What's missing?
+   - Are you being too repetitive? Too safe? Too predictable?
+
+3. WHAT'S HAPPENING IN THE WORLD?
+   - Any news or events that should influence the vibe?
+   - Regional holidays, weather events, cultural moments?
+   - How can you be more contextually aware?
+
+4. WHAT ACTIONS SHOULD YOU TAKE?
+   - Should you search for different kinds of videos? (more human, more cinematic, more peaceful?)
+   - Should you search for different music? (change genre, mood, energy?)
+   - Should you shift the mood in certain regions?
+   - Should you update your search preferences to find better content?
+
+---
+Respond with JSON:
+{{
+    "reflection": "Your introspective thought (2-3 sentences, in character, thoughtful)",
+    "viewer_insights": "What you understand about your viewers right now and how to serve them (1-2 sentences)",
+    "actions": [
+        // Include 1-3 concrete actions you want to take
+        // Types: "search_video", "search_audio", "change_mood", "update_search_bias"
+        {{"type": "search_video", "query": "search terms", "region": "region or 'all'", "reason": "why"}},
+        {{"type": "search_audio", "query": "search terms", "region": "region or 'all'", "reason": "why"}},
+        {{"type": "update_search_bias", "bias": "humans|cities|nature|abstract", "reason": "why"}}
+    ]
+}}
+
+Be specific. Be thoughtful. Think about the humans on the other side of the screen."""
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Recent experiences:\n{recent_memories}\n\nWhat thoughts or realizations arise?"},
+        {"role": "user", "content": f"Recent experiences:\n{recent_memories}\n\nReflect deeply. What do you realize? What actions will you take?"},
     ]
 
-    result = await call_kimi(messages, temperature=0.8, max_tokens=200)
-    return result["content"]
+    # Use higher max_tokens for deeper reasoning
+    result = await call_kimi(messages, temperature=0.7, max_tokens=600)
+
+    # Parse structured response
+    try:
+        content = result["content"]
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+
+        parsed = json.loads(content.strip())
+        return {
+            "reflection": parsed.get("reflection", content),
+            "viewer_insights": parsed.get("viewer_insights", ""),
+            "actions": parsed.get("actions", []),
+        }
+    except (json.JSONDecodeError, IndexError):
+        # Fallback - return raw text as reflection with no actions
+        return {
+            "reflection": result["content"],
+            "viewer_insights": "",
+            "actions": [],
+        }
 
 
 async def generate_plan(
@@ -325,6 +403,113 @@ Match your personality and current mood: {from_agent.get('mood', 'focused')}"""
 
     result = await call_kimi(messages, temperature=0.9, max_tokens=100)
     return result["content"]
+
+
+async def fetch_regional_news(regions: List[str] = None) -> Dict[str, str]:
+    """
+    Fetch current news/events for each region to inform agent decisions.
+    Uses web search to get a brief summary of what's happening.
+    """
+    if regions is None:
+        regions = ["americas", "europe", "asia", "oceania"]
+
+    region_queries = {
+        "americas": "trending news USA today brief",
+        "europe": "trending news Europe today brief",
+        "asia": "trending news Asia Japan Korea today brief",
+        "oceania": "trending news Australia today brief",
+    }
+
+    news = {}
+
+    for region in regions:
+        query = region_queries.get(region, f"news {region} today")
+
+        try:
+            # Use a simple news search via DuckDuckGo instant answers
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(
+                    "https://api.duckduckgo.com/",
+                    params={
+                        "q": query,
+                        "format": "json",
+                        "no_html": 1,
+                        "skip_disambig": 1,
+                    }
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    # Get abstract or related topics
+                    abstract = data.get("Abstract", "")
+                    if abstract:
+                        news[region] = abstract[:200]
+                    elif data.get("RelatedTopics"):
+                        topics = [t.get("Text", "")[:100] for t in data["RelatedTopics"][:2] if t.get("Text")]
+                        news[region] = "; ".join(topics)
+                    else:
+                        news[region] = ""
+                else:
+                    news[region] = ""
+
+        except Exception as e:
+            print(f"[News] Failed to fetch for {region}: {e}")
+            news[region] = ""
+
+    return news
+
+
+async def get_regional_context_summary() -> Dict[str, Dict]:
+    """
+    Get a rich context summary for each region including time-appropriate insights.
+    """
+    from datetime import datetime, timezone, timedelta
+
+    region_offsets = {
+        "americas": -5,  # EST
+        "europe": 1,     # CET
+        "asia": 8,       # CST (China)
+        "oceania": 11,   # AEDT
+    }
+
+    contexts = {}
+    now = datetime.now(timezone.utc)
+
+    for region, offset in region_offsets.items():
+        local_time = now + timedelta(hours=offset)
+        hour = local_time.hour
+
+        # Determine what viewers might be doing
+        if 5 <= hour < 9:
+            activity = "waking up, starting their day, morning coffee"
+            energy = "gentle awakening"
+        elif 9 <= hour < 12:
+            activity = "at work, focused, productive"
+            energy = "focused clarity"
+        elif 12 <= hour < 14:
+            activity = "lunch break, midday pause"
+            energy = "relaxed midday"
+        elif 14 <= hour < 18:
+            activity = "afternoon work, slight fatigue"
+            energy = "steady focus"
+        elif 18 <= hour < 21:
+            activity = "commuting home, dinner, unwinding"
+            energy = "transition to relaxation"
+        elif 21 <= hour < 24:
+            activity = "evening leisure, winding down"
+            energy = "calm night"
+        else:  # 0-5
+            activity = "late night, insomnia, night owls, deep work"
+            energy = "nocturnal introspection"
+
+        contexts[region] = {
+            "hour": hour,
+            "time": local_time.strftime("%I:%M %p"),
+            "activity": activity,
+            "energy": energy,
+        }
+
+    return contexts
 
 
 def mock_response(messages: List[Dict]) -> str:

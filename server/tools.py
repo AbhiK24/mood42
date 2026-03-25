@@ -304,27 +304,43 @@ async def download_and_upload_to_r2(video: Dict, channel_id: str) -> Optional[Di
         return None
 
 
-async def proactive_video_discover(channel_id: str, taste: List[str], current_videos: List[str] = None) -> Optional[Dict]:
+async def proactive_video_discover(
+    channel_id: str,
+    taste: List[str],
+    custom_query: str = None,
+    current_videos: List[str] = None
+) -> Optional[Dict]:
     """
-    Agent discovers new videos based on their taste.
+    Agent discovers new videos based on their taste or a custom query.
     Searches Pexels (if API key available) and Archive.org.
     Returns video uploaded to R2, ready to use.
+
+    Args:
+        channel_id: The channel ID
+        taste: List of taste preferences for query building
+        custom_query: Optional custom search query (e.g., from reflection)
+        current_videos: List of current video URLs to avoid duplicates
     """
-    # Build search query from taste
-    queries = []
-    for t in taste[:3]:  # Use first 3 taste preferences
-        t_lower = t.lower().replace("-", "").replace("_", "")
-        if t_lower in TASTE_TO_VIDEO_QUERY:
-            queries.extend(TASTE_TO_VIDEO_QUERY[t_lower])
-        else:
-            queries.append(t)
+    # Use custom query if provided, otherwise build from taste
+    if custom_query:
+        query = custom_query
+        print(f"[Video Discovery] {channel_id} searching (reflection): {query}")
+    else:
+        # Build search query from taste
+        queries = []
+        for t in taste[:3]:  # Use first 3 taste preferences
+            t_lower = t.lower().replace("-", "").replace("_", "")
+            if t_lower in TASTE_TO_VIDEO_QUERY:
+                queries.extend(TASTE_TO_VIDEO_QUERY[t_lower])
+            else:
+                queries.append(t)
 
-    if not queries:
-        queries = ["ambient", "abstract", "nature"]
+        if not queries:
+            queries = ["ambient", "abstract", "nature"]
 
-    # Pick random query
-    query = random.choice(queries)
-    print(f"[Video Discovery] {channel_id} searching: {query}")
+        # Pick random query
+        query = random.choice(queries)
+        print(f"[Video Discovery] {channel_id} searching: {query}")
 
     # Search all sources (Pexels + Archive.org)
     results = await search_videos_all_sources(query, max_results=5)

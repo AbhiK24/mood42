@@ -29,6 +29,8 @@ from server.llm import (
     generate_reflection,
     generate_plan,
     generate_inter_agent_message,
+    fetch_regional_news,
+    get_regional_context_summary,
     ALL_TOOLS,
     API_KEY,
 )
@@ -425,19 +427,54 @@ class SimulationEngine:
                 cross_region_summary = gen_agent.get_cross_region_summary()
                 context = gen_agent.get_context({"tick": tick})
 
-                reflection = await generate_reflection(context, memory_summary, cross_region_summary)
-                gen_agent.record_reflection(reflection, tick)
+                # Fetch regional news to inform reflection (every 3rd reflection)
+                regional_news = None
+                if gen_agent.reflections_made % 3 == 0:
+                    try:
+                        regional_news = await asyncio.wait_for(
+                            fetch_regional_news(["americas", "europe", "asia"]),
+                            timeout=5.0
+                        )
+                        if any(regional_news.values()):
+                            print(f"[{channel_id}] Got regional news context")
+                    except asyncio.TimeoutError:
+                        regional_news = None
 
-                print(f"[{channel_id}] Reflection: {reflection[:80]}...")
+                # Generate deep reflection with actions
+                reflection_result = await generate_reflection(
+                    context, memory_summary, cross_region_summary, regional_news
+                )
 
-                # Broadcast reflection
+                # Extract reflection text and actions
+                reflection_text = reflection_result.get("reflection", str(reflection_result))
+                viewer_insights = reflection_result.get("viewer_insights", "")
+                actions = reflection_result.get("actions", [])
+
+                gen_agent.record_reflection(reflection_text, tick)
+
+                print(f"[{channel_id}] Reflection: {reflection_text[:80]}...")
+                if viewer_insights:
+                    print(f"[{channel_id}] Viewer insight: {viewer_insights[:60]}...")
+                if actions:
+                    print(f"[{channel_id}] Actions to take: {len(actions)}")
+
+                # Broadcast reflection with viewer insights
                 await self.broadcast(channel_id, "agent:reflection", {
                     "channelId": channel_id,
-                    "reflection": reflection,
+                    "reflection": reflection_text,
+                    "viewerInsights": viewer_insights,
                     "agent": gen_agent.name,
+                    "actionsPlanned": len(actions),
                 })
+
+                # Execute reflection-triggered actions
+                if actions:
+                    await self._execute_reflection_actions(channel_id, gen_agent, actions)
+
             except Exception as e:
                 print(f"[{channel_id}] Reflection failed: {e}")
+                import traceback
+                traceback.print_exc()
 
         # Check for replanning
         if gen_agent.needs_replanning(tick) and self.use_llm:
@@ -452,6 +489,74 @@ class SimulationEngine:
                 print(f"[{channel_id}] New plan: {plans[0]['action'] if plans else 'none'}")
             except Exception as e:
                 print(f"[{channel_id}] Planning failed: {e}")
+
+    async def _execute_reflection_actions(self, channel_id: str, gen_agent: ChannelAgent, actions: List[Dict]):
+        """Execute actions triggered by agent reflection."""
+        tick = self.world["tick"]
+        channel = CHANNELS.get(channel_id)
+        if not channel:
+            return
+
+        for action in actions:
+            action_type = action.get("type", "")
+            query = action.get("query", "")
+            region = action.get("region", "all")
+            reason = action.get("reason", "reflection-triggered")
+
+            try:
+                if action_type == "search_video":
+                    print(f"[{channel_id}] Reflection action: searching videos for '{query}'")
+                    # Trigger video discovery with the agent's query
+                    video = await proactive_video_discover(
+                        channel_id,
+                        channel["agent"].get("taste", []),
+                        query  # Use reflection-generated query
+                    )
+                    if video:
+                        gen_agent.add_memory(
+                            f"Searched for new videos: '{query}' - found and added to library ({reason})",
+                            MemoryType.ACTION,
+                            importance=6,
+                            tick=tick,
+                        )
+                        print(f"[{channel_id}] Found new video from reflection: {video.get('name', 'unknown')}")
+
+                elif action_type == "search_audio":
+                    print(f"[{channel_id}] Reflection action: searching audio for '{query}'")
+                    # Trigger music discovery
+                    results = await search_music(query, mood=action.get("mood", "focused"))
+                    if results:
+                        gen_agent.add_memory(
+                            f"Searched for new music: '{query}' - found {len(results)} tracks ({reason})",
+                            MemoryType.ACTION,
+                            importance=6,
+                            tick=tick,
+                        )
+                        print(f"[{channel_id}] Found {len(results)} new tracks from reflection")
+
+                elif action_type == "change_mood":
+                    new_mood = action.get("mood", "focused")
+                    target_regions = [region] if region != "all" else REGIONS
+                    for r in target_regions:
+                        gen_agent.record_mood_shift(new_mood, reason, tick, r)
+                    print(f"[{channel_id}] Mood shift to '{new_mood}' for {region}")
+
+                elif action_type == "update_search_bias":
+                    bias = action.get("bias", "cinematic")
+                    gen_agent.add_memory(
+                        f"Updating video search preference toward '{bias}' content ({reason})",
+                        MemoryType.ACTION,
+                        importance=5,
+                        tick=tick,
+                    )
+                    # Store bias in agent metadata for future searches
+                    if not hasattr(gen_agent, 'search_preferences'):
+                        gen_agent.search_preferences = {}
+                    gen_agent.search_preferences['video_bias'] = bias
+                    print(f"[{channel_id}] Updated search bias: {bias}")
+
+            except Exception as e:
+                print(f"[{channel_id}] Action '{action_type}' failed: {e}")
 
     async def _process_agent_interactions(self):
         """Process interactions between agents who know each other."""
