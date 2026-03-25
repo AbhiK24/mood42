@@ -1707,39 +1707,67 @@
     let eventSource = null;
     let simulationEnabled = true; // Set to false to use static mode
 
-    // Detect viewer's timezone offset (hours from UTC)
+    // Detect viewer's timezone (IANA name is most precise)
     const viewerTimezone = -(new Date().getTimezoneOffset() / 60);
+    const viewerIANA = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g., "Asia/Kolkata"
     let viewerRegion = 'americas'; // Will be set by server
 
-    console.log(`[Geo] Viewer timezone: UTC${viewerTimezone >= 0 ? '+' : ''}${viewerTimezone}`);
+    console.log(`[Geo] Timezone: ${viewerIANA} (UTC${viewerTimezone >= 0 ? '+' : ''}${viewerTimezone})`);
 
-    // Precise timezone to location mapping
-    const TIMEZONE_LOCATIONS = {
-      '-10': { city: 'Honolulu', vibe: 'island time' },
-      '-8': { city: 'Los Angeles', vibe: 'west coast' },
-      '-7': { city: 'Denver', vibe: 'mountain time' },
-      '-6': { city: 'Chicago', vibe: 'midwest' },
-      '-5': { city: 'New York', vibe: 'east coast' },
-      '-3': { city: 'São Paulo', vibe: 'tropical nights' },
-      '0': { city: 'London', vibe: 'grey skies' },
-      '1': { city: 'Paris', vibe: 'city of light' },
-      '2': { city: 'Berlin', vibe: 'techno city' },
-      '3': { city: 'Moscow', vibe: 'endless nights' },
-      '4': { city: 'Dubai', vibe: 'desert nights' },
-      '5': { city: 'Karachi', vibe: 'coastal city' },
-      '5.5': { city: 'Mumbai', vibe: 'monsoon dreams' },
-      '6': { city: 'Dhaka', vibe: 'river delta' },
-      '7': { city: 'Bangkok', vibe: 'neon streets' },
-      '8': { city: 'Singapore', vibe: 'garden city' },
-      '9': { city: 'Tokyo', vibe: 'neon silence' },
-      '10': { city: 'Sydney', vibe: 'harbour lights' },
-      '11': { city: 'Melbourne', vibe: 'coffee culture' },
-      '12': { city: 'Auckland', vibe: 'edge of world' },
+    // IANA timezone to city mapping (precise!)
+    const IANA_TO_CITY = {
+      // India
+      'Asia/Kolkata': 'India', 'Asia/Calcutta': 'Kolkata', 'Asia/Mumbai': 'Mumbai',
+      // Japan
+      'Asia/Tokyo': 'Tokyo', 'Japan': 'Japan',
+      // China
+      'Asia/Shanghai': 'Shanghai', 'Asia/Hong_Kong': 'Hong Kong', 'Asia/Chongqing': 'China',
+      // Southeast Asia
+      'Asia/Singapore': 'Singapore', 'Asia/Bangkok': 'Bangkok', 'Asia/Jakarta': 'Jakarta',
+      'Asia/Kuala_Lumpur': 'Kuala Lumpur', 'Asia/Manila': 'Manila', 'Asia/Ho_Chi_Minh': 'Saigon',
+      // Korea
+      'Asia/Seoul': 'Seoul',
+      // Middle East
+      'Asia/Dubai': 'Dubai', 'Asia/Riyadh': 'Riyadh', 'Asia/Tehran': 'Tehran',
+      'Asia/Jerusalem': 'Jerusalem', 'Asia/Beirut': 'Beirut',
+      // South Asia
+      'Asia/Karachi': 'Karachi', 'Asia/Dhaka': 'Dhaka', 'Asia/Kathmandu': 'Kathmandu',
+      'Asia/Colombo': 'Colombo',
+      // Europe
+      'Europe/London': 'London', 'Europe/Paris': 'Paris', 'Europe/Berlin': 'Berlin',
+      'Europe/Madrid': 'Madrid', 'Europe/Rome': 'Rome', 'Europe/Amsterdam': 'Amsterdam',
+      'Europe/Moscow': 'Moscow', 'Europe/Istanbul': 'Istanbul', 'Europe/Athens': 'Athens',
+      'Europe/Warsaw': 'Warsaw', 'Europe/Prague': 'Prague', 'Europe/Vienna': 'Vienna',
+      'Europe/Zurich': 'Zurich', 'Europe/Stockholm': 'Stockholm', 'Europe/Oslo': 'Oslo',
+      'Europe/Copenhagen': 'Copenhagen', 'Europe/Helsinki': 'Helsinki', 'Europe/Dublin': 'Dublin',
+      'Europe/Lisbon': 'Lisbon', 'Europe/Brussels': 'Brussels',
+      // Americas
+      'America/New_York': 'New York', 'America/Los_Angeles': 'Los Angeles',
+      'America/Chicago': 'Chicago', 'America/Denver': 'Denver', 'America/Phoenix': 'Phoenix',
+      'America/Toronto': 'Toronto', 'America/Vancouver': 'Vancouver', 'America/Montreal': 'Montreal',
+      'America/Mexico_City': 'Mexico City', 'America/Sao_Paulo': 'São Paulo',
+      'America/Buenos_Aires': 'Buenos Aires', 'America/Lima': 'Lima', 'America/Bogota': 'Bogotá',
+      'America/Santiago': 'Santiago', 'America/Caracas': 'Caracas',
+      // Oceania
+      'Australia/Sydney': 'Sydney', 'Australia/Melbourne': 'Melbourne',
+      'Australia/Brisbane': 'Brisbane', 'Australia/Perth': 'Perth',
+      'Pacific/Auckland': 'Auckland', 'Pacific/Honolulu': 'Honolulu',
+      // Africa
+      'Africa/Cairo': 'Cairo', 'Africa/Lagos': 'Lagos', 'Africa/Johannesburg': 'Johannesburg',
+      'Africa/Nairobi': 'Nairobi', 'Africa/Casablanca': 'Casablanca',
     };
 
-    function getViewerLocation() {
-      const key = String(viewerTimezone);
-      return TIMEZONE_LOCATIONS[key] || TIMEZONE_LOCATIONS[String(Math.round(viewerTimezone))] || { city: 'your city', vibe: 'quiet hours' };
+    function getViewerCity() {
+      // Try exact IANA match first
+      if (IANA_TO_CITY[viewerIANA]) {
+        return IANA_TO_CITY[viewerIANA];
+      }
+      // Extract city from IANA (e.g., "Asia/Kolkata" -> "Kolkata")
+      const parts = viewerIANA.split('/');
+      if (parts.length > 1) {
+        return parts[parts.length - 1].replace(/_/g, ' ');
+      }
+      return 'your city';
     }
 
     function formatThought(thought) {
@@ -1750,8 +1778,8 @@
       const ampm = hours >= 12 ? 'PM' : 'AM';
       const hour12 = hours % 12 || 12;
       const timeStr = `${hour12}:${mins} ${ampm}`;
-      const location = getViewerLocation();
-      return `${timeStr} in ${location.city} — ${thought}`;
+      const city = getViewerCity();
+      return `${timeStr} in ${city} — ${thought}`;
     }
 
     // Helper to add timezone to API URLs
