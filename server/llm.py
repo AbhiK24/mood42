@@ -173,6 +173,113 @@ Return ONLY the search query, nothing else. Keep it concise (3-6 words)."""
     return result["content"].strip().strip('"\'')
 
 
+async def generate_reflection(agent_context: Dict, recent_memories: str) -> str:
+    """
+    Generate a reflection based on recent experiences.
+    Reflections are higher-level insights about patterns or feelings.
+    """
+    system_prompt = f"""You are {agent_context['name']}, reflecting on your recent experiences programming your channel.
+
+YOUR PERSONA:
+{agent_context['persona']}
+
+YOUR TRAITS: {', '.join(agent_context.get('traits', []))}
+CURRENT MOOD: {agent_context.get('mood', 'focused')}
+
+Based on recent experiences, generate 1-2 brief, introspective reflections.
+These should be realizations about:
+- Patterns in your programming choices
+- How the music relates to your mood
+- Connections you're noticing
+- Feelings about your channel and listeners
+
+Write in first person, authentically as your character.
+Keep each reflection to 1-2 sentences. Be genuine and introspective."""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Recent experiences:\n{recent_memories}\n\nWhat thoughts or realizations arise?"},
+    ]
+
+    result = await call_kimi(messages, temperature=0.8, max_tokens=200)
+    return result["content"]
+
+
+async def generate_plan(agent_context: Dict, recent_memories: str) -> List[Dict]:
+    """
+    Generate a plan for the next hour of programming.
+    Returns list of planned actions.
+    """
+    system_prompt = f"""You are {agent_context['name']}, planning your next hour of channel programming.
+
+YOUR PERSONA:
+{agent_context['persona']}
+
+CURRENT TIME: {agent_context.get('time', '11:00 PM')}
+CURRENT MOOD: {agent_context.get('mood', 'focused')}
+ENERGY LEVEL: {int(agent_context.get('energy', 0.8) * 100)}%
+
+Plan your next few programming decisions. Think about:
+- What mood/vibe to cultivate
+- Types of tracks to play
+- How to evolve the atmosphere
+- Your listeners' needs at this hour
+
+Return as JSON array:
+[
+  {{"time": "11:30 PM", "action": "brief description", "duration": 30}},
+  {{"time": "12:00 AM", "action": "brief description", "duration": 30}}
+]
+
+Keep actions simple and authentic to your character. 3-5 items max."""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Recent context:\n{recent_memories}\n\nWhat's your programming plan?"},
+    ]
+
+    result = await call_kimi(messages, temperature=0.7, max_tokens=400)
+
+    try:
+        content = result["content"]
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+
+        parsed = json.loads(content.strip())
+        return parsed if isinstance(parsed, list) else parsed.get("plan", [])
+    except:
+        return [
+            {"time": "now", "action": "continue curating the vibe", "duration": 30},
+            {"time": "later", "action": "shift energy based on the hour", "duration": 30},
+        ]
+
+
+async def generate_inter_agent_message(
+    from_agent: Dict,
+    to_agent: Dict,
+    context: str,
+) -> str:
+    """Generate a message from one agent to another."""
+    system_prompt = f"""You are {from_agent['name']}, sending a brief message to {to_agent['name']}.
+
+YOUR PERSONA: {from_agent['persona']}
+THEIR CHANNEL: They program a channel with {', '.join(to_agent.get('taste', ['ambient']))} vibes.
+
+Write a brief, authentic message (1-2 sentences max).
+This could be about music, the late hour, shared experiences, or just checking in.
+Match your personality and current mood: {from_agent.get('mood', 'focused')}"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Context: {context}\n\nWhat do you message them?"},
+    ]
+
+    result = await call_kimi(messages, temperature=0.9, max_tokens=100)
+    return result["content"]
+
+
 def mock_response(messages: List[Dict]) -> str:
     """Generate mock response when no API key."""
     import random

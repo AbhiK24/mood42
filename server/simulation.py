@@ -11,7 +11,15 @@ from typing import Callable, Dict, List, Optional, Any
 
 from channels import CHANNELS, TRACKS, get_channel_tracks
 from tools import get_tracks_for_channel, search_music, execute_tool
-from llm import generate_programming_decision, ALL_TOOLS, API_KEY
+from llm import (
+    generate_programming_decision,
+    generate_reflection,
+    generate_plan,
+    generate_inter_agent_message,
+    ALL_TOOLS,
+    API_KEY,
+)
+from agent import ChannelAgent, create_channel_agents, MemoryType
 
 
 class SimulationEngine:
@@ -37,11 +45,14 @@ class SimulationEngine:
         else:
             print("[Simulation] LLM mode disabled (no API key) - using mock decisions")
 
-        # Channel agent states
+        # Channel agents (generative agent architecture)
+        self.channel_agents: Dict[str, ChannelAgent] = create_channel_agents(CHANNELS)
+
+        # Legacy agents dict for compatibility
         self.agents: Dict[str, Dict] = {}
         self._init_agents()
 
-        print(f"[Simulation] Initialized {len(self.agents)} channel agents")
+        print(f"[Simulation] Initialized {len(self.agents)} channel agents with memory + reflection")
 
     def _init_agents(self):
         """Initialize all channel agents."""
@@ -189,6 +200,15 @@ class SimulationEngine:
         for ch_id, agent in self.agents.items():
             await self._process_channel(ch_id, agent)
 
+            # Process generative agent behaviors
+            gen_agent = self.channel_agents.get(ch_id)
+            if gen_agent:
+                await self._process_agent_behaviors(ch_id, gen_agent)
+
+        # Occasional inter-agent interactions (every ~10 ticks)
+        if self.world["tick"] % 10 == 0 and self.use_llm:
+            await self._process_agent_interactions()
+
     async def _process_channel(self, channel_id: str, agent: Dict):
         """Process a single channel - check if track should change."""
         if not agent["currentTrack"]:
@@ -289,6 +309,12 @@ class SimulationEngine:
         if thought:
             print(f"[{channel_id}] Thought: {thought}")
 
+        # Record in generative agent's memory
+        gen_agent = self.channel_agents.get(channel_id)
+        if gen_agent:
+            gen_agent.record_track_played(new_track, self.world["tick"], thought)
+            gen_agent.mood = mood
+
         # Broadcast update
         await self.broadcast(channel_id, "channel:update", {
             "channelId": channel_id,
@@ -296,6 +322,99 @@ class SimulationEngine:
             "thought": thought,
             "mood": mood,
         })
+
+    async def _process_agent_behaviors(self, channel_id: str, gen_agent: ChannelAgent):
+        """Process reflection, planning, and energy updates for a generative agent."""
+        tick = self.world["tick"]
+
+        # Update energy based on time
+        gen_agent.update_energy(self.world["timeOfDay"])
+        gen_agent.total_ticks = tick
+
+        # Check for reflection
+        if gen_agent.needs_reflection() and self.use_llm:
+            try:
+                memory_summary = gen_agent.get_memory_summary(15)
+                context = gen_agent.get_context(self.get_world_state())
+
+                reflection = await generate_reflection(context, memory_summary)
+                gen_agent.record_reflection(reflection, tick)
+
+                print(f"[{channel_id}] Reflection: {reflection[:80]}...")
+
+                # Broadcast reflection as thought
+                await self.broadcast(channel_id, "agent:reflection", {
+                    "channelId": channel_id,
+                    "reflection": reflection,
+                    "agent": gen_agent.name,
+                })
+            except Exception as e:
+                print(f"[{channel_id}] Reflection failed: {e}")
+
+        # Check for replanning
+        if gen_agent.needs_replanning(tick) and self.use_llm:
+            try:
+                memory_summary = gen_agent.get_memory_summary(10)
+                context = gen_agent.get_context(self.get_world_state())
+
+                plans = await generate_plan(context, memory_summary)
+                gen_agent.record_plan(plans, tick)
+
+                print(f"[{channel_id}] New plan: {plans[0]['action'] if plans else 'none'}")
+            except Exception as e:
+                print(f"[{channel_id}] Planning failed: {e}")
+
+    async def _process_agent_interactions(self):
+        """Process interactions between agents who know each other."""
+        # Pick a random agent to initiate
+        channel_ids = list(self.channel_agents.keys())
+        initiator_id = random.choice(channel_ids)
+        initiator = self.channel_agents[initiator_id]
+
+        # Check if they have relationships
+        if not initiator.relationships:
+            return
+
+        # Pick a random relationship
+        target_id = random.choice(initiator.relationships)
+        target = self.channel_agents.get(target_id)
+
+        if not target:
+            return
+
+        try:
+            # Generate a message
+            from_context = initiator.get_context(self.get_world_state())
+            to_context = target.get_context(self.get_world_state())
+
+            context = f"It's {from_context['time']}. You're both programming your channels."
+            message = await generate_inter_agent_message(from_context, to_context, context)
+
+            # Record in both agents' memories
+            initiator.add_memory(
+                f"Messaged {target.name}: {message}",
+                MemoryType.INTERACTION,
+                importance=5,
+                tick=self.world["tick"],
+            )
+            target.add_memory(
+                f"Received message from {initiator.name}: {message}",
+                MemoryType.INTERACTION,
+                importance=5,
+                tick=self.world["tick"],
+            )
+
+            print(f"[Interaction] {initiator.name} → {target.name}: {message[:50]}...")
+
+            # Broadcast interaction
+            await self.broadcast("all", "agent:interaction", {
+                "from": {"id": initiator_id, "name": initiator.name},
+                "to": {"id": target_id, "name": target.name},
+                "message": message,
+            })
+
+        except Exception as e:
+            print(f"[Interaction] Failed: {e}")
 
     def get_world_state(self) -> Dict:
         """Get current world state."""
@@ -311,15 +430,19 @@ class SimulationEngine:
         states = []
         for ch_id, channel in CHANNELS.items():
             agent = self.agents.get(ch_id, {})
+            gen_agent = self.channel_agents.get(ch_id)
+
             states.append({
                 "id": ch_id,
                 "name": channel["name"],
                 "agent": {
                     "name": channel["agent"]["name"],
                     "thought": agent.get("lastThought", ""),
+                    "mood": gen_agent.mood if gen_agent else agent.get("currentMood"),
+                    "energy": gen_agent.energy if gen_agent else 0.8,
                 },
                 "currentTrack": agent.get("currentTrack"),
-                "currentMood": agent.get("currentMood", channel["currentMood"]),
+                "currentMood": gen_agent.mood if gen_agent else agent.get("currentMood", channel["currentMood"]),
                 "viewerCount": agent.get("viewerCount", 0),
                 "color": channel["color"],
             })
