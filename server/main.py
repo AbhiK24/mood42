@@ -131,6 +131,7 @@ async def ops_dashboard():
         "server_time": datetime.now().isoformat(),
         "tick": sim.world["tick"],
         "uptime_ticks": sim.world["tick"],
+        "llm_enabled": sim.use_llm,
         "regions": REGIONS,
         "channels": [],
     }
@@ -145,6 +146,9 @@ async def ops_dashboard():
             "name": channel["name"],
             "agent_name": channel["agent"]["name"],
             "energy": agent.energy,
+            "reflections_made": agent.reflections_made,
+            "memory_count": len(agent.memories),
+            "tracks_played": agent.tracks_played,
             "regions": {},
         }
 
