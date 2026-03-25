@@ -3,6 +3,7 @@ Content Discovery Tools for mood42 Agents
 Search for copyright-free music and videos
 PROACTIVE discovery - agents actively search for new content
 WITH URL VALIDATION - verify content is accessible before using
+VIDEO DISCOVERY - agents search Archive.org and download to R2
 """
 
 import httpx
@@ -10,8 +11,10 @@ import asyncio
 import random
 import re
 import time
+import subprocess
+import os
 from typing import List, Dict, Optional, Tuple
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, quote
 
 
 # ============ URL VALIDATION ============
@@ -26,6 +29,220 @@ _verified_urls: set = set()
 # Track broken URLs (don't retry for a while)
 _broken_urls: Dict[str, float] = {}
 BROKEN_URL_COOLDOWN = 600  # Don't retry broken URLs for 10 minutes
+
+# ============ R2 VIDEO STORAGE ============
+R2_BUCKET = "mood42-assets"
+R2_PUBLIC_URL = "https://pub-c60e3a4de388402ba5e40acbc497a6d6.r2.dev"
+VIDEO_TEMP_DIR = "/tmp/mood42-assets/video"
+
+# Track videos already in R2 to avoid re-downloading
+_r2_video_cache: Dict[str, str] = {}  # filename -> r2_url
+
+# Archive.org collections for video discovery
+ARCHIVE_VIDEO_COLLECTIONS = [
+    "prelinger",  # Prelinger Archives - historical/artistic films
+    "opensource_movies",  # Open source movies
+    "stock_footage",  # Stock footage
+]
+
+# Taste to search query mapping for video discovery
+TASTE_TO_VIDEO_QUERY = {
+    "lo-fi": ["city night", "rain window", "neon lights", "urban night"],
+    "ambient": ["clouds timelapse", "nature peaceful", "abstract motion", "slow motion"],
+    "jazz": ["city noir", "night club", "smoky bar", "vintage city"],
+    "synthwave": ["neon grid", "retro futurism", "80s aesthetic", "laser lights"],
+    "space": ["stars galaxy", "nebula cosmic", "space travel", "universe"],
+    "nature": ["forest sunlight", "flowers garden", "sunrise morning", "ocean waves"],
+    "minimal": ["geometric abstract", "minimal motion", "clean lines", "simple shapes"],
+    "melancholic": ["rain city", "fog morning", "lonely street", "grey sky"],
+    "warm": ["golden hour", "sunset beach", "warm light", "autumn colors"],
+    "cozy": ["fireplace", "coffee steam", "rain window", "bookshelf"],
+}
+
+
+async def search_video_archive(query: str, max_results: int = 5) -> List[Dict]:
+    """
+    Search Archive.org for videos matching query.
+    Returns list of video objects with download URLs.
+    """
+    results = []
+
+    try:
+        # Search across collections
+        search_query = f"({query}) AND mediatype:movies"
+        encoded_query = quote_plus(search_query)
+        url = f"https://archive.org/advancedsearch.php?q={encoded_query}&fl=identifier,title,description&rows={max_results * 2}&output=json"
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url)
+            if response.status_code != 200:
+                return results
+
+            data = response.json()
+            docs = data.get("response", {}).get("docs", [])
+
+            for doc in docs[:max_results * 2]:
+                identifier = doc.get("identifier", "")
+                title = doc.get("title", "Unknown")
+
+                # Get actual video files from this item
+                files_url = f"https://archive.org/metadata/{identifier}/files"
+                try:
+                    files_resp = await client.get(files_url, timeout=5.0)
+                    if files_resp.status_code == 200:
+                        files_data = files_resp.json()
+                        for f in files_data.get("result", []):
+                            fname = f.get("name", "")
+                            size = int(f.get("size", 0))
+
+                            # Only MP4 files, reasonable size (1MB - 100MB)
+                            if fname.endswith(".mp4") and 1_000_000 < size < 100_000_000:
+                                video_url = f"https://archive.org/download/{identifier}/{quote(fname)}"
+                                results.append({
+                                    "id": f"archive_{identifier}_{fname[:20]}",
+                                    "name": title[:50],
+                                    "filename": fname,
+                                    "url": video_url,
+                                    "size_mb": size // 1_000_000,
+                                    "source": "archive.org",
+                                    "identifier": identifier,
+                                })
+                                if len(results) >= max_results:
+                                    return results
+                                break  # One video per item
+                except Exception:
+                    continue
+
+    except Exception as e:
+        print(f"[Video Search] Archive.org search failed: {e}")
+
+    return results
+
+
+async def download_video_to_r2(video: Dict, channel_id: str) -> Optional[str]:
+    """
+    Download a video and upload to R2.
+    Returns R2 URL if successful, None otherwise.
+    """
+    if not video or not video.get("url"):
+        return None
+
+    # Create descriptive filename from video name
+    name = video.get("name", "video")
+    # Clean filename: lowercase, replace spaces with underscores, remove special chars
+    clean_name = re.sub(r'[^a-z0-9_]', '', name.lower().replace(' ', '_').replace('-', '_'))
+    clean_name = clean_name[:40]  # Limit length
+    filename = f"{channel_id}_{clean_name}.mp4"
+
+    # Check if already in R2
+    if filename in _r2_video_cache:
+        print(f"[Video] Already in R2: {filename}")
+        return _r2_video_cache[filename]
+
+    local_path = f"{VIDEO_TEMP_DIR}/{filename}"
+    os.makedirs(VIDEO_TEMP_DIR, exist_ok=True)
+
+    try:
+        # Download video
+        print(f"[Video] Downloading: {video['name'][:40]}...")
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            response = await client.get(video["url"])
+            if response.status_code != 200:
+                print(f"[Video] Download failed: HTTP {response.status_code}")
+                return None
+
+            # Check content type
+            content_type = response.headers.get("content-type", "")
+            if "video" not in content_type and "octet-stream" not in content_type:
+                print(f"[Video] Not a video: {content_type}")
+                return None
+
+            # Save locally
+            with open(local_path, "wb") as f:
+                f.write(response.content)
+
+            size = os.path.getsize(local_path)
+            if size < 500_000:  # Less than 500KB is probably an error
+                print(f"[Video] File too small: {size} bytes")
+                os.remove(local_path)
+                return None
+
+            print(f"[Video] Downloaded: {filename} ({size // 1024} KB)")
+
+        # Upload to R2
+        print(f"[Video] Uploading to R2: {filename}")
+        result = subprocess.run(
+            ["wrangler", "r2", "object", "put", f"{R2_BUCKET}/video/{filename}",
+             "--file", local_path, "--remote"],
+            capture_output=True,
+            timeout=120
+        )
+
+        if result.returncode != 0:
+            print(f"[Video] R2 upload failed: {result.stderr.decode()[:100]}")
+            return None
+
+        r2_url = f"{R2_PUBLIC_URL}/video/{filename}"
+        _r2_video_cache[filename] = r2_url
+        print(f"[Video] Uploaded to R2: {r2_url}")
+
+        return r2_url
+
+    except Exception as e:
+        print(f"[Video] Error: {e}")
+        return None
+
+
+async def proactive_video_discover(channel_id: str, taste: List[str], current_videos: List[str] = None) -> Optional[Dict]:
+    """
+    Agent discovers new videos based on their taste.
+    Downloads to R2 and returns video object ready to use.
+    """
+    # Build search query from taste
+    queries = []
+    for t in taste[:3]:  # Use first 3 taste preferences
+        t_lower = t.lower().replace("-", "").replace("_", "")
+        if t_lower in TASTE_TO_VIDEO_QUERY:
+            queries.extend(TASTE_TO_VIDEO_QUERY[t_lower])
+        else:
+            queries.append(t)
+
+    if not queries:
+        queries = ["ambient", "abstract", "nature"]
+
+    # Pick random query
+    query = random.choice(queries)
+    print(f"[Video Discovery] {channel_id} searching: {query}")
+
+    # Search Archive.org
+    results = await search_video_archive(query, max_results=3)
+
+    if not results:
+        print(f"[Video Discovery] No results for: {query}")
+        return None
+
+    # Filter out videos we already have
+    current_urls = set(current_videos or [])
+    available = [v for v in results if v["url"] not in current_urls]
+
+    if not available:
+        available = results  # Use any if all filtered
+
+    # Pick one and download to R2
+    video = random.choice(available)
+    r2_url = await download_video_to_r2(video, channel_id)
+
+    if r2_url:
+        return {
+            "id": f"{channel_id}_discovered_{int(time.time())}",
+            "name": video["name"],
+            "url": r2_url,
+            "tags": query.split(),
+            "source": "discovered",
+            "_verified": True,  # Just uploaded, so it's valid
+        }
+
+    return None
 
 
 async def check_url_health(url: str) -> bool:

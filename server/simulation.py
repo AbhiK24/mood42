@@ -17,10 +17,12 @@ from server.tools import (
     search_music,
     execute_tool,
     proactive_discover,
+    proactive_video_discover,
     get_videos_for_channel,
     get_validated_track,
     get_validated_video,
     validate_track,
+    CHANNEL_VIDEOS,
 )
 from server.llm import (
     generate_programming_decision,
@@ -341,11 +343,32 @@ class SimulationEngine:
         if not thought:
             thought = self._generate_thought(channel_id, region, "track_change")
 
-        # Select VALIDATED video for this track (avoid repeating current video)
+        # Select video for this track (avoid repeating current video)
         videos = get_videos_for_channel(channel_id)
         current_video = agent.get_region_state(region).current_video
         current_video_id = current_video.get("id") if current_video else None
         video = await get_validated_video(videos, exclude_id=current_video_id) if videos else None
+
+        # Occasionally discover NEW videos (5% chance per track change)
+        if random.random() < 0.05:
+            try:
+                taste = CHANNELS.get(channel_id, {}).get("agent", {}).get("taste", [])
+                current_urls = [v.get("url") for v in videos] if videos else []
+                discovered = await asyncio.wait_for(
+                    proactive_video_discover(channel_id, taste, current_urls),
+                    timeout=30.0
+                )
+                if discovered:
+                    # Add to channel's video library
+                    if channel_id not in CHANNEL_VIDEOS:
+                        CHANNEL_VIDEOS[channel_id] = []
+                    CHANNEL_VIDEOS[channel_id].append(discovered)
+                    video = discovered  # Use the newly discovered video
+                    print(f"[{channel_id}] Discovered new video: {discovered['name']}")
+            except asyncio.TimeoutError:
+                print(f"[{channel_id}] Video discovery timeout")
+            except Exception as e:
+                print(f"[{channel_id}] Video discovery error: {e}")
 
         # Record in agent's memory (region-tagged)
         agent.record_track_played(new_track, self.world["tick"], thought, region)
