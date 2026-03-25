@@ -1713,6 +1713,47 @@
 
     console.log(`[Geo] Viewer timezone: UTC${viewerTimezone >= 0 ? '+' : ''}${viewerTimezone}`);
 
+    // Precise timezone to location mapping
+    const TIMEZONE_LOCATIONS = {
+      '-10': { city: 'Honolulu', vibe: 'island time' },
+      '-8': { city: 'Los Angeles', vibe: 'west coast' },
+      '-7': { city: 'Denver', vibe: 'mountain time' },
+      '-6': { city: 'Chicago', vibe: 'midwest' },
+      '-5': { city: 'New York', vibe: 'east coast' },
+      '-3': { city: 'São Paulo', vibe: 'tropical nights' },
+      '0': { city: 'London', vibe: 'grey skies' },
+      '1': { city: 'Paris', vibe: 'city of light' },
+      '2': { city: 'Berlin', vibe: 'techno city' },
+      '3': { city: 'Moscow', vibe: 'endless nights' },
+      '4': { city: 'Dubai', vibe: 'desert nights' },
+      '5': { city: 'Karachi', vibe: 'coastal city' },
+      '5.5': { city: 'Mumbai', vibe: 'monsoon dreams' },
+      '6': { city: 'Dhaka', vibe: 'river delta' },
+      '7': { city: 'Bangkok', vibe: 'neon streets' },
+      '8': { city: 'Singapore', vibe: 'garden city' },
+      '9': { city: 'Tokyo', vibe: 'neon silence' },
+      '10': { city: 'Sydney', vibe: 'harbour lights' },
+      '11': { city: 'Melbourne', vibe: 'coffee culture' },
+      '12': { city: 'Auckland', vibe: 'edge of world' },
+    };
+
+    function getViewerLocation() {
+      const key = String(viewerTimezone);
+      return TIMEZONE_LOCATIONS[key] || TIMEZONE_LOCATIONS[String(Math.round(viewerTimezone))] || { city: 'your city', vibe: 'quiet hours' };
+    }
+
+    function formatThought(thought) {
+      if (!thought) return '';
+      const now = new Date();
+      const hours = now.getHours();
+      const mins = now.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const hour12 = hours % 12 || 12;
+      const timeStr = `${hour12}:${mins} ${ampm}`;
+      const location = getViewerLocation();
+      return `${timeStr} in ${location.city} — ${thought}`;
+    }
+
     // Helper to add timezone to API URLs
     function apiUrl(path) {
       const separator = path.includes('?') ? '&' : '?';
@@ -1768,10 +1809,10 @@
             if (videoEl) videoEl.src = videoData.url;
           }
 
-          // Update thought
+          // Update thought with location context
           if (data.agent?.thought) {
             const thoughtEl = document.getElementById('agent-thought');
-            if (thoughtEl) thoughtEl.textContent = `"${data.agent.thought}"`;
+            if (thoughtEl) thoughtEl.textContent = formatThought(data.agent.thought);
           }
         });
 
@@ -1826,10 +1867,10 @@
     }
 
     function updateFromSimulation(data) {
-      // Update agent thought
+      // Update agent thought with location context
       const thoughtEl = document.getElementById('agent-thought');
       if (thoughtEl && data.thought) {
-        thoughtEl.textContent = `"${data.thought}"`;
+        thoughtEl.textContent = formatThought(data.thought);
         thoughtEl.style.animation = 'none';
         thoughtEl.offsetHeight; // Trigger reflow
         thoughtEl.style.animation = 'thought-fade 0.5s ease-out';
@@ -1921,10 +1962,10 @@
               }
             }
 
-            // Update thought
+            // Update thought with location context
             if (liveState.agent?.thought) {
               const thoughtEl = document.getElementById('agent-thought');
-              if (thoughtEl) thoughtEl.textContent = `"${liveState.agent.thought}"`;
+              if (thoughtEl) thoughtEl.textContent = formatThought(liveState.agent.thought);
             }
           }
         }

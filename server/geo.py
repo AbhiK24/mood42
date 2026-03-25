@@ -24,6 +24,59 @@ TIMEZONE_TO_REGION = {
     10: "oceania", 11: "oceania", 12: "oceania", 13: "oceania", 14: "oceania",
 }
 
+# Precise timezone to location mapping (for personalized messages)
+# Key is timezone offset (float to handle half-hour zones)
+TIMEZONE_TO_LOCATION = {
+    # Americas
+    -10.0: {"city": "Honolulu", "country": "Hawaii", "vibe": "island time"},
+    -9.0: {"city": "Anchorage", "country": "Alaska", "vibe": "northern solitude"},
+    -8.0: {"city": "Los Angeles", "country": "USA", "vibe": "west coast dreams"},
+    -7.0: {"city": "Denver", "country": "USA", "vibe": "mountain air"},
+    -6.0: {"city": "Chicago", "country": "USA", "vibe": "midwest heart"},
+    -5.0: {"city": "New York", "country": "USA", "vibe": "city that never sleeps"},
+    -4.0: {"city": "Santiago", "country": "Chile", "vibe": "andean heights"},
+    -3.0: {"city": "São Paulo", "country": "Brazil", "vibe": "tropical metropolis"},
+    # Europe
+    -1.0: {"city": "Azores", "country": "Portugal", "vibe": "atlantic winds"},
+    0.0: {"city": "London", "country": "UK", "vibe": "grey skies, warm tea"},
+    1.0: {"city": "Paris", "country": "France", "vibe": "city of light"},
+    2.0: {"city": "Berlin", "country": "Germany", "vibe": "techno heartbeat"},
+    3.0: {"city": "Moscow", "country": "Russia", "vibe": "endless winter"},
+    3.5: {"city": "Tehran", "country": "Iran", "vibe": "ancient crossroads"},
+    # Asia
+    4.0: {"city": "Dubai", "country": "UAE", "vibe": "desert futurism"},
+    4.5: {"city": "Kabul", "country": "Afghanistan", "vibe": "mountain silence"},
+    5.0: {"city": "Karachi", "country": "Pakistan", "vibe": "coastal energy"},
+    5.5: {"city": "Mumbai", "country": "India", "vibe": "monsoon dreams"},
+    5.75: {"city": "Kathmandu", "country": "Nepal", "vibe": "himalayan peace"},
+    6.0: {"city": "Dhaka", "country": "Bangladesh", "vibe": "river delta"},
+    6.5: {"city": "Yangon", "country": "Myanmar", "vibe": "golden pagodas"},
+    7.0: {"city": "Bangkok", "country": "Thailand", "vibe": "street food nights"},
+    8.0: {"city": "Singapore", "country": "Singapore", "vibe": "garden city"},
+    9.0: {"city": "Tokyo", "country": "Japan", "vibe": "neon and silence"},
+    9.5: {"city": "Adelaide", "country": "Australia", "vibe": "southern calm"},
+    # Oceania
+    10.0: {"city": "Sydney", "country": "Australia", "vibe": "harbour light"},
+    11.0: {"city": "Melbourne", "country": "Australia", "vibe": "coffee and art"},
+    12.0: {"city": "Auckland", "country": "New Zealand", "vibe": "edge of the world"},
+    13.0: {"city": "Samoa", "country": "Samoa", "vibe": "pacific dawn"},
+}
+
+
+def get_location_from_offset(offset_hours: float) -> Dict:
+    """Get specific location info from timezone offset."""
+    # Try exact match first (for half-hour zones like India +5.5)
+    if offset_hours in TIMEZONE_TO_LOCATION:
+        return TIMEZONE_TO_LOCATION[offset_hours]
+
+    # Try rounded match
+    rounded = round(offset_hours)
+    if float(rounded) in TIMEZONE_TO_LOCATION:
+        return TIMEZONE_TO_LOCATION[float(rounded)]
+
+    # Fallback
+    return {"city": "somewhere", "country": "unknown", "vibe": "quiet hours"}
+
 
 def get_region_from_offset(offset_hours: float) -> str:
     """Get region from UTC offset in hours (handles half-hour zones like India +5.5)."""
