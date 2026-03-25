@@ -484,16 +484,11 @@
       font-size: 12px;
       cursor: pointer;
       backdrop-filter: blur(8px);
-      transition: opacity 0.8s ease, background 0.2s ease;
+      transition: background 0.2s ease;
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 8px;
-    }
-
-    .back-btn.hidden {
-      opacity: 0;
-      pointer-events: none;
     }
 
     .back-btn:hover {
@@ -794,12 +789,10 @@
     function showUI() {
       const info = document.querySelector('.channel-info');
       const footer = document.querySelector('.channel-footer');
-      const backBtn = document.querySelector('.back-btn');
 
       if (currentChannel) {
         info?.classList.remove('hidden');
         footer?.classList.remove('hidden');
-        backBtn?.classList.remove('hidden');
         infoVisible = true;
       }
     }
@@ -807,11 +800,9 @@
     function hideUI() {
       const info = document.querySelector('.channel-info');
       const footer = document.querySelector('.channel-footer');
-      const backBtn = document.querySelector('.back-btn');
 
       info?.classList.add('hidden');
       footer?.classList.add('hidden');
-      backBtn?.classList.add('hidden');
       infoVisible = false;
     }
 
