@@ -985,13 +985,13 @@ CHANNEL_VIDEOS = {
     "ch01": [
         {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "lo-fi"]},
     ],
-    # CH02: Yuki - liquid motion like coffee steam (exclusive)
+    # CH02: Yuki - rain cafe cozy (exclusive)
     "ch02": [
-        {"id": "ch02_v1", "name": "Liquid Flow", "url": f"{R2_BASE}/video/ch01_liquid_motion.mp4", "tags": ["liquid", "cozy", "cafe"]},
+        {"id": "ch02_v1", "name": "Rain Cafe", "url": f"{R2_BASE}/video/ch02_rain_cafe.mp4", "tags": ["rain", "cozy", "cafe"]},
     ],
-    # CH03: Vincent - noir color gradients (exclusive)
+    # CH03: Vincent - jazz club noir (exclusive)
     "ch03": [
-        {"id": "ch03_v1", "name": "Noir Gradients", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "noir", "smoky"]},
+        {"id": "ch03_v1", "name": "Jazz Club", "url": f"{R2_BASE}/video/ch03_jazz_club.mp4", "tags": ["jazz", "noir", "city"]},
     ],
     # CH04: NEON-7 - galaxy travel synthwave (exclusive)
     "ch04": [
