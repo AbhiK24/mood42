@@ -96,13 +96,16 @@ async def validate_video(video: Dict) -> bool:
 async def get_validated_track(tracks: List[Dict], exclude_id: str = None) -> Optional[Dict]:
     """
     Get a validated track from the list.
-    Checks URLs and returns only working ones.
+    Pre-verified tracks skip validation. Others are checked.
     """
     # Shuffle for variety
     candidates = [t for t in tracks if t.get("id") != exclude_id]
     random.shuffle(candidates)
 
     for track in candidates:
+        # Skip validation for pre-verified exclusive tracks
+        if track.get("_verified"):
+            return track
         if await validate_track(track):
             return track
 
@@ -114,7 +117,7 @@ async def get_validated_track(tracks: List[Dict], exclude_id: str = None) -> Opt
 async def get_validated_video(videos: List[Dict], exclude_id: str = None) -> Optional[Dict]:
     """
     Get a validated video from the list.
-    Checks URLs and returns only working ones.
+    Pre-verified videos skip validation. Others are checked.
     Avoids repeating the same video (exclude_id).
     """
     # Filter out the current video to avoid repeats
@@ -127,6 +130,9 @@ async def get_validated_video(videos: List[Dict], exclude_id: str = None) -> Opt
     random.shuffle(available)
 
     for video in available:
+        # Skip validation for pre-verified exclusive videos
+        if video.get("_verified"):
+            return video
         if await validate_video(video):
             return video
 
@@ -932,9 +938,12 @@ async def execute_tool(tool_name: str, arguments: Dict) -> Dict:
 
 def get_tracks_for_channel(channel_id: str, mood: Optional[str] = None) -> List[Dict]:
     """Get EXCLUSIVE tracks for a channel - each agent has their own unique library."""
-    # Use exclusive channel tracks
+    # Use exclusive channel tracks - these are PRE-VERIFIED, skip validation
     if channel_id in CHANNEL_TRACKS:
         tracks = CHANNEL_TRACKS[channel_id].copy()
+        # Mark as pre-verified to skip slow URL validation
+        for t in tracks:
+            t["_verified"] = True
         random.shuffle(tracks)
         return tracks
 
@@ -963,9 +972,12 @@ def get_tracks_for_channel(channel_id: str, mood: Optional[str] = None) -> List[
 
 def get_videos_for_channel(channel_id: str) -> List[Dict]:
     """Get EXCLUSIVE videos for a channel - each agent has their own unique visual library."""
-    # Use exclusive channel videos
+    # Use exclusive channel videos - these are PRE-VERIFIED, skip validation
     if channel_id in CHANNEL_VIDEOS:
         videos = CHANNEL_VIDEOS[channel_id].copy()
+        # Mark as pre-verified to skip slow URL validation
+        for v in videos:
+            v["_verified"] = True
         random.shuffle(videos)
         return videos
 
