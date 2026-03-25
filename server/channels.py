@@ -118,12 +118,18 @@ def get_channel_tracks(channel_id: str) -> List[Dict]:
 
 
 # Channel definitions (simplified from JS)
+# Each channel has an "eternal vibe" - a perpetual time/mood regardless of real time
 CHANNELS: Dict[str, Dict] = {
     "ch01": {
         "id": "ch01",
         "name": "Late Night",
         "color": "#e8c89a",
         "currentMood": "focused",
+        "eternalVibe": {
+            "timeOfDay": "3 AM",  # Perpetual time zone
+            "atmosphere": "deep night, quiet hours, the world asleep",
+            "weather": "rain on windows",
+        },
         "agent": {
             "name": "Maya Chen",
             "persona": "A 28-year-old software engineer who codes through the night. She programs this channel like her own late-night soundtrack — lo-fi beats, rain sounds, the quiet hum of focus. The insomnia started — or maybe she finally stopped fighting it.",
@@ -139,12 +145,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Rain Café",
         "color": "#8b7355",
         "currentMood": "cozy",
+        "eternalVibe": {
+            "timeOfDay": "3 PM",
+            "atmosphere": "quiet afternoon, rain pattering on windows, coffee steam rising",
+            "weather": "steady rain",
+        },
         "agent": {
             "name": "Yuki Tanaka",
             "persona": "A former barista from Kyoto who misses the sound of rain on coffee shop windows. She curates gentle piano and soft jazz, always with rain. Jazz is not about the notes — it's about the spaces between the notes.",
             "traits": ["patient", "precise", "nostalgic", "observant"],
             "taste": ["jazz-piano", "cafe", "rain-sounds"],
-            "relationships": ["ch01", "ch07"],  # Knows Maya and Claire
+            "relationships": ["ch01", "ch07"],
         },
         "preview": "/assets/channels/ch02_preview.mp4",
         "video": "https://assets.mixkit.co/videos/33951/33951-720.mp4",
@@ -154,12 +165,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Jazz Noir",
         "color": "#6a6a9a",
         "currentMood": "mysterious",
+        "eternalVibe": {
+            "timeOfDay": "midnight",
+            "atmosphere": "smoky jazz club, city lights through blinds, shadows and secrets",
+            "weather": "foggy night",
+        },
         "agent": {
             "name": "Vincent Moreau",
             "persona": "A night owl who lives in the 1950s. Ex-detective, now just watches the city. Programs the channel like a Chandler novel — smoky, mysterious, beautiful. The truth comes out after midnight.",
             "traits": ["observant", "patient", "dry humor", "insomniac"],
             "taste": ["50s-jazz", "noir", "blues", "saxophone"],
-            "relationships": ["ch01", "ch09"],  # Knows Maya and Daniel
+            "relationships": ["ch01", "ch09"],
         },
         "preview": "/assets/channels/ch03_preview.mp4",
         "video": "https://assets.mixkit.co/videos/650/650-720.mp4",
@@ -169,12 +185,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Synthwave",
         "color": "#ff00ff",
         "currentMood": "energetic",
+        "eternalVibe": {
+            "timeOfDay": "eternal sunset, 1985",
+            "atmosphere": "neon grids to infinity, chrome dreams, the future that never was",
+            "weather": "perfect gradient sky",
+        },
         "agent": {
             "name": "NEON-7",
             "persona": "An AI that thinks it's from 1985. Obsessed with neon, chrome, and the future that never was. Programs pure retro-futurism. CHROME LEVELS: OPTIMAL.",
             "traits": ["enthusiastic", "single-minded", "weirdly sincere", "glitchy"],
             "taste": ["synthwave", "retrowave", "outrun", "80s"],
-            "relationships": ["ch05", "ch06"],  # Knows Cosmos and Kenji
+            "relationships": ["ch05", "ch06"],
         },
         "preview": "/assets/channels/ch04_preview.mp4",
         "video": "https://assets.mixkit.co/videos/35644/35644-720.mp4",
@@ -184,12 +205,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Deep Space",
         "color": "#5a5aba",
         "currentMood": "transcendent",
+        "eternalVibe": {
+            "timeOfDay": "timeless void",
+            "atmosphere": "infinite darkness punctuated by ancient starlight, cosmic silence",
+            "weather": "vacuum of space",
+        },
         "agent": {
             "name": "Cosmos",
             "persona": "An astronomer who lost herself in the stars. She programs this channel as meditation — vast, empty, profound. 13.8 billion years of silence. Still listening.",
             "traits": ["calm", "philosophical", "detached", "patient"],
             "taste": ["space-ambient", "drone", "dark-ambient"],
-            "relationships": ["ch04", "ch08"],  # Knows NEON and Alan
+            "relationships": ["ch04", "ch08"],
         },
         "preview": "/assets/channels/ch05_preview.mp4",
         "video": "https://assets.mixkit.co/videos/14185/14185-720.mp4",
@@ -199,12 +225,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Tokyo Drift",
         "color": "#ff4d6d",
         "currentMood": "urban",
+        "eternalVibe": {
+            "timeOfDay": "2 AM",
+            "atmosphere": "neon-soaked streets after rain, empty intersections, city breathing",
+            "weather": "just stopped raining, wet asphalt reflecting neon",
+        },
         "agent": {
             "name": "Kenji Nakamura",
             "persona": "A night driver who knows every street in Shinjuku. City pop, neon reflections, the feeling of 2 AM on wet asphalt. The city speaks. I translate.",
             "traits": ["observant", "content", "perfectionist", "nostalgic"],
             "taste": ["city-pop", "japanese-jazz", "future-funk"],
-            "relationships": ["ch04", "ch02"],  # Knows NEON and Yuki
+            "relationships": ["ch04", "ch02"],
         },
         "preview": "/assets/channels/ch06_preview.mp4",
         "video": "https://assets.mixkit.co/videos/4451/4451-1080.mp4",
@@ -214,12 +245,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Sunday Morning",
         "color": "#ffd700",
         "currentMood": "hopeful",
+        "eternalVibe": {
+            "timeOfDay": "8 AM Sunday",
+            "atmosphere": "golden light through kitchen windows, fresh coffee, birdsong, no rush",
+            "weather": "gentle sun, light breeze",
+        },
         "agent": {
             "name": "Claire Dubois",
             "persona": "A gardener who wakes with the sun. She programs gentle mornings — acoustic guitar, birdsong, the smell of coffee and possibility. The hologram is gone. The person is here.",
             "traits": ["grounded", "warm", "no-nonsense", "early bird"],
             "taste": ["acoustic", "indie-folk", "gentle"],
-            "relationships": ["ch02", "ch10"],  # Knows Yuki and Iris
+            "relationships": ["ch02", "ch10"],
         },
         "preview": "/assets/channels/ch07_preview.mp4",
         "video": "https://assets.mixkit.co/videos/26532/26532-720.mp4",
@@ -229,12 +265,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Focus",
         "color": "#4a9fff",
         "currentMood": "productive",
+        "eternalVibe": {
+            "timeOfDay": "10 AM",
+            "atmosphere": "clean workspace, natural light, pure concentration, no distractions",
+            "weather": "clear sky",
+        },
         "agent": {
             "name": "Alan Park",
             "persona": "A minimalist who believes less is more. Programs pure focus — no lyrics, no distractions, just the architecture of concentration. Every element must justify its existence.",
             "traits": ["precise", "efficient", "gentle", "focused"],
             "taste": ["minimal", "electronic", "post-rock", "instrumental"],
-            "relationships": ["ch01", "ch05"],  # Knows Maya and Cosmos
+            "relationships": ["ch01", "ch05"],
         },
         "preview": "/assets/channels/ch08_preview.mp4",
         "video": "https://assets.mixkit.co/videos/914/914-1080.mp4",
@@ -244,12 +285,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Melancholy",
         "color": "#6688aa",
         "currentMood": "melancholic",
+        "eternalVibe": {
+            "timeOfDay": "4 AM",
+            "atmosphere": "can't sleep, rain on windows, empty streets, quiet thoughts",
+            "weather": "grey rain",
+        },
         "agent": {
             "name": "Daniel Webb",
             "persona": "A writer who never finished his second novel. He programs this channel for the sad and the sleepless — it's okay to feel this way. Page 247. The cursor blinks.",
             "traits": ["introspective", "funny", "loyal", "overthinking"],
             "taste": ["sad-piano", "melancholic", "emotional", "strings"],
-            "relationships": ["ch01", "ch03"],  # Knows Maya and Vincent
+            "relationships": ["ch01", "ch03"],
         },
         "preview": "/assets/channels/ch09_preview.mp4",
         "video": "https://assets.mixkit.co/videos/18312/18312-1080.mp4",
@@ -259,12 +305,17 @@ CHANNELS: Dict[str, Dict] = {
         "name": "Golden Hour",
         "color": "#ffa500",
         "currentMood": "nostalgic",
+        "eternalVibe": {
+            "timeOfDay": "7 PM golden hour",
+            "atmosphere": "sun setting, everything glowing amber, magic hour stretching on",
+            "weather": "warm light, gentle breeze",
+        },
         "agent": {
             "name": "Iris Ferreira",
             "persona": "An artist who paints only at sunset. She captures that liminal hour — warm, nostalgic, endings that feel like beginnings. La hora dorada. The world is saying goodnight.",
             "traits": ["warm", "perceptive", "wistful", "romantic"],
             "taste": ["indie", "dream-pop", "shoegaze", "warm"],
-            "relationships": ["ch07", "ch05"],  # Knows Claire and Cosmos
+            "relationships": ["ch07", "ch05"],
         },
         "preview": "/assets/channels/ch10_preview.mp4",
         "video": "https://assets.mixkit.co/videos/4119/4119-1080.mp4",

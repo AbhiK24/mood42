@@ -99,9 +99,10 @@ YOUR VIBE & PERSONA:
 YOUR MUSICAL TASTE: {', '.join(agent.get('taste', []))}
 YOUR TRAITS: {', '.join(agent.get('traits', []))}
 
-CURRENT CONTEXT:
-- Time: {context['timeString']} (simulated)
-- Weather: {'Raining' if context['weather']['raining'] else 'Clear'}
+YOUR ETERNAL VIBE (your channel always exists in this moment):
+- Time: {channel.get('eternalVibe', {}).get('timeOfDay', '11 PM')}
+- Atmosphere: {channel.get('eternalVibe', {}).get('atmosphere', 'late night calm')}
+- Weather: {channel.get('eternalVibe', {}).get('weather', 'clear')}
 - Your current mood: {agent.get('currentMood', 'focused')}
 
 You are programming your channel - deciding what music and visuals to play next.
@@ -215,7 +216,7 @@ async def generate_plan(agent_context: Dict, recent_memories: str) -> List[Dict]
 YOUR PERSONA:
 {agent_context['persona']}
 
-CURRENT TIME: {agent_context.get('time', '11:00 PM')}
+CURRENT VIBE: Your channel exists in an eternal moment - always {agent_context.get('eternalTime', '11:00 PM')}
 CURRENT MOOD: {agent_context.get('mood', 'focused')}
 ENERGY LEVEL: {int(agent_context.get('energy', 0.8) * 100)}%
 

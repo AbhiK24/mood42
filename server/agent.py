@@ -278,13 +278,17 @@ class ChannelAgent:
             elif 23 <= hour or hour < 5:
                 self.energy = max(0.3, self.energy - 0.03)
 
-    def get_context(self, world_state: Dict) -> Dict:
+    def get_context(self, world_state: Dict, eternal_vibe: Dict = None) -> Dict:
         """Get current context for LLM prompts."""
         recent_tracks = [
             m.metadata.get("track_id")
             for m in self.get_recent_memories(5, MemoryType.TRACK_PLAYED)
             if m.metadata.get("track_id")
         ]
+
+        # Use eternal vibe time if available, otherwise fall back to world time
+        vibe = eternal_vibe or {}
+        eternal_time = vibe.get("timeOfDay", world_state.get("timeString", "11:00 PM"))
 
         return {
             "name": self.name,
@@ -294,6 +298,8 @@ class ChannelAgent:
             "taste": self.taste,
             "mood": self.mood,
             "energy": self.energy,
+            "eternalTime": eternal_time,
+            "eternalVibe": vibe,
             "time": world_state.get("timeString", "11:00 PM"),
             "weather": world_state.get("weather", {}),
             "recent_tracks": recent_tracks,

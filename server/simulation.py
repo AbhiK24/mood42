@@ -334,8 +334,10 @@ class SimulationEngine:
         # Check for reflection
         if gen_agent.needs_reflection() and self.use_llm:
             try:
+                channel = CHANNELS.get(channel_id, {})
+                eternal_vibe = channel.get("eternalVibe", {})
                 memory_summary = gen_agent.get_memory_summary(15)
-                context = gen_agent.get_context(self.get_world_state())
+                context = gen_agent.get_context(self.get_world_state(), eternal_vibe)
 
                 reflection = await generate_reflection(context, memory_summary)
                 gen_agent.record_reflection(reflection, tick)
@@ -354,8 +356,10 @@ class SimulationEngine:
         # Check for replanning
         if gen_agent.needs_replanning(tick) and self.use_llm:
             try:
+                channel = CHANNELS.get(channel_id, {})
+                eternal_vibe = channel.get("eternalVibe", {})
                 memory_summary = gen_agent.get_memory_summary(10)
-                context = gen_agent.get_context(self.get_world_state())
+                context = gen_agent.get_context(self.get_world_state(), eternal_vibe)
 
                 plans = await generate_plan(context, memory_summary)
                 gen_agent.record_plan(plans, tick)
@@ -384,10 +388,12 @@ class SimulationEngine:
 
         try:
             # Generate a message
-            from_context = initiator.get_context(self.get_world_state())
-            to_context = target.get_context(self.get_world_state())
+            from_channel = CHANNELS.get(initiator_id, {})
+            to_channel = CHANNELS.get(target_id, {})
+            from_context = initiator.get_context(self.get_world_state(), from_channel.get("eternalVibe", {}))
+            to_context = target.get_context(self.get_world_state(), to_channel.get("eternalVibe", {}))
 
-            context = f"It's {from_context['time']}. You're both programming your channels."
+            context = f"It's {from_context['eternalTime']} in your eternal vibe. You're both programming your channels."
             message = await generate_inter_agent_message(from_context, to_context, context)
 
             # Record in both agents' memories
