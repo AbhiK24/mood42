@@ -39,6 +39,17 @@ const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
 let useLiveLLM = false // Start with mock mode to save tokens
 let autoSimulation = false // Don't auto-start simulation
 
+// Audio - lo-fi background music
+let bgMusic = null
+let musicPlaying = false
+const MUSIC_TRACKS = [
+  // Free lo-fi / jazz tracks (royalty-free)
+  'https://cdn.pixabay.com/audio/2024/11/04/audio_a8a0779da9.mp3', // lofi-chill
+  'https://cdn.pixabay.com/audio/2022/10/25/audio_552d6f8fc0.mp3', // jazz-piano
+  'https://cdn.pixabay.com/audio/2024/04/23/audio_d06431eb61.mp3', // lofi-rain
+]
+let currentTrack = 0
+
 async function init() {
   await app.init({
     resizeTo: window,
@@ -76,15 +87,64 @@ async function init() {
   window.addEventListener('resize', handleResize)
   handleResize()
 
+  // Initialize music
+  initMusic()
+
   // Initial toast
   setTimeout(() => {
     showToast('the building', '11 PM · NYC · RAINING')
     addEvent('You approach the building on 2nd Avenue...')
-    addEvent('Press [S] to start simulation, [L] to toggle live LLM')
+    addEvent('[S] sim · [L] llm · [M] music · [N] next track')
   }, 500)
 
   // DON'T auto-start simulation - wait for user to press S
   // This saves API tokens during development
+}
+
+function initMusic() {
+  bgMusic = new Audio(MUSIC_TRACKS[currentTrack])
+  bgMusic.loop = true
+  bgMusic.volume = 0.3
+
+  // When track ends or errors, try next
+  bgMusic.addEventListener('ended', () => {
+    if (musicPlaying) nextTrack()
+  })
+  bgMusic.addEventListener('error', () => {
+    console.log('Track failed, trying next...')
+    nextTrack()
+  })
+}
+
+function toggleMusic() {
+  if (!bgMusic) initMusic()
+
+  if (musicPlaying) {
+    bgMusic.pause()
+    musicPlaying = false
+    addEvent('Music paused')
+  } else {
+    bgMusic.play().then(() => {
+      musicPlaying = true
+      addEvent(`Playing: lo-fi track ${currentTrack + 1}`)
+    }).catch(err => {
+      addEvent('Click anywhere first to enable audio')
+    })
+  }
+}
+
+function nextTrack() {
+  currentTrack = (currentTrack + 1) % MUSIC_TRACKS.length
+  const wasPlaying = musicPlaying
+
+  if (bgMusic) {
+    bgMusic.pause()
+    bgMusic.src = MUSIC_TRACKS[currentTrack]
+    if (wasPlaying) {
+      bgMusic.play()
+      addEvent(`Now playing: track ${currentTrack + 1}`)
+    }
+  }
 }
 
 function createBuildingView() {
@@ -481,9 +541,7 @@ function updateMemoryPanel() {
   })
 
   // Controls hint
-  const controlsText = simulationRunning
-    ? `[S] stop · [L] ${useLiveLLM ? 'mock' : 'live'} · [T] +1hr`
-    : `[S] start · [L] ${useLiveLLM ? 'mock' : 'live'} · ${currentView === 'apartment' ? '[ESC] back' : '[CLICK] enter'}`
+  const controlsText = `[S] sim · [M] music · [L] llm · ${currentView === 'apartment' ? '[ESC] back' : '[1-3] enter'}`
 
   const controls = new Text({
     text: controlsText,
@@ -493,9 +551,9 @@ function updateMemoryPanel() {
   controls.y = H - 30
   memoryPanel.addChild(controls)
 
-  // LLM status indicator
+  // Status indicators
   const llmStatus = new Text({
-    text: `${useLiveLLM ? '● LIVE LLM' : '○ MOCK'} ${simulationRunning ? '▶ RUNNING' : '■ STOPPED'}`,
+    text: `${useLiveLLM ? '● LIVE' : '○ MOCK'} ${simulationRunning ? '▶ SIM' : '■ STOP'} ${musicPlaying ? '♪ MUSIC' : '♪ -'}`,
     style: { fontFamily: 'monospace', fontSize: 9, fill: useLiveLLM ? 0x88ff88 : 0x888888 }
   })
   llmStatus.x = W - 300
@@ -639,6 +697,16 @@ function setupKeyboard() {
         if (currentView === 'building') drawBuilding()
         break
 
+      case 'm':
+      case 'M':
+        toggleMusic()
+        break
+
+      case 'n':
+      case 'N':
+        nextTrack()
+        break
+
       case '1':
         showApartmentView('2A') // Daniel
         break
@@ -650,6 +718,13 @@ function setupKeyboard() {
         break
     }
   })
+
+  // Enable audio on first click (browser autoplay policy)
+  document.addEventListener('click', () => {
+    if (bgMusic && musicPlaying) {
+      bgMusic.play().catch(() => {})
+    }
+  }, { once: true })
 }
 
 // Start
