@@ -67,6 +67,7 @@ export {
 export {
   TRACKS,
   PLAYLISTS,
+  CHANNEL_PLAYLISTS,
   initMusic,
   playTrack,
   playPlaylist,
@@ -77,4 +78,54 @@ export {
   getState as getMusicState,
   getAllTracks,
   addTrack,
+  getTracksByMood,
+  getTracksByGenre,
+  getTracksForChannel,
+  getRandomTrackForChannel,
+  playChannelMusic,
 } from './music.js'
+
+// Channel agents (self-aware programmers)
+export {
+  initAllChannelAgents,
+  initChannelAgent,
+  addChannelMemory,
+  recordTrackPlayed,
+  recordVisualShown,
+  recordMoodShift,
+  getRecentMemories,
+  getChannelHistory,
+  formatMemoriesForAgent,
+  generateProgrammingDecision,
+  generateChannelReflection,
+  planChannelProgramming,
+  getChannelPlan,
+  getRelatedChannelContext,
+  exportChannelAgentState,
+  importChannelAgentState,
+} from './channelAgent.js'
+
+// Channels
+export {
+  CHANNELS,
+  WALL_LAYOUT,
+  getAllChannels,
+  getChannel,
+  getChannelState,
+  updateChannelState,
+  initChannels,
+  getAgentProgrammingPrompt,
+  getFeaturedChannels,
+} from './channels.js'
+
+// Visuals
+export {
+  VISUALS,
+  CHANNEL_VISUALS,
+  getAllVisuals,
+  getVisual,
+  getVisualsByMood,
+  getVisualsByStyle,
+  getVisualsForChannel,
+  getRandomVisualForChannel,
+} from './visuals.js'

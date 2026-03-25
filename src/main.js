@@ -1,57 +1,72 @@
-// mood42 - The Building: Living apartments with AI characters
-import { Application, Sprite, Container, Graphics, BlurFilter, Text, Assets } from 'pixi.js'
+// mood42 — agentically programmed tv
+import { Application, Container, Graphics, Text, Sprite, Assets, BlurFilter } from 'pixi.js'
 import gsap from 'gsap'
 
 // Simulation imports
+import { world } from './sim/world.js'
+import { initSimulation } from './sim/bridge.js'
 import {
-  initSimulation,
-  simulationTick,
-  getBuildingView,
-  getCharacterDetail,
-  setActiveCharacter,
-  getActiveCharacter,
-  world,
-  initLLM,
-  // Music
+  CHANNELS,
+  WALL_LAYOUT,
+  getAllChannels,
+  getChannel,
+  getChannelState,
+  updateChannelState,
+  initChannels,
+  getAgentProgrammingPrompt,
+} from './sim/channels.js'
+import {
   initMusic as initMusicLib,
-  toggleMusic as toggleMusicLib,
-  nextTrack as nextTrackLib,
-  getMusicState,
+  toggle as toggleMusicLib,
+  getState as getMusicState,
   playTrack,
-} from './sim/index.js'
-
-// HUD
+  setVolume,
+  getTracksForChannel,
+  playChannelMusic,
+  TRACKS,
+} from './sim/music.js'
+import {
+  getVisualsForChannel,
+  getRandomVisualForChannel,
+  VISUALS,
+} from './sim/visuals.js'
+import {
+  initAllChannelAgents,
+  generateProgrammingDecision,
+  recordTrackPlayed,
+  recordVisualShown,
+  recordMoodShift,
+  getRecentMemories,
+  getChannelHistory,
+  addChannelMemory,
+} from './sim/channelAgent.js'
+import { callKimi } from './sim/llm.js'
 import { showToast } from './hud/hud.js'
 
 const app = new Application()
 
-// Scene assets
+// Assets
 const ASSETS = {
   sceneFocused: '/assets/scene_focused.png',
   sceneWithdrawn: '/assets/scene_withdrawn.png',
 }
 
 // State
-let currentView = 'building' // 'building' or 'apartment'
-let activeApartment = null
-let sceneFocused, sceneWithdrawn
-let buildingContainer, apartmentContainer, hudContainer
+let currentView = 'wall' // 'wall' or 'channel'
+let currentChannel = null
+let wallContainer, channelContainer, hudContainer
 let rainContainer, rainDrops = []
-let memoryPanel, eventLog = []
-let simulationRunning = false
-
-// LLM Config - DEFAULT TO MOCK MODE IN DEV
-const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
-let useLiveLLM = false // Start with mock mode to save tokens
-let autoSimulation = false // Don't auto-start simulation
-
-// Music state (managed by sim/music.js)
 let musicPlaying = false
+let simulationRunning = false
+let useLiveLLM = false
+
+// API Key
+const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
 
 async function init() {
   await app.init({
     resizeTo: window,
-    backgroundColor: 0x0a0a12,
+    backgroundColor: 0x0a0a0f,
     antialias: true,
     resolution: Math.min(window.devicePixelRatio, 2),
     autoDensity: true,
@@ -60,121 +75,488 @@ async function init() {
   document.getElementById('app').appendChild(app.canvas)
 
   // Load assets
-  console.log('Loading assets...')
   await Assets.load(Object.values(ASSETS))
 
-  // Initialize simulation - mock mode by default (no API calls)
+  // Initialize systems
+  initChannels()
+  initAllChannelAgents()
+  initMusicLib()
   initSimulation(useLiveLLM ? MOONSHOT_API_KEY : null)
 
-  // Create layers
-  createBuildingView()
-  createApartmentView()
-  createHUD()
+  // Create views
+  createWallView()
+  createChannelView()
   createRain()
+  createHUD()
 
-  // Start in building view
-  showBuildingView()
+  // Start with wall
+  showWall()
 
   // Animation loop
   app.ticker.add(update)
 
-  // Keyboard controls
+  // Controls
   setupKeyboard()
-
-  // Handle resize
   window.addEventListener('resize', handleResize)
   handleResize()
 
-  // Initialize music library
-  initMusicLib()
-
-  // Initial toast
+  // Welcome
   setTimeout(() => {
-    showToast('the building', '11 PM · NYC · RAINING')
-    addEvent('You approach the building on 2nd Avenue...')
-    addEvent('[S] sim · [L] llm · [M] music · [N] next track')
+    showToast('mood42.tv', 'AGENTICALLY PROGRAMMED TV')
   }, 500)
-
-  // DON'T auto-start simulation - wait for user to press S
-  // This saves API tokens during development
 }
 
-function toggleMusic() {
-  toggleMusicLib().then(playing => {
-    musicPlaying = playing
-    const state = getMusicState()
-    if (playing && state.currentTrack) {
-      addEvent(`Playing: ${state.currentTrack.name}`)
-    } else {
-      addEvent('Music paused')
-    }
-  }).catch(() => {
-    addEvent('Click anywhere first to enable audio')
+// ============ WALL VIEW ============
+
+function createWallView() {
+  wallContainer = new Container()
+  wallContainer.label = 'wall'
+  app.stage.addChild(wallContainer)
+}
+
+function showWall() {
+  currentView = 'wall'
+  currentChannel = null
+  wallContainer.visible = true
+  channelContainer.visible = false
+  drawWall()
+}
+
+function drawWall() {
+  const W = app.screen.width
+  const H = app.screen.height
+
+  wallContainer.removeChildren()
+
+  // Background
+  const bg = new Graphics()
+  bg.rect(0, 0, W, H)
+  bg.fill({ color: 0x0a0a0f })
+  wallContainer.addChild(bg)
+
+  // Title
+  const title = new Text({
+    text: 'mood42.tv',
+    style: { fontFamily: 'monospace', fontSize: 24, fill: 0x888899, letterSpacing: 4 }
   })
-}
+  title.x = W / 2 - title.width / 2
+  title.y = 30
+  wallContainer.addChild(title)
 
-function nextTrack() {
-  nextTrackLib().then(() => {
-    const state = getMusicState()
-    if (state.currentTrack) {
-      addEvent(`Now playing: ${state.currentTrack.name}`)
-    }
+  const subtitle = new Text({
+    text: 'agentically programmed tv',
+    style: { fontFamily: 'monospace', fontSize: 12, fill: 0x555566, letterSpacing: 2 }
   })
+  subtitle.x = W / 2 - subtitle.width / 2
+  subtitle.y = 60
+  wallContainer.addChild(subtitle)
+
+  // Channel grid
+  const gridW = Math.min(W * 0.9, 1200)
+  const gridH = H * 0.65
+  const gridX = (W - gridW) / 2
+  const gridY = 100
+
+  const cols = WALL_LAYOUT.cols
+  const rows = WALL_LAYOUT.rows
+  const gap = 15
+  const cellW = (gridW - gap * (cols - 1)) / cols
+  const cellH = (gridH - gap * (rows - 1)) / rows
+
+  WALL_LAYOUT.channels.forEach((row, rowIdx) => {
+    row.forEach((channelId, colIdx) => {
+      const channel = getChannel(channelId)
+      if (!channel) return
+
+      const x = gridX + colIdx * (cellW + gap)
+      const y = gridY + rowIdx * (cellH + gap)
+
+      // Channel card
+      const card = new Container()
+      card.x = x
+      card.y = y
+      wallContainer.addChild(card)
+
+      // Background
+      const cardBg = new Graphics()
+      cardBg.roundRect(0, 0, cellW, cellH, 8)
+      cardBg.fill({ color: 0x15151f })
+      card.addChild(cardBg)
+
+      // Color accent bar
+      const accent = new Graphics()
+      accent.roundRect(0, 0, cellW, 4, 2)
+      accent.fill({ color: channel.color })
+      card.addChild(accent)
+
+      // Glow effect (animated)
+      const glow = new Graphics()
+      glow.roundRect(2, 2, cellW - 4, cellH - 4, 6)
+      glow.fill({ color: channel.color, alpha: 0.05 })
+      card.addChild(glow)
+
+      // Channel number
+      const chNum = new Text({
+        text: channelId.replace('ch', 'CH '),
+        style: { fontFamily: 'monospace', fontSize: 10, fill: 0x444455 }
+      })
+      chNum.x = 10
+      chNum.y = 12
+      card.addChild(chNum)
+
+      // Channel name
+      const name = new Text({
+        text: channel.name,
+        style: { fontFamily: 'monospace', fontSize: 14, fill: 0xaaaaaa, fontWeight: 'bold' }
+      })
+      name.x = 10
+      name.y = cellH / 2 - 15
+      card.addChild(name)
+
+      // Agent name
+      const agent = new Text({
+        text: `by ${channel.agent.name}`,
+        style: { fontFamily: 'monospace', fontSize: 10, fill: 0x666677 }
+      })
+      agent.x = 10
+      agent.y = cellH / 2 + 5
+      card.addChild(agent)
+
+      // Mood indicator
+      const mood = new Text({
+        text: `● ${channel.currentMood}`,
+        style: { fontFamily: 'monospace', fontSize: 9, fill: channel.color }
+      })
+      mood.x = 10
+      mood.y = cellH - 25
+      card.addChild(mood)
+
+      // Interaction
+      cardBg.eventMode = 'static'
+      cardBg.cursor = 'pointer'
+
+      cardBg.on('pointerover', () => {
+        gsap.to(card, { y: y - 5, duration: 0.2 })
+        gsap.to(glow, { alpha: 0.15, duration: 0.2 })
+      })
+
+      cardBg.on('pointerout', () => {
+        gsap.to(card, { y: y, duration: 0.2 })
+        gsap.to(glow, { alpha: 0.05, duration: 0.2 })
+      })
+
+      cardBg.on('pointerdown', () => {
+        tuneIn(channelId)
+      })
+    })
+  })
+
+  // Footer
+  const footer = new Text({
+    text: '[M] music · [1-0] channels · click to tune in',
+    style: { fontFamily: 'monospace', fontSize: 11, fill: 0x444455 }
+  })
+  footer.x = W / 2 - footer.width / 2
+  footer.y = H - 40
+  wallContainer.addChild(footer)
 }
 
-function createBuildingView() {
-  buildingContainer = new Container()
-  buildingContainer.label = 'building'
-  app.stage.addChild(buildingContainer)
+// ============ CHANNEL VIEW ============
 
-  // Building background
-  const buildingBg = new Graphics()
-  buildingBg.label = 'building-bg'
-  buildingContainer.addChild(buildingBg)
-
-  // Windows container
-  const windowsContainer = new Container()
-  windowsContainer.label = 'windows'
-  buildingContainer.addChild(windowsContainer)
+function createChannelView() {
+  channelContainer = new Container()
+  channelContainer.label = 'channel'
+  channelContainer.visible = false
+  app.stage.addChild(channelContainer)
 }
 
-function createApartmentView() {
-  apartmentContainer = new Container()
-  apartmentContainer.label = 'apartment'
-  apartmentContainer.visible = false
-  app.stage.addChild(apartmentContainer)
+function tuneIn(channelId) {
+  const channel = getChannel(channelId)
+  if (!channel) return
 
-  // Scene sprites
-  sceneFocused = Sprite.from(ASSETS.sceneFocused)
-  sceneFocused.anchor.set(0.5)
-  apartmentContainer.addChild(sceneFocused)
+  currentView = 'channel'
+  currentChannel = channel
+  wallContainer.visible = false
+  channelContainer.visible = true
 
-  sceneWithdrawn = Sprite.from(ASSETS.sceneWithdrawn)
-  sceneWithdrawn.anchor.set(0.5)
-  sceneWithdrawn.alpha = 0
-  apartmentContainer.addChild(sceneWithdrawn)
+  // Record tune-in as viewer interaction
+  addChannelMemory(channelId, {
+    type: 'viewer_interaction',
+    content: 'A viewer tuned in',
+    importance: 2,
+  })
+
+  drawChannel()
+  showToast(channel.name, `TUNED IN · ${channel.agent.name.toUpperCase()}`)
+
+  // Start channel programming (mock or live)
+  programChannel(channelId)
+}
+
+function drawChannel() {
+  if (!currentChannel) return
+
+  const W = app.screen.width
+  const H = app.screen.height
+
+  channelContainer.removeChildren()
+
+  // Background with channel color tint
+  const bg = new Graphics()
+  bg.rect(0, 0, W, H)
+  bg.fill({ color: 0x080810 })
+  channelContainer.addChild(bg)
+
+  // Get current visual from channel state
+  const state = getChannelState(currentChannel.id)
+  const visualId = state?.currentVisual || currentChannel.defaultVisual
+  const visualAsset = VISUALS[visualId]?.asset || ASSETS.sceneFocused
+
+  // Visual (using scene assets)
+  const visual = Sprite.from(visualAsset)
+  visual.anchor.set(0.5)
+  const scale = Math.max(W / visual.texture.width, H / visual.texture.height)
+  visual.scale.set(scale * 1.05)
+  visual.position.set(W / 2, H / 2)
+  channelContainer.addChild(visual)
 
   // Breathing animation
-  gsap.to([sceneFocused, sceneWithdrawn], {
-    scaleX: 1.008,
-    scaleY: 1.005,
-    duration: 3.5,
+  gsap.to(visual, {
+    scaleX: scale * 1.06,
+    scaleY: scale * 1.055,
+    duration: 4,
     ease: 'sine.inOut',
     yoyo: true,
     repeat: -1,
   })
+
+  // Overlay gradient
+  const overlay = new Graphics()
+  overlay.rect(0, 0, W, H * 0.3)
+  overlay.fill({ color: 0x000000, alpha: 0.6 })
+  overlay.rect(0, H * 0.75, W, H * 0.25)
+  overlay.fill({ color: 0x000000, alpha: 0.7 })
+  channelContainer.addChild(overlay)
+
+  // Channel info (top left)
+  const chLabel = new Text({
+    text: currentChannel.id.replace('ch', 'CH '),
+    style: { fontFamily: 'monospace', fontSize: 12, fill: currentChannel.color }
+  })
+  chLabel.x = 30
+  chLabel.y = 30
+  channelContainer.addChild(chLabel)
+
+  const chName = new Text({
+    text: currentChannel.name.toUpperCase(),
+    style: { fontFamily: 'monospace', fontSize: 28, fill: 0xffffff, letterSpacing: 3 }
+  })
+  chName.x = 30
+  chName.y = 50
+  channelContainer.addChild(chName)
+
+  const agentInfo = new Text({
+    text: `programmed by ${currentChannel.agent.name}`,
+    style: { fontFamily: 'monospace', fontSize: 11, fill: 0x888899 }
+  })
+  agentInfo.x = 30
+  agentInfo.y = 85
+  channelContainer.addChild(agentInfo)
+
+  // Agent persona snippet
+  const personaSnippet = currentChannel.agent.persona.split('.')[0] + '.'
+  const persona = new Text({
+    text: personaSnippet,
+    style: {
+      fontFamily: 'monospace',
+      fontSize: 10,
+      fill: 0x555566,
+      fontStyle: 'italic',
+      wordWrap: true,
+      wordWrapWidth: Math.min(W * 0.4, 400),
+    }
+  })
+  persona.x = 30
+  persona.y = 105
+  channelContainer.addChild(persona)
+
+  // Current mood/vibe (bottom left)
+  const currentMood = state?.mood || currentChannel.currentMood
+  const moodText = new Text({
+    text: `● ${currentMood}`,
+    style: { fontFamily: 'monospace', fontSize: 14, fill: currentChannel.color }
+  })
+  moodText.x = 30
+  moodText.y = H - 100
+  channelContainer.addChild(moodText)
+
+  // Now playing (from music state)
+  const musicState = getMusicState()
+  if (musicState.currentTrack) {
+    const nowPlaying = new Text({
+      text: `♪ ${musicState.currentTrack.name}`,
+      style: { fontFamily: 'monospace', fontSize: 11, fill: 0x888899 }
+    })
+    nowPlaying.x = 30
+    nowPlaying.y = H - 78
+    channelContainer.addChild(nowPlaying)
+  }
+
+  // Agent thought (if available)
+  if (state && state.lastThought) {
+    const thought = new Text({
+      text: `"${state.lastThought}"`,
+      style: {
+        fontFamily: 'monospace',
+        fontSize: 12,
+        fill: 0x666677,
+        fontStyle: 'italic',
+        wordWrap: true,
+        wordWrapWidth: W * 0.5,
+      }
+    })
+    thought.x = 30
+    thought.y = H - 55
+    channelContainer.addChild(thought)
+  }
+
+  // Recent memory stream (right side, subtle)
+  const memories = getRecentMemories(currentChannel.id, 5)
+  if (memories.length > 0) {
+    const memoryTitle = new Text({
+      text: 'MEMORY STREAM',
+      style: { fontFamily: 'monospace', fontSize: 9, fill: 0x333344, letterSpacing: 1 }
+    })
+    memoryTitle.x = W - 280
+    memoryTitle.y = 70
+    channelContainer.addChild(memoryTitle)
+
+    memories.slice().reverse().forEach((mem, i) => {
+      const timeAgo = Math.floor((Date.now() - mem.timestamp) / 60000)
+      const memText = new Text({
+        text: `${timeAgo}m · ${mem.content.substring(0, 35)}${mem.content.length > 35 ? '...' : ''}`,
+        style: { fontFamily: 'monospace', fontSize: 9, fill: 0x444455 }
+      })
+      memText.x = W - 280
+      memText.y = 90 + i * 16
+      channelContainer.addChild(memText)
+    })
+  }
+
+  // Controls hint
+  const controls = new Text({
+    text: '[ESC] wall · [M] music · [N/P] channels · [L] live ai · [R] reprogram',
+    style: { fontFamily: 'monospace', fontSize: 10, fill: 0x444455 }
+  })
+  controls.x = W - controls.width - 30
+  controls.y = H - 30
+  channelContainer.addChild(controls)
+
+  // Status indicator
+  const status = new Text({
+    text: `${useLiveLLM ? '● LIVE' : '○ MOCK'} ${musicState.isPlaying ? '♪' : ''}`,
+    style: { fontFamily: 'monospace', fontSize: 10, fill: useLiveLLM ? 0x88ff88 : 0x666666 }
+  })
+  status.x = W - status.width - 30
+  status.y = 30
+  channelContainer.addChild(status)
 }
 
-function createHUD() {
-  hudContainer = new Container()
-  hudContainer.label = 'hud'
-  app.stage.addChild(hudContainer)
+async function programChannel(channelId) {
+  const channel = CHANNELS[channelId]
+  if (!channel) return
 
-  // Memory panel (right side)
-  memoryPanel = new Container()
-  memoryPanel.label = 'memory-panel'
-  hudContainer.addChild(memoryPanel)
+  // Get available content for this channel
+  const availableTracks = getTracksForChannel(channelId)
+  const availableVisuals = getVisualsForChannel(channelId)
+
+  if (useLiveLLM) {
+    // Use AI to make programming decision
+    try {
+      const decision = await generateProgrammingDecision(
+        channelId,
+        availableTracks,
+        availableVisuals
+      )
+
+      if (decision) {
+        const oldMood = channel.currentMood
+
+        // Update channel state
+        updateChannelState(channelId, {
+          mood: decision.mood || oldMood,
+          lastThought: decision.thought,
+          musicVibe: decision.musicVibe,
+          visualDesc: decision.visualDesc,
+          currentVisual: decision.visualId || channel.defaultVisual,
+        })
+
+        // Record mood shift if changed
+        if (decision.mood && decision.mood !== oldMood) {
+          recordMoodShift(channelId, oldMood, decision.mood, decision.thought)
+        }
+
+        // Play selected track
+        if (decision.trackId && TRACKS[decision.trackId]) {
+          playTrack(decision.trackId)
+          recordTrackPlayed(channelId, TRACKS[decision.trackId])
+        }
+
+        // Record visual selection
+        if (decision.visualId && VISUALS[decision.visualId]) {
+          recordVisualShown(channelId, VISUALS[decision.visualId])
+        }
+      }
+    } catch (err) {
+      console.error('AI Programming error:', err)
+      // Fallback to random selection
+      fallbackProgramming(channelId)
+    }
+  } else {
+    // Mock mode: random selection
+    fallbackProgramming(channelId)
+  }
+
+  // Redraw if still on this channel
+  if (currentChannel && currentChannel.id === channelId) {
+    drawChannel()
+  }
 }
+
+function fallbackProgramming(channelId) {
+  const channel = CHANNELS[channelId]
+  if (!channel) return
+
+  // Random track selection
+  const tracks = getTracksForChannel(channelId)
+  const track = tracks[Math.floor(Math.random() * tracks.length)]
+  if (track) {
+    playTrack(track.id)
+    recordTrackPlayed(channelId, track)
+  }
+
+  // Random visual selection
+  const visual = getRandomVisualForChannel(channelId)
+  if (visual) {
+    recordVisualShown(channelId, visual)
+    updateChannelState(channelId, {
+      currentVisual: visual.id,
+    })
+  }
+
+  // Generate a mock thought
+  const mockThoughts = [
+    `Setting the mood for ${channel.name}...`,
+    `${channel.agent.pacing} vibes tonight.`,
+    `Time for some ${channel.agent.taste[0]} sounds.`,
+    `The ${channel.currentMood} energy continues.`,
+  ]
+  updateChannelState(channelId, {
+    lastThought: mockThoughts[Math.floor(Math.random() * mockThoughts.length)],
+  })
+}
+
+// ============ RAIN EFFECT ============
 
 function createRain() {
   rainContainer = new Container()
@@ -184,197 +566,39 @@ function createRain() {
   const rainGraphics = new Graphics()
   rainContainer.addChild(rainGraphics)
 
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 150; i++) {
     rainDrops.push({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      speed: 6 + Math.random() * 10,
-      length: 12 + Math.random() * 20,
-      opacity: 0.1 + Math.random() * 0.25,
+      speed: 5 + Math.random() * 8,
+      length: 10 + Math.random() * 15,
+      opacity: 0.08 + Math.random() * 0.15,
     })
   }
 }
 
-function showBuildingView() {
-  currentView = 'building'
-  buildingContainer.visible = true
-  apartmentContainer.visible = false
-  drawBuilding()
+// ============ HUD ============
+
+function createHUD() {
+  hudContainer = new Container()
+  hudContainer.label = 'hud'
+  app.stage.addChild(hudContainer)
 }
 
-function showApartmentView(apartment) {
-  currentView = 'apartment'
-  activeApartment = apartment
-  buildingContainer.visible = false
-  apartmentContainer.visible = true
-
-  // Set active character in simulation
-  const charMap = { '3B': 'maya_3b', '2A': 'daniel_2a', '4C': 'iris_4c' }
-  if (charMap[apartment]) {
-    setActiveCharacter(charMap[apartment])
-    const char = getActiveCharacter()
-    if (char) {
-      showToast(`apt ${apartment}`, `${char.name.toUpperCase()} · ${char.state.mood.toUpperCase()}`)
-      addEvent(`You peer into ${char.name}'s window...`)
-    }
-  }
-
-  handleResize()
-}
-
-function drawBuilding() {
-  const W = app.screen.width
-  const H = app.screen.height
-
-  const buildingBg = buildingContainer.children.find(c => c.label === 'building-bg')
-  const windowsContainer = buildingContainer.children.find(c => c.label === 'windows')
-
-  // Clear previous
-  buildingBg.clear()
-  windowsContainer.removeChildren()
-
-  // Building dimensions
-  const buildingWidth = Math.min(W * 0.6, 500)
-  const buildingHeight = H * 0.75
-  const buildingX = (W - buildingWidth) / 2
-  const buildingY = H * 0.12
-
-  // Building facade
-  buildingBg.rect(buildingX - 20, buildingY - 20, buildingWidth + 40, buildingHeight + 40)
-  buildingBg.fill({ color: 0x1a1a24 })
-
-  buildingBg.rect(buildingX, buildingY, buildingWidth, buildingHeight)
-  buildingBg.fill({ color: 0x12121a })
-
-  // Get building state
-  const buildingView = getBuildingView()
-
-  // Window layout
-  const floors = [
-    { y: 0, apartments: ['4A', '4B', '4C'] },
-    { y: 1, apartments: ['3A', '3B', '3C'] },
-    { y: 2, apartments: ['2A', '2B', '2C'] },
-  ]
-
-  const windowWidth = buildingWidth * 0.25
-  const windowHeight = buildingHeight * 0.22
-  const gapX = (buildingWidth - windowWidth * 3) / 4
-  const gapY = (buildingHeight - windowHeight * 3) / 4
-
-  floors.forEach((floor, floorIdx) => {
-    floor.apartments.forEach((apt, aptIdx) => {
-      const wx = buildingX + gapX + aptIdx * (windowWidth + gapX)
-      const wy = buildingY + gapY + floorIdx * (windowHeight + gapY)
-
-      // Find if this apartment is occupied
-      const occupied = ['3B', '2A', '4C'].includes(apt)
-      const charMap = { '3B': 'maya_3b', '2A': 'daniel_2a', '4C': 'iris_4c' }
-      const charId = charMap[apt]
-      const char = charId ? world.characters.get(charId) : null
-
-      // Window frame
-      const windowG = new Graphics()
-      windowG.rect(wx, wy, windowWidth, windowHeight)
-      windowG.fill({ color: 0x0a0a10 })
-
-      // Window glow if occupied and lit
-      if (char && char.state.energy > 0.2) {
-        const glowColor = char.state.mood === 'focused' ? 0xe8c89a :
-                          char.state.mood === 'anxious' ? 0x8888ff :
-                          char.state.mood === 'lonely' ? 0x6688aa : 0xccaa77
-
-        // Inner glow
-        windowG.rect(wx + 4, wy + 4, windowWidth - 8, windowHeight - 8)
-        windowG.fill({ color: glowColor, alpha: 0.3 + char.state.energy * 0.3 })
-
-        // Silhouette hint
-        const silhouette = new Graphics()
-        silhouette.circle(wx + windowWidth / 2, wy + windowHeight * 0.6, windowWidth * 0.15)
-        silhouette.fill({ color: 0x000000, alpha: 0.4 })
-        windowsContainer.addChild(silhouette)
-      }
-
-      windowsContainer.addChild(windowG)
-
-      // Label
-      const label = new Text({
-        text: apt,
-        style: {
-          fontFamily: 'monospace',
-          fontSize: 12,
-          fill: occupied ? 0x888899 : 0x444455,
-        }
-      })
-      label.x = wx + 6
-      label.y = wy + 6
-      windowsContainer.addChild(label)
-
-      // Character name if occupied
-      if (char) {
-        const nameLabel = new Text({
-          text: char.name.toLowerCase(),
-          style: {
-            fontFamily: 'monospace',
-            fontSize: 10,
-            fill: 0x666677,
-          }
-        })
-        nameLabel.x = wx + 6
-        nameLabel.y = wy + windowHeight - 18
-        windowsContainer.addChild(nameLabel)
-      }
-
-      // Click handler
-      if (occupied) {
-        windowG.eventMode = 'static'
-        windowG.cursor = 'pointer'
-        windowG.on('pointerdown', () => {
-          showApartmentView(apt)
-        })
-      }
-    })
-  })
-
-  // Building address
-  const address = new Text({
-    text: '127 2ND AVE',
-    style: {
-      fontFamily: 'monospace',
-      fontSize: 14,
-      fill: 0x555566,
-      letterSpacing: 2,
-    }
-  })
-  address.x = buildingX
-  address.y = buildingY + buildingHeight + 15
-  windowsContainer.addChild(address)
-}
+// ============ UPDATE LOOP ============
 
 function update() {
   const W = app.screen.width
   const H = app.screen.height
 
-  // Update rain
-  updateRain(W, H)
-
-  // Update apartment view if active
-  if (currentView === 'apartment') {
-    updateApartmentView()
-  }
-
-  // Update memory panel
-  updateMemoryPanel()
-}
-
-function updateRain(W, H) {
-  rainContainer.alpha = 0.6
-
+  // Rain
+  rainContainer.alpha = currentView === 'channel' ? 0.4 : 0.2
   const rainGraphics = rainContainer.children[0]
   rainGraphics.clear()
 
   rainDrops.forEach(drop => {
     drop.y += drop.speed
-    drop.x -= drop.speed * 0.1
+    drop.x -= drop.speed * 0.08
 
     if (drop.y > H) {
       drop.y = -20
@@ -382,324 +606,95 @@ function updateRain(W, H) {
     }
 
     rainGraphics.moveTo(drop.x, drop.y)
-    rainGraphics.lineTo(drop.x - drop.length * 0.1, drop.y + drop.length)
-    rainGraphics.stroke({
-      color: 0x8899bb,
-      alpha: drop.opacity,
-      width: 1,
-    })
+    rainGraphics.lineTo(drop.x - drop.length * 0.08, drop.y + drop.length)
+    rainGraphics.stroke({ color: 0x6688aa, alpha: drop.opacity, width: 1 })
   })
 }
 
-function updateApartmentView() {
-  const char = getActiveCharacter()
-  if (!char) return
+// ============ CONTROLS ============
 
-  // Crossfade based on mood
-  const isFocused = char.state.mood === 'focused' || char.state.mood === 'content'
-  const targetFocused = isFocused ? 1 : 0
-  const targetWithdrawn = isFocused ? 0 : 1
+function setupKeyboard() {
+  window.addEventListener('keydown', (e) => {
+    const channels = Object.keys(CHANNELS)
 
-  sceneFocused.alpha += (targetFocused - sceneFocused.alpha) * 0.03
-  sceneWithdrawn.alpha += (targetWithdrawn - sceneWithdrawn.alpha) * 0.03
-}
+    switch (e.key) {
+      case 'Escape':
+        if (currentView === 'channel') showWall()
+        break
 
-function updateMemoryPanel() {
-  const W = app.screen.width
-  const H = app.screen.height
-
-  memoryPanel.removeChildren()
-
-  // Background
-  const panelBg = new Graphics()
-  panelBg.rect(W - 320, 0, 320, H)
-  panelBg.fill({ color: 0x000000, alpha: 0.7 })
-  memoryPanel.addChild(panelBg)
-
-  // Title
-  let y = 20
-  const title = new Text({
-    text: currentView === 'building' ? 'THE BUILDING' : `APT ${activeApartment}`,
-    style: { fontFamily: 'monospace', fontSize: 14, fill: 0x888899, letterSpacing: 2 }
-  })
-  title.x = W - 300
-  title.y = y
-  memoryPanel.addChild(title)
-  y += 30
-
-  // Time
-  const timeText = new Text({
-    text: `${formatTime(world.timeOfDay)} · DAY ${world.day}`,
-    style: { fontFamily: 'monospace', fontSize: 12, fill: 0x666677 }
-  })
-  timeText.x = W - 300
-  timeText.y = y
-  memoryPanel.addChild(timeText)
-  y += 40
-
-  // Character info if in apartment
-  if (currentView === 'apartment') {
-    const char = getActiveCharacter()
-    if (char) {
-      // Name and mood
-      const charInfo = new Text({
-        text: `${char.name.toUpperCase()}\n${char.state.mood} · ${Math.round(char.state.energy * 100)}% energy`,
-        style: { fontFamily: 'monospace', fontSize: 12, fill: 0xaaaaaa, lineHeight: 18 }
-      })
-      charInfo.x = W - 300
-      charInfo.y = y
-      memoryPanel.addChild(charInfo)
-      y += 50
-
-      // Current action
-      if (char.state.currentAction) {
-        const action = new Text({
-          text: `→ ${char.state.currentAction}`,
-          style: { fontFamily: 'monospace', fontSize: 11, fill: 0x88aa88, wordWrap: true, wordWrapWidth: 280 }
+      case 'm':
+      case 'M':
+        toggleMusicLib().then(playing => {
+          musicPlaying = playing
+          showToast(playing ? 'playing' : 'paused', 'MUSIC')
         })
-        action.x = W - 300
-        action.y = y
-        memoryPanel.addChild(action)
-        y += 30
-      }
+        break
 
-      // Recent memories
-      const memTitle = new Text({
-        text: 'MEMORIES',
-        style: { fontFamily: 'monospace', fontSize: 10, fill: 0x555566, letterSpacing: 1 }
-      })
-      memTitle.x = W - 300
-      memTitle.y = y
-      memoryPanel.addChild(memTitle)
-      y += 20
-
-      const recentMems = char.memories.slice(-6).reverse()
-      recentMems.forEach(mem => {
-        const memText = new Text({
-          text: `· ${mem.text}`,
-          style: {
-            fontFamily: 'monospace',
-            fontSize: 10,
-            fill: mem.type === 'reflection' ? 0xaaaacc : 0x777788,
-            wordWrap: true,
-            wordWrapWidth: 280,
-          }
-        })
-        memText.x = W - 300
-        memText.y = y
-        memoryPanel.addChild(memText)
-        y += memText.height + 8
-      })
-    }
-  }
-
-  // Event log at bottom
-  y = H - 180
-  const logTitle = new Text({
-    text: 'EVENTS',
-    style: { fontFamily: 'monospace', fontSize: 10, fill: 0x555566, letterSpacing: 1 }
-  })
-  logTitle.x = W - 300
-  logTitle.y = y
-  memoryPanel.addChild(logTitle)
-  y += 20
-
-  eventLog.slice(-5).forEach(evt => {
-    const evtText = new Text({
-      text: evt,
-      style: { fontFamily: 'monospace', fontSize: 10, fill: 0x666677, wordWrap: true, wordWrapWidth: 280 }
-    })
-    evtText.x = W - 300
-    evtText.y = y
-    memoryPanel.addChild(evtText)
-    y += evtText.height + 6
-  })
-
-  // Controls hint
-  const controlsText = `[S] sim · [M] music · [L] llm · ${currentView === 'apartment' ? '[ESC] back' : '[1-3] enter'}`
-
-  const controls = new Text({
-    text: controlsText,
-    style: { fontFamily: 'monospace', fontSize: 10, fill: 0x444455 }
-  })
-  controls.x = W - 300
-  controls.y = H - 30
-  memoryPanel.addChild(controls)
-
-  // Status indicators
-  const llmStatus = new Text({
-    text: `${useLiveLLM ? '● LIVE' : '○ MOCK'} ${simulationRunning ? '▶ SIM' : '■ STOP'} ${musicPlaying ? '♪ MUSIC' : '♪ -'}`,
-    style: { fontFamily: 'monospace', fontSize: 9, fill: useLiveLLM ? 0x88ff88 : 0x888888 }
-  })
-  llmStatus.x = W - 300
-  llmStatus.y = H - 45
-  memoryPanel.addChild(llmStatus)
-}
-
-function addEvent(text) {
-  const time = formatTime(world.timeOfDay)
-  eventLog.push(`[${time}] ${text}`)
-  if (eventLog.length > 20) eventLog.shift()
-}
-
-function formatTime(minutes) {
-  const h = Math.floor(minutes / 60) % 24
-  const m = minutes % 60
-  const period = h >= 12 ? 'PM' : 'AM'
-  const h12 = h % 12 || 12
-  return `${h12}:${m.toString().padStart(2, '0')} ${period}`
-}
-
-function startSimulation() {
-  simulationRunning = true
-  addEvent(`Simulation started (${useLiveLLM ? 'LIVE LLM' : 'MOCK MODE'})`)
-  runSimulationLoop()
-}
-
-async function runSimulationLoop() {
-  if (!simulationRunning) return
-
-  try {
-    const state = await simulationTick({ verbose: false })
-
-    // Check for new memories/events
-    for (const [id, char] of world.characters) {
-      const lastMem = char.memories[char.memories.length - 1]
-      if (lastMem && lastMem.tick === world.tick) {
-        if (lastMem.type === 'reflection') {
-          addEvent(`${char.name} reflects: "${lastMem.text.slice(0, 60)}..."`)
-        } else if (lastMem.type === 'dialogue') {
-          addEvent(`${char.name}: ${lastMem.text.slice(0, 50)}...`)
+      case 'l':
+      case 'L':
+        useLiveLLM = !useLiveLLM
+        showToast(useLiveLLM ? 'live ai' : 'mock mode', useLiveLLM ? 'KIMI K2 ACTIVE' : 'NO API CALLS')
+        if (useLiveLLM && currentChannel) {
+          programChannel(currentChannel.id)
         }
-      }
-    }
+        break
 
-    // Redraw building if in building view
-    if (currentView === 'building') {
-      drawBuilding()
-    }
-  } catch (err) {
-    console.error('Tick error:', err)
-    addEvent(`Error: ${err.message}`)
-  }
+      case 'n':
+      case 'N':
+        if (currentView === 'channel' && currentChannel) {
+          const idx = channels.indexOf(currentChannel.id)
+          const nextId = channels[(idx + 1) % channels.length]
+          tuneIn(nextId)
+        }
+        break
 
-  // Next tick (only if still running)
-  if (simulationRunning) {
-    setTimeout(runSimulationLoop, 3000)
-  }
+      case 'p':
+      case 'P':
+        if (currentView === 'channel' && currentChannel) {
+          const idx = channels.indexOf(currentChannel.id)
+          const prevId = channels[(idx - 1 + channels.length) % channels.length]
+          tuneIn(prevId)
+        }
+        break
+
+      case 'r':
+      case 'R':
+        // Reprogram current channel
+        if (currentView === 'channel' && currentChannel) {
+          showToast('reprogramming...', `${currentChannel.agent.name.toUpperCase()} IS THINKING`)
+          programChannel(currentChannel.id)
+        }
+        break
+
+      // Number keys 1-0 for channels
+      case '1': tuneIn('ch01'); break
+      case '2': tuneIn('ch02'); break
+      case '3': tuneIn('ch03'); break
+      case '4': tuneIn('ch04'); break
+      case '5': tuneIn('ch05'); break
+      case '6': tuneIn('ch06'); break
+      case '7': tuneIn('ch07'); break
+      case '8': tuneIn('ch08'); break
+      case '9': tuneIn('ch09'); break
+      case '0': tuneIn('ch10'); break
+    }
+  })
 }
 
 function handleResize() {
   const W = window.innerWidth
   const H = window.innerHeight
 
-  if (currentView === 'building') {
-    drawBuilding()
+  if (currentView === 'wall') {
+    drawWall()
   } else {
-    // Scale apartment scenes
-    const scaleScene = (sprite) => {
-      if (!sprite?.texture) return
-      const scale = Math.max((W - 320) / sprite.texture.width, H / sprite.texture.height)
-      sprite.scale.set(scale * 1.02)
-      sprite.position.set((W - 320) / 2, H / 2)
-    }
-    scaleScene(sceneFocused)
-    scaleScene(sceneWithdrawn)
+    drawChannel()
   }
 
-  // Reset rain
   rainDrops.forEach(drop => {
     drop.x = Math.random() * W
     drop.y = Math.random() * H
   })
-}
-
-function setupKeyboard() {
-  window.addEventListener('keydown', (e) => {
-    switch (e.key) {
-      case 'Escape':
-        if (currentView === 'apartment') {
-          showBuildingView()
-          showToast('the building', 'NYC · RAINING')
-        }
-        break
-
-      case 's':
-      case 'S':
-        // Toggle simulation on/off
-        if (simulationRunning) {
-          simulationRunning = false
-          addEvent('Simulation STOPPED')
-          showToast('paused', 'SIMULATION STOPPED')
-        } else {
-          startSimulation()
-          showToast('running', useLiveLLM ? 'LIVE LLM MODE' : 'MOCK MODE')
-        }
-        break
-
-      case 'l':
-      case 'L':
-        // Toggle live LLM mode
-        useLiveLLM = !useLiveLLM
-        // Reinitialize with new mode
-        initSimulation(useLiveLLM ? MOONSHOT_API_KEY : null)
-        addEvent(`LLM mode: ${useLiveLLM ? 'LIVE (uses tokens)' : 'MOCK (free)'}`)
-        showToast(useLiveLLM ? 'live llm' : 'mock mode', useLiveLLM ? 'KIMI K2 · USES TOKENS' : 'NO API CALLS')
-        break
-
-      case ' ':
-        e.preventDefault()
-        // Pause/resume (only if already running)
-        if (simulationRunning) {
-          simulationRunning = false
-          addEvent('Paused')
-        } else if (eventLog.some(e => e.includes('Simulation started'))) {
-          // Only resume if previously started
-          simulationRunning = true
-          addEvent('Resumed')
-          runSimulationLoop()
-        }
-        break
-
-      case 't':
-      case 'T':
-        // Advance time by 1 hour (12 ticks) - uses current LLM mode
-        addEvent('Advancing 1 hour...')
-        for (let i = 0; i < 12; i++) {
-          simulationTick({ verbose: false })
-        }
-        addEvent('Time advanced 1 hour')
-        if (currentView === 'building') drawBuilding()
-        break
-
-      case 'm':
-      case 'M':
-        toggleMusic()
-        break
-
-      case 'n':
-      case 'N':
-        nextTrack()
-        break
-
-      case '1':
-        showApartmentView('2A') // Daniel
-        break
-      case '2':
-        showApartmentView('3B') // Maya
-        break
-      case '3':
-        showApartmentView('4C') // Iris
-        break
-    }
-  })
-
-  // Enable audio on first click (browser autoplay policy)
-  document.addEventListener('click', () => {
-    if (musicPlaying) {
-      toggleMusicLib().catch(() => {})
-    }
-  }, { once: true })
 }
 
 // Start
