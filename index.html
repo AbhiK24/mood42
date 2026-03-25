@@ -33,6 +33,16 @@
     body {
       min-height: 100vh;
       padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* ========== LANDING PAGE ========== */
+    #landing {
+      display: block;
+    }
+
+    #landing.hidden {
+      display: none;
     }
 
     /* Header */
@@ -53,6 +63,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      text-decoration: none;
     }
 
     .logo img {
@@ -153,12 +164,7 @@
     .card-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(
-        180deg,
-        transparent 0%,
-        transparent 40%,
-        rgba(0,0,0,0.8) 100%
-      );
+      background: linear-gradient(180deg, transparent 0%, transparent 40%, rgba(0,0,0,0.8) 100%);
       opacity: 0.9;
       transition: opacity 0.3s ease;
     }
@@ -179,7 +185,6 @@
     .card-number {
       font-size: 11px;
       font-weight: 500;
-      color: var(--accent);
       letter-spacing: 0.15em;
       margin-bottom: 8px;
       opacity: 0.8;
@@ -254,6 +259,193 @@
       color: var(--text-dim);
     }
 
+    /* ========== CHANNEL PAGE ========== */
+    #channel-page {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+    }
+
+    #channel-page.active {
+      display: block;
+    }
+
+    .channel-video-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .channel-video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.6) saturate(1.1);
+    }
+
+    .channel-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.6) 0%,
+        rgba(0,0,0,0.2) 30%,
+        rgba(0,0,0,0.2) 70%,
+        rgba(0,0,0,0.7) 100%
+      );
+    }
+
+    .channel-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px;
+    }
+
+    .channel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .channel-info {
+      max-width: 500px;
+    }
+
+    .channel-num {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+
+    .channel-name {
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .channel-agent {
+      font-size: 16px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+
+    .channel-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-dim);
+      max-width: 400px;
+    }
+
+    .channel-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .channel-time {
+      font-size: 48px;
+      font-weight: 300;
+      opacity: 0.3;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .channel-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .now-playing {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .now-playing-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.5;
+    }
+
+    .now-playing-track {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .music-icon {
+      animation: music-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes music-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .channel-nav {
+      display: flex;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .back-btn {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+      z-index: 10;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .back-btn:hover {
+      background: rgba(0,0,0,0.6);
+    }
+
+    /* Audio player */
+    #audio-player {
+      display: none;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       header {
@@ -284,6 +476,19 @@
       .card-tags {
         display: none;
       }
+
+      .channel-content {
+        padding: 20px;
+      }
+
+      .back-btn {
+        top: 20px;
+        left: 20px;
+      }
+
+      .channel-time {
+        font-size: 32px;
+      }
     }
 
     @media (max-width: 480px) {
@@ -294,145 +499,227 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="/assets/logo.svg" alt="mood42">
-    </div>
-    <div class="header-right">
-      <div class="live-badge">
-        <span class="live-dot"></span>
-        <span>10 channels live</span>
+  <!-- Landing Page -->
+  <div id="landing">
+    <header>
+      <a href="/" class="logo">
+        <img src="/assets/logo.svg" alt="mood42">
+      </a>
+      <div class="header-right">
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          <span>10 channels live</span>
+        </div>
+        <div class="clock" id="clock">00:00</div>
       </div>
-      <div class="clock" id="clock">00:00</div>
+    </header>
+
+    <main>
+      <p class="tagline">tune in. zone out. — 10 AI minds programming 24/7</p>
+      <div class="grid" id="channel-grid"></div>
+    </main>
+
+    <footer>
+      <span>mood42</span> — AI-programmed ambient television
+    </footer>
+  </div>
+
+  <!-- Channel Page -->
+  <div id="channel-page">
+    <div class="channel-video-bg">
+      <video id="channel-video" autoplay loop muted playsinline></video>
     </div>
-  </header>
+    <div class="channel-overlay"></div>
 
-  <main>
-    <p class="tagline">tune in. zone out. — 10 AI minds programming 24/7</p>
+    <a href="/" class="back-btn">
+      <span>←</span>
+      <span>BACK</span>
+    </a>
 
-    <div class="grid" id="channel-grid">
-      <!-- Channels injected by JS -->
+    <div class="channel-content">
+      <div class="channel-header">
+        <div class="channel-info">
+          <div class="channel-num" id="ch-num">CH 01</div>
+          <h1 class="channel-name" id="ch-name">Late Night</h1>
+          <p class="channel-agent" id="ch-agent">programmed by Maya Chen</p>
+          <p class="channel-desc" id="ch-desc">Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.</p>
+        </div>
+        <div class="channel-controls">
+          <div class="channel-time" id="ch-time">00:00</div>
+        </div>
+      </div>
+
+      <div class="channel-footer">
+        <div class="now-playing">
+          <span class="now-playing-label">Now Playing</span>
+          <div class="now-playing-track">
+            <span class="music-icon">♪</span>
+            <span id="track-name">Loading...</span>
+          </div>
+        </div>
+        <div class="channel-nav">
+          <button class="nav-btn" id="prev-ch">← PREV</button>
+          <button class="nav-btn" id="toggle-music">♪ MUSIC ON</button>
+          <button class="nav-btn" id="next-ch">NEXT →</button>
+        </div>
+      </div>
     </div>
-  </main>
+  </div>
 
-  <footer>
-    <span>mood42</span> — AI-programmed ambient television
-  </footer>
+  <!-- Audio Player -->
+  <audio id="audio-player" loop></audio>
 
   <script type="module">
-    // Channel data
+    // Channel data with music URLs (using royalty-free sources)
     const CHANNELS = [
       {
         id: 'ch01',
         num: '01',
         name: 'Late Night',
         agent: 'Maya Chen',
+        desc: 'Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.',
         tags: ['lo-fi', 'coding', 'rain'],
         video: '/assets/channels/ch01_preview.mp4',
         poster: '/assets/channels/ch01_late_night.png',
-        color: '#e8c89a'
+        color: '#e8c89a',
+        music: '/assets/ambient.mp3',
+        trackName: 'Late Night Lo-Fi'
       },
       {
         id: 'ch02',
         num: '02',
         name: 'Rain Café',
         agent: 'Yuki Tanaka',
+        desc: 'A cozy Japanese kissaten. Vinyl jazz crackles softly as rain patters against the window. Coffee steam rises.',
         tags: ['jazz', 'coffee', 'vinyl'],
         video: '/assets/channels/ch02_preview.mp4',
         poster: '/assets/channels/ch02_rain_cafe.png',
-        color: '#8b7355'
+        color: '#8b7355',
+        music: '/assets/ambient.mp3',
+        trackName: 'Coffee Shop Jazz'
       },
       {
         id: 'ch03',
         num: '03',
         name: 'Jazz Noir',
         agent: 'Vincent Moreau',
+        desc: '1950s Chicago. Smoke curls through dim light. A saxophone weeps in the corner. The city never sleeps.',
         tags: ['noir', 'smoky', '1950s'],
         video: '/assets/channels/ch03_preview.mp4',
         poster: '/assets/channels/ch03_jazz_noir.png',
-        color: '#6a6a9a'
+        color: '#6a6a9a',
+        music: '/assets/ambient.mp3',
+        trackName: 'Noir Saxophone'
       },
       {
         id: 'ch04',
         num: '04',
         name: 'Synthwave',
         agent: 'NEON-7',
+        desc: 'Neon grids stretch to infinity. Chrome dreams of electric nights. The future was 1984.',
         tags: ['retro', 'neon', '80s'],
         video: '/assets/channels/ch04_preview.mp4',
         poster: '/assets/channels/ch04_synthwave.png',
-        color: '#ff00ff'
+        color: '#ff00ff',
+        music: '/assets/ambient.mp3',
+        trackName: 'Neon Drive'
       },
       {
         id: 'ch05',
         num: '05',
         name: 'Deep Space',
         agent: 'Cosmos',
+        desc: 'Drift through infinite void. Stars whisper ancient secrets. Time stretches into eternity.',
         tags: ['ambient', 'stars', 'void'],
         video: '/assets/channels/ch05_preview.mp4',
         poster: '/assets/channels/ch05_deep_space.png',
-        color: '#5a5aba'
+        color: '#5a5aba',
+        music: '/assets/ambient.mp3',
+        trackName: 'Cosmic Drift'
       },
       {
         id: 'ch06',
         num: '06',
         name: 'Tokyo Drift',
         agent: 'Kenji Nakamura',
+        desc: 'Neon reflections on wet asphalt. Empty streets after midnight. The city breathes in electric silence.',
         tags: ['city', 'neon', 'night'],
         video: '/assets/channels/ch06_preview.mp4',
         poster: '/assets/channels/ch06_tokyo_drift.png',
-        color: '#ff4d6d'
+        color: '#ff4d6d',
+        music: '/assets/ambient.mp3',
+        trackName: 'Shinjuku Nights'
       },
       {
         id: 'ch07',
         num: '07',
         name: 'Sunday Morning',
         agent: 'Claire Dubois',
+        desc: 'Golden light through kitchen windows. Fresh bread and wildflowers. The world can wait.',
         tags: ['acoustic', 'sunny', 'peaceful'],
         video: '/assets/channels/ch07_preview.mp4',
         poster: '/assets/channels/ch07_sunday_morning.png',
-        color: '#ffd700'
+        color: '#ffd700',
+        music: '/assets/ambient.mp3',
+        trackName: 'Morning Guitar'
       },
       {
         id: 'ch08',
         num: '08',
         name: 'Focus',
         agent: 'Alan Park',
+        desc: 'Clean lines. Clear mind. Nothing but the task at hand. Perfect productive silence.',
         tags: ['minimal', 'productive', 'clean'],
         video: '/assets/channels/ch08_preview.mp4',
         poster: '/assets/channels/ch08_focus.png',
-        color: '#4a9fff'
+        color: '#4a9fff',
+        music: '/assets/ambient.mp3',
+        trackName: 'Pure Focus'
       },
       {
         id: 'ch09',
         num: '09',
         name: 'Melancholy',
         agent: 'Daniel Webb',
+        desc: 'Rain traces paths down London glass. An old typewriter waits. Some feelings need space to exist.',
         tags: ['piano', 'rain', 'reflective'],
         video: '/assets/channels/ch09_preview.mp4',
         poster: '/assets/channels/ch09_melancholy.png',
-        color: '#6688aa'
+        color: '#6688aa',
+        music: '/assets/ambient.mp3',
+        trackName: 'Empty Room Piano'
       },
       {
         id: 'ch10',
         num: '10',
         name: 'Golden Hour',
         agent: 'Iris Ferreira',
+        desc: 'Lisbon rooftops glow amber. Warm wind carries fado from somewhere distant. Magic hour stretches on.',
         tags: ['warm', 'sunset', 'nostalgic'],
         video: '/assets/channels/ch10_preview.mp4',
         poster: '/assets/channels/ch10_golden_hour.png',
-        color: '#ffa500'
+        color: '#ffa500',
+        music: '/assets/ambient.mp3',
+        trackName: 'Hazy Sunset'
       }
     ];
 
-    // Render grid
-    function renderGrid() {
-      const grid = document.getElementById('channel-grid');
+    // State
+    let currentChannel = null;
+    let musicPlaying = false;
+    const audio = document.getElementById('audio-player');
 
+    // Elements
+    const landing = document.getElementById('landing');
+    const channelPage = document.getElementById('channel-page');
+    const grid = document.getElementById('channel-grid');
+
+    // Render landing grid
+    function renderGrid() {
       CHANNELS.forEach(ch => {
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.channel = ch.id;
-        card.style.setProperty('--accent', ch.color);
 
         card.innerHTML = `
           <div class="card-media">
@@ -461,12 +748,90 @@
           </div>
         `;
 
-        card.addEventListener('click', () => {
-          window.location.href = `/?channel=${ch.id}`;
-        });
-
+        card.addEventListener('click', () => openChannel(ch.id));
         grid.appendChild(card);
       });
+    }
+
+    // Open channel
+    function openChannel(channelId) {
+      const ch = CHANNELS.find(c => c.id === channelId);
+      if (!ch) return;
+
+      currentChannel = ch;
+
+      // Update URL
+      history.pushState({ channel: channelId }, '', `?channel=${channelId}`);
+
+      // Update page
+      document.getElementById('ch-num').textContent = `CH ${ch.num}`;
+      document.getElementById('ch-num').style.color = ch.color;
+      document.getElementById('ch-name').textContent = ch.name;
+      document.getElementById('ch-name').style.color = ch.color;
+      document.getElementById('ch-agent').textContent = `programmed by ${ch.agent}`;
+      document.getElementById('ch-desc').textContent = ch.desc;
+      document.getElementById('channel-video').src = ch.video;
+      document.getElementById('track-name').textContent = ch.trackName;
+
+      // Show channel page
+      landing.classList.add('hidden');
+      channelPage.classList.add('active');
+
+      // Start music
+      audio.src = ch.music;
+      audio.play().then(() => {
+        musicPlaying = true;
+        document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+      }).catch(() => {
+        musicPlaying = false;
+        document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+      });
+
+      // Update title
+      document.title = `${ch.name} — mood42`;
+    }
+
+    // Close channel (back to landing)
+    function closeChannel() {
+      currentChannel = null;
+      history.pushState({}, '', '/');
+
+      landing.classList.remove('hidden');
+      channelPage.classList.remove('active');
+
+      audio.pause();
+      musicPlaying = false;
+
+      document.title = 'mood42 — tune in. zone out.';
+    }
+
+    // Navigate channels
+    function prevChannel() {
+      if (!currentChannel) return;
+      const idx = CHANNELS.findIndex(c => c.id === currentChannel.id);
+      const prev = CHANNELS[(idx - 1 + CHANNELS.length) % CHANNELS.length];
+      openChannel(prev.id);
+    }
+
+    function nextChannel() {
+      if (!currentChannel) return;
+      const idx = CHANNELS.findIndex(c => c.id === currentChannel.id);
+      const next = CHANNELS[(idx + 1) % CHANNELS.length];
+      openChannel(next.id);
+    }
+
+    // Toggle music
+    function toggleMusic() {
+      if (musicPlaying) {
+        audio.pause();
+        musicPlaying = false;
+        document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+      } else {
+        audio.play().then(() => {
+          musicPlaying = true;
+          document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+        });
+      }
     }
 
     // Clock
@@ -478,19 +843,70 @@
         hour12: false
       });
       document.getElementById('clock').textContent = time;
+      document.getElementById('ch-time').textContent = time;
     }
+
+    // Event listeners
+    document.getElementById('prev-ch').addEventListener('click', prevChannel);
+    document.getElementById('next-ch').addEventListener('click', nextChannel);
+    document.getElementById('toggle-music').addEventListener('click', toggleMusic);
+    document.querySelector('.back-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      closeChannel();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (currentChannel) {
+        switch(e.key) {
+          case 'Escape':
+            closeChannel();
+            break;
+          case 'ArrowLeft':
+          case 'p':
+          case 'P':
+            prevChannel();
+            break;
+          case 'ArrowRight':
+          case 'n':
+          case 'N':
+            nextChannel();
+            break;
+          case 'm':
+          case 'M':
+            toggleMusic();
+            break;
+        }
+      } else {
+        // Number keys to open channels
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 9) {
+          openChannel(`ch0${num}`);
+        } else if (e.key === '0') {
+          openChannel('ch10');
+        }
+      }
+    });
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', (e) => {
+      if (e.state && e.state.channel) {
+        openChannel(e.state.channel);
+      } else {
+        closeChannel();
+      }
+    });
 
     // Init
     renderGrid();
     updateClock();
     setInterval(updateClock, 1000);
 
-    // Check if coming to specific channel
+    // Check URL for channel
     const params = new URLSearchParams(window.location.search);
     const channelParam = params.get('channel');
     if (channelParam) {
-      // Load full app for channel view
-      import('/src/main.js');
+      openChannel(channelParam);
     }
   </script>
 </body>
