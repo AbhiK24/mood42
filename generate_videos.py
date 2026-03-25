@@ -1,241 +1,240 @@
-"""Generate channel preview videos using BytePlus Seaweed video model."""
+"""Generate channel preview videos using BytePlus Seedance video model."""
 import httpx
 import asyncio
 import json
-import time
 from pathlib import Path
 
 API_KEY = "4379a644-f5b9-4a48-9e2b-a55efafa0fcc"
 API_BASE = "https://ark.ap-southeast.bytepluses.com/api/v3"
 
-# Video generation model
-VIDEO_MODEL = "seaweed-video-01"
+# Seedance video model
+VIDEO_MODEL = "seedance-1-5-pro-251215"
 
 ASSETS_DIR = Path("public/assets/channels")
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
-# Channel video prompts - cinematic scenes with the manager's vibe
+# Channel video prompts - cinematic scenes
 CHANNEL_VIDEOS = [
     {
         "id": "ch01",
         "name": "Late Night",
-        "prompt": """
-            Cinematic loop: Software engineer at desk, 3AM, rain hitting window,
-            city lights twinkling outside, warm desk lamp glow, coffee steam rising,
-            code on screen, lo-fi aesthetic, cozy night coding session,
-            subtle camera movement, atmospheric, 4K quality
-        """,
+        "prompt": "Cinematic scene: Software engineer coding at desk, 3AM, rain hitting window, city lights outside, warm desk lamp, coffee steam, lo-fi cozy atmosphere, subtle movement",
+        "image": "ch01_late_night.png",
     },
     {
         "id": "ch02",
         "name": "Rain Café",
-        "prompt": """
-            Cinematic loop: Japanese kissaten coffee shop interior, rain outside window,
-            vinyl record spinning, steam from coffee cup, warm amber lighting,
-            plants on windowsill, vintage aesthetic, peaceful rainy afternoon,
-            gentle camera drift, 4K quality
-        """,
+        "prompt": "Cinematic scene: Japanese kissaten coffee shop, rain outside window, vinyl record spinning, steam from coffee cup, warm amber lighting, peaceful rainy afternoon",
+        "image": "ch02_rain_cafe.png",
     },
     {
         "id": "ch03",
         "name": "Jazz Noir",
-        "prompt": """
-            Cinematic loop: 1950s jazz club, smoky atmosphere, dim spotlight,
-            saxophone silhouette, noir shadows, whiskey glass on piano,
-            film grain, black and white tones, mysterious mood,
-            slow pan, 4K quality
-        """,
+        "prompt": "Cinematic scene: 1950s jazz club, smoky atmosphere, dim spotlight, saxophone silhouette, noir shadows, whiskey glass on piano, film grain aesthetic",
+        "image": "ch03_jazz_noir.png",
     },
     {
         "id": "ch04",
         "name": "Synthwave",
-        "prompt": """
-            Cinematic loop: Retro-futuristic neon landscape, purple and pink sunset,
-            chrome car driving on grid road, palm trees silhouette,
-            80s aesthetic, VHS look, synthwave vibes, glowing horizon,
-            forward motion, 4K quality
-        """,
+        "prompt": "Cinematic scene: Retro-futuristic neon landscape, purple pink sunset, chrome car on grid road, 80s synthwave aesthetic, VHS look, glowing horizon",
+        "image": "ch04_synthwave.png",
     },
     {
         "id": "ch05",
         "name": "Deep Space",
-        "prompt": """
-            Cinematic loop: Deep space nebula, stars slowly drifting,
-            cosmic dust clouds in purple and blue, distant galaxy,
-            astronaut floating peacefully, infinite void feeling,
-            slow zoom through stars, 4K quality
-        """,
+        "prompt": "Cinematic scene: Deep space nebula, stars slowly drifting, cosmic dust clouds purple blue, distant galaxy, astronaut floating, infinite void",
+        "image": "ch05_deep_space.png",
     },
     {
         "id": "ch06",
         "name": "Tokyo Drift",
-        "prompt": """
-            Cinematic loop: Tokyo street at night after rain, neon signs reflecting,
-            empty alley, vending machines glowing, steam from grate,
-            cyberpunk aesthetic, Japanese text signs, moody atmosphere,
-            slow dolly forward, 4K quality
-        """,
+        "prompt": "Cinematic scene: Tokyo street at night after rain, neon signs reflecting on wet pavement, empty alley, vending machines glowing, cyberpunk atmosphere",
+        "image": "ch06_tokyo_drift.png",
     },
     {
         "id": "ch07",
         "name": "Sunday Morning",
-        "prompt": """
-            Cinematic loop: Sunlit farmhouse kitchen, golden morning light streaming,
-            plants on windowsill, fresh bread on table, dust particles in light,
-            peaceful countryside view outside, warm and hopeful mood,
-            gentle camera sway, 4K quality
-        """,
+        "prompt": "Cinematic scene: Sunlit farmhouse kitchen, golden morning light streaming through window, plants on windowsill, fresh bread, dust particles in light",
+        "image": "ch07_sunday_morning.png",
     },
     {
         "id": "ch08",
         "name": "Focus",
-        "prompt": """
-            Cinematic loop: Minimal Scandinavian workspace, clean white desk,
-            single plant, natural light, laptop and notebook,
-            zen aesthetic, productivity mood, calm and focused,
-            subtle breathing camera movement, 4K quality
-        """,
+        "prompt": "Cinematic scene: Minimal Scandinavian workspace, clean white desk, single plant, natural light from window, laptop and notebook, zen productivity",
+        "image": "ch08_focus.png",
     },
     {
         "id": "ch09",
         "name": "Melancholy",
-        "prompt": """
-            Cinematic loop: Rainy London window view, writer's room,
-            typewriter on desk, grey sky, contemplative mood,
-            books stacked, tea cup, melancholic but beautiful,
-            slow camera drift with rain drops, 4K quality
-        """,
+        "prompt": "Cinematic scene: Rainy London window view, writer's room, typewriter on desk, grey sky, contemplative mood, books stacked, tea cup steaming",
+        "image": "ch09_melancholy.png",
     },
     {
         "id": "ch10",
         "name": "Golden Hour",
-        "prompt": """
-            Cinematic loop: Lisbon rooftops at golden hour, warm sunset light,
-            terracotta tiles, laundry on lines, church bells visible,
-            magical warm glow, nostalgic Portuguese summer evening,
-            gentle pan across cityscape, 4K quality
-        """,
+        "prompt": "Cinematic scene: Lisbon rooftops at golden hour, warm sunset light, terracotta tiles, laundry on lines, church bells visible, magical warm glow",
+        "image": "ch10_golden_hour.png",
     },
 ]
 
 
-async def generate_video(channel: dict):
-    """Generate a video for a channel using BytePlus Seaweed."""
-    print(f"\n{'='*60}")
-    print(f"Generating video for: {channel['name']} ({channel['id']})")
-    print(f"{'='*60}")
+async def create_video_task(client: httpx.AsyncClient, channel: dict) -> str | None:
+    """Create a video generation task, returns task ID."""
+    print(f"Creating video task for: {channel['name']}")
 
-    prompt = channel["prompt"].strip().replace("\n", " ").replace("  ", " ")
-    print(f"Prompt: {prompt[:100]}...")
+    # Build content array - use existing image as first frame
+    image_path = ASSETS_DIR / channel["image"]
 
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        # Submit video generation request
-        print("Submitting generation request...")
-        response = await client.post(
-            f"{API_BASE}/video/generations",
+    content = [
+        {
+            "type": "text",
+            "text": channel["prompt"]
+        }
+    ]
+
+    # If we have an existing image, use it as first frame reference
+    if image_path.exists():
+        # For image-to-video, we'd need to upload or use a URL
+        # For now, just use text-to-video
+        pass
+
+    response = await client.post(
+        f"{API_BASE}/contents/generations/tasks",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {API_KEY}",
+        },
+        json={
+            "model": VIDEO_MODEL,
+            "content": content,
+            "resolution": "720p",
+            "ratio": "3:4",  # Portrait for cards
+            "duration": 4,  # 4 second loop
+            "watermark": False,
+            "camera_fixed": False,
+        },
+    )
+
+    if response.status_code != 200:
+        print(f"  Error creating task: {response.status_code}")
+        print(f"  Response: {response.text[:500]}")
+        return None
+
+    data = response.json()
+    task_id = data.get("id")
+    print(f"  Task created: {task_id}")
+    return task_id
+
+
+async def get_video_result(client: httpx.AsyncClient, task_id: str) -> str | None:
+    """Poll for video generation result, returns video URL."""
+    print(f"  Polling for result...")
+
+    for attempt in range(120):  # Max 10 minutes
+        await asyncio.sleep(5)
+
+        response = await client.get(
+            f"{API_BASE}/contents/generations/tasks/{task_id}",
             headers={
-                "Content-Type": "application/json",
                 "Authorization": f"Bearer {API_KEY}",
-            },
-            json={
-                "model": VIDEO_MODEL,
-                "prompt": prompt,
-                "duration": 4,  # 4 second loop
-                "resolution": "720p",
-                "fps": 24,
             },
         )
 
         if response.status_code != 200:
-            print(f"Error: {response.status_code}")
-            print(response.text)
-            return None
+            print(f"  Poll error: {response.status_code}")
+            continue
 
         data = response.json()
-        print(f"Response: {json.dumps(data, indent=2)[:500]}")
+        status = data.get("status", "unknown")
 
-        # Check for task ID (async generation)
-        if "task_id" in data:
-            task_id = data["task_id"]
-            print(f"Task ID: {task_id}")
+        if attempt % 6 == 0:  # Log every 30 seconds
+            print(f"  Status: {status} (attempt {attempt + 1})")
 
-            # Poll for completion
-            for attempt in range(60):  # Max 5 minutes
-                await asyncio.sleep(5)
-                print(f"Checking status... (attempt {attempt + 1})")
-
-                status_response = await client.get(
-                    f"{API_BASE}/video/generations/{task_id}",
-                    headers={"Authorization": f"Bearer {API_KEY}"},
-                )
-
-                if status_response.status_code == 200:
-                    status_data = status_response.json()
-                    status = status_data.get("status", "unknown")
-                    print(f"Status: {status}")
-
-                    if status == "completed":
-                        video_url = status_data.get("video_url") or status_data.get("data", {}).get("url")
-                        if video_url:
-                            return await download_video(client, video_url, channel["id"])
-                    elif status == "failed":
-                        print(f"Generation failed: {status_data}")
-                        return None
-
-        # Direct URL response
-        elif "data" in data and len(data["data"]) > 0:
-            video_url = data["data"][0].get("url")
+        if status == "succeeded":
+            video_url = data.get("content", {}).get("video_url")
             if video_url:
-                return await download_video(client, video_url, channel["id"])
+                print(f"  Video ready!")
+                return video_url
 
-        # Video URL in response
-        elif "video_url" in data:
-            return await download_video(client, data["video_url"], channel["id"])
+        elif status == "failed":
+            error = data.get("error", {})
+            print(f"  Generation failed: {error}")
+            return None
 
-    print("No video URL found in response")
+    print(f"  Timeout waiting for video")
     return None
 
 
-async def download_video(client: httpx.AsyncClient, url: str, channel_id: str):
+async def download_video(client: httpx.AsyncClient, url: str, channel_id: str) -> Path | None:
     """Download video from URL."""
-    print(f"Downloading video from: {url[:80]}...")
+    print(f"  Downloading video...")
 
-    video_response = await client.get(url)
-    if video_response.status_code == 200:
+    response = await client.get(url)
+    if response.status_code == 200:
         filepath = ASSETS_DIR / f"{channel_id}_preview.mp4"
         with open(filepath, "wb") as f:
-            f.write(video_response.content)
-        print(f"Saved: {filepath}")
+            f.write(response.content)
+        print(f"  Saved: {filepath}")
         return filepath
     else:
-        print(f"Download failed: {video_response.status_code}")
+        print(f"  Download failed: {response.status_code}")
         return None
+
+
+async def generate_channel_video(channel: dict) -> bool:
+    """Generate video for a single channel."""
+    print(f"\n{'='*60}")
+    print(f"Channel: {channel['name']} ({channel['id']})")
+    print(f"{'='*60}")
+
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        # Create task
+        task_id = await create_video_task(client, channel)
+        if not task_id:
+            return False
+
+        # Wait for result
+        video_url = await get_video_result(client, task_id)
+        if not video_url:
+            return False
+
+        # Download video
+        result = await download_video(client, video_url, channel["id"])
+        return result is not None
 
 
 async def main():
     print("=" * 60)
     print("MOOD42 - CHANNEL VIDEO GENERATION")
-    print("Using BytePlus Seaweed Video Model")
+    print("Using BytePlus Seedance Video Model")
+    print(f"Model: {VIDEO_MODEL}")
     print("=" * 60)
+
+    results = {"success": [], "failed": []}
 
     for channel in CHANNEL_VIDEOS:
         try:
-            result = await generate_video(channel)
-            if result:
-                print(f"✓ {channel['name']} video generated successfully")
+            success = await generate_channel_video(channel)
+            if success:
+                results["success"].append(channel["name"])
+                print(f"✓ {channel['name']} - SUCCESS")
             else:
-                print(f"✗ {channel['name']} video generation failed")
+                results["failed"].append(channel["name"])
+                print(f"✗ {channel['name']} - FAILED")
 
-            # Rate limiting
-            await asyncio.sleep(3)
+            # Rate limiting between requests
+            await asyncio.sleep(2)
 
         except Exception as e:
-            print(f"Error generating {channel['name']}: {e}")
+            results["failed"].append(channel["name"])
+            print(f"✗ {channel['name']} - ERROR: {e}")
             import traceback
             traceback.print_exc()
 
     print("\n" + "=" * 60)
     print("GENERATION COMPLETE")
+    print(f"Success: {len(results['success'])}/{len(CHANNEL_VIDEOS)}")
+    print(f"Failed: {results['failed']}")
     print("=" * 60)
 
 
