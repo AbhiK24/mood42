@@ -131,6 +131,28 @@
       margin: 0 auto;
     }
 
+    /* Hero section - centered title */
+    .hero {
+      text-align: center;
+      padding: 40px 0 60px;
+    }
+
+    .hero-title {
+      font-family: 'Kode Mono', monospace;
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .hero-subtitle {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-dim);
+      letter-spacing: 0.03em;
+    }
+
     .tagline {
       font-size: 14px;
       font-weight: 400;
@@ -196,28 +218,30 @@
       left: 0;
       right: 0;
       padding: 20px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9);
     }
 
     .card-number {
       font-family: 'Kode Mono', monospace;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.15em;
       margin-bottom: 8px;
-      opacity: 0.8;
+      color: rgba(255,255,255,0.9);
     }
 
     .card-title {
       font-family: 'Kode Mono', monospace;
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 4px;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
       letter-spacing: -0.01em;
+      color: #fff;
     }
 
     .card-agent {
-      font-size: 13px;
-      color: var(--text-dim);
+      font-size: 14px;
+      color: rgba(255,255,255,0.75);
       margin-bottom: 12px;
     }
 
@@ -229,12 +253,13 @@
 
     .tag {
       font-size: 10px;
-      font-weight: 500;
-      padding: 4px 8px;
-      background: rgba(255,255,255,0.08);
+      font-weight: 600;
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.15);
       border-radius: 4px;
-      color: var(--text-dim);
+      color: rgba(255,255,255,0.85);
       letter-spacing: 0.03em;
+      text-shadow: none;
     }
 
     /* Live indicator on card */
@@ -336,6 +361,7 @@
       margin-top: 80px;
       opacity: 1;
       transition: opacity 0.8s ease-in-out;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.7);
     }
 
     .channel-info.hidden {
@@ -349,21 +375,22 @@
       font-weight: 600;
       letter-spacing: 0.2em;
       margin-bottom: 8px;
-      opacity: 0.7;
+      color: rgba(255,255,255,0.85);
     }
 
     .channel-name {
       font-family: 'Kode Mono', monospace;
-      font-size: clamp(30px, 6vw, 48px);
+      font-size: clamp(32px, 6vw, 52px);
       font-weight: 700;
       letter-spacing: -0.02em;
       margin-bottom: 12px;
+      color: #fff;
     }
 
     .channel-agent {
       font-family: 'Cabinet Grotesk', sans-serif;
       font-size: 18px;
-      color: var(--text-dim);
+      color: rgba(255,255,255,0.8);
       margin-bottom: 20px;
       display: flex;
       align-items: center;
@@ -394,9 +421,9 @@
 
     .channel-desc {
       font-family: 'Cabinet Grotesk', sans-serif;
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.6;
-      color: var(--text-dim);
+      color: rgba(255,255,255,0.75);
       max-width: 400px;
     }
 
@@ -430,21 +457,24 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.7);
     }
 
     .now-playing-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      opacity: 0.5;
+      color: rgba(255,255,255,0.6);
     }
 
     .now-playing-track {
-      font-size: 14px;
+      font-size: 16px;
+      font-weight: 500;
       display: flex;
       align-items: center;
       gap: 8px;
+      color: #fff;
     }
 
     .music-icon {
@@ -457,11 +487,11 @@
     }
 
     .agent-thought {
-      font-size: 13px;
+      font-size: 14px;
       font-style: italic;
-      color: rgba(255,255,255,0.6);
-      margin-top: 8px;
-      max-width: 400px;
+      color: rgba(255,255,255,0.75);
+      margin-top: 10px;
+      max-width: 450px;
       animation: thought-fade 0.5s ease-out;
     }
 
@@ -798,7 +828,10 @@
     </header>
 
     <main>
-      <p class="tagline">tune in. zone out. — 10 AI minds programming 24/7</p>
+      <div class="hero">
+        <h1 class="hero-title">mood42</h1>
+        <p class="hero-subtitle">10 AI minds. infinite moods. always live.</p>
+      </div>
       <div class="grid" id="channel-grid"></div>
     </main>
 
@@ -1224,7 +1257,8 @@
 
       document.getElementById('ch-desc').textContent = ch.desc;
       document.getElementById('channel-video').src = ch.video;
-      document.getElementById('track-name').textContent = ch.trackName;
+      // Show "loading" until we get live data from server
+      document.getElementById('track-name').textContent = 'Connecting...';
 
       // Start info fade cycle
       startInfoFadeCycle();
@@ -1233,15 +1267,24 @@
       landing.classList.add('hidden');
       channelPage.classList.add('active');
 
-      // Start music
-      audio.src = ch.music;
-      audio.play().then(() => {
-        musicPlaying = true;
-        document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
-      }).catch(() => {
-        musicPlaying = false;
-        document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
-      });
+      // NOTE: Don't start static music here - wait for live state from server
+      // The patched openChannel() will fetch live track and start playback
+
+      // Fallback: if server doesn't respond in 3s, use static track
+      setTimeout(() => {
+        if (document.getElementById('track-name').textContent === 'Connecting...') {
+          console.log('[Fallback] Server slow, using static track');
+          document.getElementById('track-name').textContent = ch.trackName;
+          audio.src = ch.music;
+          audio.play().then(() => {
+            musicPlaying = true;
+            document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+          }).catch(() => {
+            musicPlaying = false;
+            document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+          });
+        }
+      }, 3000);
 
       // Update title
       document.title = `${ch.name} — mood42`;
@@ -1547,11 +1590,45 @@
 
           // Update with live track immediately
           if (liveState.currentTrack) {
-            updateFromSimulation({
-              track: liveState.currentTrack,
-              thought: liveState.agent?.thought,
-              video: liveState.currentVideo,
-            });
+            const track = liveState.currentTrack;
+
+            // Update track name
+            document.getElementById('track-name').textContent = track.name || 'Unknown Track';
+
+            // Set audio source and start playing
+            if (track.url) {
+              audio.src = track.url;
+
+              // Sync to current position if track has startedAt
+              if (track.startedAt) {
+                const elapsed = (Date.now() - track.startedAt) / 1000;
+                const duration = track.duration || 180;
+                audio.currentTime = elapsed % duration;
+              }
+
+              // Start playback
+              audio.play().then(() => {
+                musicPlaying = true;
+                document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+              }).catch(() => {
+                musicPlaying = false;
+                document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+              });
+            }
+
+            // Update video
+            if (liveState.currentVideo?.url) {
+              const videoEl = document.getElementById('channel-video');
+              if (videoEl) {
+                videoEl.src = liveState.currentVideo.url;
+              }
+            }
+
+            // Update thought
+            if (liveState.agent?.thought) {
+              const thoughtEl = document.getElementById('agent-thought');
+              if (thoughtEl) thoughtEl.textContent = `"${liveState.agent.thought}"`;
+            }
           }
         }
       } catch (err) {
