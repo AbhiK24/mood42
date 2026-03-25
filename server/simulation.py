@@ -5,10 +5,13 @@ Manages world state, channel agents, and real-time decisions
 
 import random
 import time
+import os
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
 
 from channels import CHANNELS, TRACKS, get_channel_tracks
+from tools import get_tracks_for_channel, search_music, execute_tool
+from llm import generate_programming_decision, ALL_TOOLS, API_KEY
 
 
 class SimulationEngine:
@@ -27,6 +30,13 @@ class SimulationEngine:
             }
         }
 
+        # LLM mode
+        self.use_llm = bool(API_KEY)
+        if self.use_llm:
+            print("[Simulation] LLM mode enabled (Kimi K2)")
+        else:
+            print("[Simulation] LLM mode disabled (no API key) - using mock decisions")
+
         # Channel agent states
         self.agents: Dict[str, Dict] = {}
         self._init_agents()
@@ -36,8 +46,8 @@ class SimulationEngine:
     def _init_agents(self):
         """Initialize all channel agents."""
         for ch_id, channel in CHANNELS.items():
-            # Pick initial track
-            tracks = get_channel_tracks(ch_id)
+            # Get tracks for this channel's vibe
+            tracks = get_tracks_for_channel(ch_id)
             initial_track = random.choice(tracks) if tracks else None
 
             self.agents[ch_id] = {
@@ -53,6 +63,8 @@ class SimulationEngine:
                 "lastThought": self._generate_thought(ch_id, "starting"),
                 "viewerCount": 0,
                 "trackHistory": [],
+                "availableTracks": tracks,  # Cache available tracks
+                "pendingSearch": None,  # For async search results
             }
 
     def _generate_thought(self, channel_id: str, context: str = "track_change") -> str:
@@ -191,19 +203,68 @@ class SimulationEngine:
             await self._change_track(channel_id, agent)
 
     async def _change_track(self, channel_id: str, agent: Dict):
-        """Change to next track for a channel."""
-        tracks = get_channel_tracks(channel_id)
+        """Change to next track for a channel using LLM decision."""
+        channel = CHANNELS.get(channel_id)
+        if not channel:
+            return
+
+        # Get available tracks
+        tracks = agent.get("availableTracks", [])
+        if not tracks:
+            tracks = get_tracks_for_channel(channel_id)
+            agent["availableTracks"] = tracks
+
         if not tracks:
             return
 
-        # Avoid repeating last track
-        current_id = agent["currentTrack"]["id"] if agent["currentTrack"] else None
-        available = [t for t in tracks if t["id"] != current_id]
-        if not available:
-            available = tracks
-
-        new_track = random.choice(available)
         now = int(time.time() * 1000)
+        new_track = None
+        thought = None
+        mood = agent.get("currentMood", "focused")
+
+        # Use LLM if available
+        if self.use_llm:
+            try:
+                decision = await generate_programming_decision(
+                    agent=channel["agent"],
+                    channel=channel,
+                    context=self.get_world_state(),
+                    available_tracks=tracks,
+                    tools=ALL_TOOLS,
+                )
+
+                thought = decision.get("thought", "")
+                mood = decision.get("mood", mood)
+
+                # Check if agent wants to search for new music
+                search_query = decision.get("search_query")
+                if search_query:
+                    print(f"[{channel_id}] Agent searching: {search_query}")
+                    search_results = await search_music(search_query, mood)
+                    if search_results:
+                        # Add new tracks to available
+                        agent["availableTracks"].extend(search_results)
+                        # Pick from search results
+                        new_track = random.choice(search_results)
+
+                # Otherwise use selected track_id
+                if not new_track and decision.get("track_id"):
+                    track_id = decision["track_id"]
+                    new_track = next((t for t in tracks if t["id"] == track_id), None)
+
+            except Exception as e:
+                print(f"[{channel_id}] LLM decision failed: {e}")
+
+        # Fallback: random selection
+        if not new_track:
+            current_id = agent["currentTrack"]["id"] if agent["currentTrack"] else None
+            available = [t for t in tracks if t["id"] != current_id]
+            if not available:
+                available = tracks
+            new_track = random.choice(available)
+
+        if not thought:
+            thought = self._generate_thought(channel_id, "track_change")
 
         # Update agent state
         agent["currentTrack"] = {
@@ -213,7 +274,8 @@ class SimulationEngine:
             "duration": new_track.get("duration", 180),
             "startedAt": now,
         }
-        agent["lastThought"] = self._generate_thought(channel_id, "track_change")
+        agent["lastThought"] = thought
+        agent["currentMood"] = mood
 
         # Add to history
         agent["trackHistory"].append({
@@ -223,12 +285,16 @@ class SimulationEngine:
         # Keep only last 20
         agent["trackHistory"] = agent["trackHistory"][-20:]
 
+        print(f"[{channel_id}] Now playing: {new_track['name']}")
+        if thought:
+            print(f"[{channel_id}] Thought: {thought}")
+
         # Broadcast update
         await self.broadcast(channel_id, "channel:update", {
             "channelId": channel_id,
             "track": agent["currentTrack"],
-            "thought": agent["lastThought"],
-            "mood": agent["currentMood"],
+            "thought": thought,
+            "mood": mood,
         })
 
     def get_world_state(self) -> Dict:
