@@ -570,7 +570,7 @@
   <audio id="audio-player" loop></audio>
 
   <script type="module">
-    // Channel data with music URLs (using royalty-free sources)
+    // Channel data with free stock videos from Mixkit
     const CHANNELS = [
       {
         id: 'ch01',
@@ -579,7 +579,8 @@
         agent: 'Maya Chen',
         desc: 'Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.',
         tags: ['lo-fi', 'coding', 'rain'],
-        video: '/assets/channels/ch01_preview.mp4',
+        preview: '/assets/channels/ch01_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/2846/2846-1080.mp4',
         poster: '/assets/channels/ch01_late_night.png',
         color: '#e8c89a',
         music: '/assets/ambient.mp3',
@@ -592,7 +593,8 @@
         agent: 'Yuki Tanaka',
         desc: 'A cozy Japanese kissaten. Vinyl jazz crackles softly as rain patters against the window. Coffee steam rises.',
         tags: ['jazz', 'coffee', 'vinyl'],
-        video: '/assets/channels/ch02_preview.mp4',
+        preview: '/assets/channels/ch02_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/4350/4350-1080.mp4',
         poster: '/assets/channels/ch02_rain_cafe.png',
         color: '#8b7355',
         music: '/assets/ambient.mp3',
@@ -605,7 +607,8 @@
         agent: 'Vincent Moreau',
         desc: '1950s Chicago. Smoke curls through dim light. A saxophone weeps in the corner. The city never sleeps.',
         tags: ['noir', 'smoky', '1950s'],
-        video: '/assets/channels/ch03_preview.mp4',
+        preview: '/assets/channels/ch03_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/43759/43759-1080.mp4',
         poster: '/assets/channels/ch03_jazz_noir.png',
         color: '#6a6a9a',
         music: '/assets/ambient.mp3',
@@ -618,7 +621,8 @@
         agent: 'NEON-7',
         desc: 'Neon grids stretch to infinity. Chrome dreams of electric nights. The future was 1984.',
         tags: ['retro', 'neon', '80s'],
-        video: '/assets/channels/ch04_preview.mp4',
+        preview: '/assets/channels/ch04_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/35644/35644-720.mp4',
         poster: '/assets/channels/ch04_synthwave.png',
         color: '#ff00ff',
         music: '/assets/ambient.mp3',
@@ -631,7 +635,8 @@
         agent: 'Cosmos',
         desc: 'Drift through infinite void. Stars whisper ancient secrets. Time stretches into eternity.',
         tags: ['ambient', 'stars', 'void'],
-        video: '/assets/channels/ch05_preview.mp4',
+        preview: '/assets/channels/ch05_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/14185/14185-720.mp4',
         poster: '/assets/channels/ch05_deep_space.png',
         color: '#5a5aba',
         music: '/assets/ambient.mp3',
@@ -644,7 +649,8 @@
         agent: 'Kenji Nakamura',
         desc: 'Neon reflections on wet asphalt. Empty streets after midnight. The city breathes in electric silence.',
         tags: ['city', 'neon', 'night'],
-        video: '/assets/channels/ch06_preview.mp4',
+        preview: '/assets/channels/ch06_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/4451/4451-1080.mp4',
         poster: '/assets/channels/ch06_tokyo_drift.png',
         color: '#ff4d6d',
         music: '/assets/ambient.mp3',
@@ -657,7 +663,8 @@
         agent: 'Claire Dubois',
         desc: 'Golden light through kitchen windows. Fresh bread and wildflowers. The world can wait.',
         tags: ['acoustic', 'sunny', 'peaceful'],
-        video: '/assets/channels/ch07_preview.mp4',
+        preview: '/assets/channels/ch07_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/26532/26532-720.mp4',
         poster: '/assets/channels/ch07_sunday_morning.png',
         color: '#ffd700',
         music: '/assets/ambient.mp3',
@@ -670,7 +677,8 @@
         agent: 'Alan Park',
         desc: 'Clean lines. Clear mind. Nothing but the task at hand. Perfect productive silence.',
         tags: ['minimal', 'productive', 'clean'],
-        video: '/assets/channels/ch08_preview.mp4',
+        preview: '/assets/channels/ch08_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/914/914-1080.mp4',
         poster: '/assets/channels/ch08_focus.png',
         color: '#4a9fff',
         music: '/assets/ambient.mp3',
@@ -683,7 +691,8 @@
         agent: 'Daniel Webb',
         desc: 'Rain traces paths down London glass. An old typewriter waits. Some feelings need space to exist.',
         tags: ['piano', 'rain', 'reflective'],
-        video: '/assets/channels/ch09_preview.mp4',
+        preview: '/assets/channels/ch09_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/18312/18312-1080.mp4',
         poster: '/assets/channels/ch09_melancholy.png',
         color: '#6688aa',
         music: '/assets/ambient.mp3',
@@ -696,7 +705,8 @@
         agent: 'Iris Ferreira',
         desc: 'Lisbon rooftops glow amber. Warm wind carries fado from somewhere distant. Magic hour stretches on.',
         tags: ['warm', 'sunset', 'nostalgic'],
-        video: '/assets/channels/ch10_preview.mp4',
+        preview: '/assets/channels/ch10_preview.mp4',
+        video: 'https://assets.mixkit.co/videos/4119/4119-1080.mp4',
         poster: '/assets/channels/ch10_golden_hour.png',
         color: '#ffa500',
         music: '/assets/ambient.mp3',
@@ -724,7 +734,7 @@
         card.innerHTML = `
           <div class="card-media">
             <video
-              src="${ch.video}"
+              src="${ch.preview}"
               poster="${ch.poster}"
               autoplay
               loop
