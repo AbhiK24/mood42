@@ -282,12 +282,14 @@ class SimulationEngine:
                                 new_track = result
                                 break
 
-                # Otherwise use selected track_id (validate it first)
+                # Otherwise use selected track_id (skip validation for pre-verified)
                 if not new_track and decision.get("track_id"):
                     track_id = decision["track_id"]
                     candidate = next((t for t in tracks if t["id"] == track_id), None)
-                    if candidate and await validate_track(candidate):
-                        new_track = candidate
+                    if candidate:
+                        # Skip validation for pre-verified exclusive tracks
+                        if candidate.get("_verified") or await validate_track(candidate):
+                            new_track = candidate
 
             except Exception as e:
                 print(f"[{channel_id}:{region}] LLM decision failed: {e}")
