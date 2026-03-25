@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>mood42 — tune in. zone out.</title>
+  <meta name="description" content="AI-programmed ambient TV channels. Lo-fi beats, jazz, synthwave, and more. Tune in. Zone out.">
+
+  <!-- Open Graph / Social Preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mood42-production.up.railway.app">
+  <meta property="og:title" content="mood42 — tune in. zone out.">
+  <meta property="og:description" content="AI-programmed ambient TV channels. Lo-fi beats, jazz, synthwave, and more.">
+  <meta property="og:image" content="https://mood42-production.up.railway.app/assets/social-preview.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="mood42 — tune in. zone out.">
+  <meta name="twitter:description" content="AI-programmed ambient TV channels. Lo-fi beats, jazz, synthwave, and more.">
+  <meta name="twitter:image" content="https://mood42-production.up.railway.app/assets/social-preview.png">
+
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700&display=swap" rel="stylesheet">
@@ -318,6 +333,14 @@
 
     .channel-info {
       max-width: 500px;
+      margin-top: 80px;
+      opacity: 1;
+      transition: opacity 0.8s ease-in-out;
+    }
+
+    .channel-info.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .channel-num {
@@ -339,9 +362,26 @@
 
     .channel-agent {
       font-family: 'Cabinet Grotesk', sans-serif;
-      font-size: 20px;
+      font-size: 18px;
       color: var(--text-dim);
       margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .agent-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--agent-color, #888) 0%, rgba(0,0,0,0.3) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.8;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     .channel-desc {
@@ -369,6 +409,13 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
+      opacity: 1;
+      transition: opacity 0.8s ease-in-out;
+    }
+
+    .channel-footer.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .now-playing {
@@ -427,7 +474,7 @@
     .back-btn {
       position: absolute;
       top: 40px;
-      left: 40px;
+      right: 40px;
       z-index: 10;
       background: rgba(0,0,0,0.4);
       border: 1px solid rgba(255,255,255,0.1);
@@ -437,11 +484,16 @@
       font-size: 12px;
       cursor: pointer;
       backdrop-filter: blur(8px);
-      transition: background 0.2s ease;
+      transition: opacity 0.8s ease, background 0.2s ease;
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .back-btn.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .back-btn:hover {
@@ -548,7 +600,7 @@
         <div class="channel-info">
           <div class="channel-num" id="ch-num">CH 01</div>
           <h1 class="channel-name" id="ch-name">Late Night</h1>
-          <p class="channel-agent" id="ch-agent">programmed by Maya Chen</p>
+          <p class="channel-agent"><span id="ch-agent">programmed by Maya Chen</span><span class="agent-avatar" id="ch-avatar">M</span></p>
           <p class="channel-desc" id="ch-desc">Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.</p>
         </div>
         <div class="channel-controls">
@@ -724,7 +776,62 @@
     // State
     let currentChannel = null;
     let musicPlaying = false;
+    let infoVisible = true;
     const audio = document.getElementById('audio-player');
+
+    // Info fade in/out cycle
+    function startInfoFadeCycle() {
+      // Show immediately when entering channel
+      showUI();
+
+      // Hide after 5 seconds of inactivity
+      if (mouseTimer) clearTimeout(mouseTimer);
+      mouseTimer = setTimeout(hideUI, 5000);
+    }
+
+    // Show UI on mouse move, hide after inactivity
+    let mouseTimer = null;
+    function showUI() {
+      const info = document.querySelector('.channel-info');
+      const footer = document.querySelector('.channel-footer');
+      const backBtn = document.querySelector('.back-btn');
+
+      if (currentChannel) {
+        info?.classList.remove('hidden');
+        footer?.classList.remove('hidden');
+        backBtn?.classList.remove('hidden');
+        infoVisible = true;
+      }
+    }
+
+    function hideUI() {
+      const info = document.querySelector('.channel-info');
+      const footer = document.querySelector('.channel-footer');
+      const backBtn = document.querySelector('.back-btn');
+
+      info?.classList.add('hidden');
+      footer?.classList.add('hidden');
+      backBtn?.classList.add('hidden');
+      infoVisible = false;
+    }
+
+    document.addEventListener('mousemove', () => {
+      if (!currentChannel) return;
+
+      showUI();
+
+      // Reset hide timer
+      if (mouseTimer) clearTimeout(mouseTimer);
+      mouseTimer = setTimeout(hideUI, 4000);
+    });
+
+    // Also show on click/touch
+    document.addEventListener('click', () => {
+      if (!currentChannel) return;
+      showUI();
+      if (mouseTimer) clearTimeout(mouseTimer);
+      mouseTimer = setTimeout(hideUI, 4000);
+    });
 
     // Elements
     const landing = document.getElementById('landing');
@@ -785,9 +892,14 @@
       document.getElementById('ch-name').textContent = ch.name;
       document.getElementById('ch-name').style.color = ch.color;
       document.getElementById('ch-agent').textContent = `programmed by ${ch.agent}`;
+      document.getElementById('ch-avatar').textContent = ch.agent.charAt(0);
+      document.getElementById('ch-avatar').style.setProperty('--agent-color', ch.color);
       document.getElementById('ch-desc').textContent = ch.desc;
       document.getElementById('channel-video').src = ch.video;
       document.getElementById('track-name').textContent = ch.trackName;
+
+      // Start info fade cycle
+      startInfoFadeCycle();
 
       // Show channel page
       landing.classList.add('hidden');
