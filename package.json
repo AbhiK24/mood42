@@ -2,7 +2,7 @@
   "name": "mood42",
   "version": "1.0.0",
   "type": "module",
-  "description": "Living apartment window — NYC, 11pm, raining",
+  "description": "mood42 - agentic tv | Living apartments with AI characters",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
