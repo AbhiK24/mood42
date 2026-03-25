@@ -208,66 +208,69 @@ VERIFIED_ARCHIVE_ITEMS = [
 # =============================================================================
 
 # Each channel agent has EXCLUSIVE tracks - no sharing between channels
+# R2 CDN base URL - self-hosted for reliability
+R2_BASE = "https://pub-c60e3a4de388402ba5e40acbc497a6d6.r2.dev"
+
 CHANNEL_TRACKS = {
     # CH01: Late Night with Maya - lo-fi, introspective night coding vibes
     "ch01": [
-        {"id": "ch01_1", "name": "Hanging Lanterns - Kalaido", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3", "duration": 180},
-        {"id": "ch01_2", "name": "First Snow - Kerusu", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kerusu%20-%20First%20Snow.mp3", "duration": 195},
-        {"id": "ch01_3", "name": "Lofi Experimentin - Kronicle", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kronicle%20-%20Lofi%20Experimentin%20%28No%20Copyright%20Hip%20Hop%20Music%29.mp3", "duration": 185},
+        {"id": "ch01_1", "name": "Hanging Lanterns - Kalaido", "url": f"{R2_BASE}/audio/ch01_hanging_lanterns.mp3", "duration": 180},
+        {"id": "ch01_2", "name": "First Snow - Kerusu", "url": f"{R2_BASE}/audio/ch01_first_snow.mp3", "duration": 195},
+        {"id": "ch01_3", "name": "Lofi Experimentin - Kronicle", "url": f"{R2_BASE}/audio/ch01_lofi_experimentin.mp3", "duration": 185},
     ],
     # CH02: Rain Café with Yuki - jazz café, cozy rain vibes
     "ch02": [
-        {"id": "ch02_1", "name": "Lo-fi Rain Beat", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28FREE%29%20Lo-fi%20Type%20Beat%20-%20Rain.mp3", "duration": 170},
-        {"id": "ch02_2", "name": "Chill Jazzy Lofi", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNo%20Copyright%20Music%5D%20Chill%20Jazzy%20Lofi%20Hip-Hop%20Beat%20%28Copyright%20Free%29%20Music%20By%20KaizanBlu.mp3", "duration": 180},
-        {"id": "ch02_3", "name": "Herbal Tea Jazz", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNon%20Copyrighted%20Music%5D%20Artificial.Music%20-%20Herbal%20Tea%20%5BLo-fi%5D.mp3", "duration": 195},
+        {"id": "ch02_1", "name": "Lo-fi Rain Beat", "url": f"{R2_BASE}/audio/ch02_lofi_rain_beat.mp3", "duration": 170},
+        {"id": "ch02_2", "name": "Chill Jazzy Lofi", "url": f"{R2_BASE}/audio/ch02_chill_jazzy_lofi.mp3", "duration": 180},
+        {"id": "ch02_3", "name": "Herbal Tea Jazz", "url": f"{R2_BASE}/audio/ch02_herbal_tea_jazz.mp3", "duration": 195},
     ],
     # CH03: Jazz Noir with Vincent - smoky detective jazz
     "ch03": [
-        {"id": "ch03_1", "name": "Swing Jazz Grooves", "url": "https://archive.org/download/lofi-music-swing-jazz-grooves-to-elevate-your-mood-feel-the-rhythm/LOFI%20Music%E3%80%80Swing%20Jazz%20Grooves%20to%20Elevate%20Your%20Mood%20%EF%BD%9C%20Feel%20the%20Rhythm%20.mp3", "duration": 220},
-        {"id": "ch03_2", "name": "Jazz Type Beat - Lukrembo", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3", "duration": 165},
-        {"id": "ch03_3", "name": "Deep Space Jazz", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/deep%20space%20-%20Ambient%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 200},
+        {"id": "ch03_1", "name": "Swing Jazz Grooves", "url": f"{R2_BASE}/audio/ch03_swing_jazz_grooves.mp3", "duration": 220},
+        {"id": "ch03_2", "name": "Jazz Type Beat - Lukrembo", "url": f"{R2_BASE}/audio/ch03_jazz_type_beat.mp3", "duration": 165},
+        {"id": "ch03_3", "name": "Deep Space Jazz", "url": f"{R2_BASE}/audio/ch03_deep_space_jazz.mp3", "duration": 200},
     ],
     # CH04: Synthwave with NEON - retro-futuristic neon dreams
     "ch04": [
-        {"id": "ch04_1", "name": "Synthwave Dreams", "url": "https://archive.org/download/synthwave/synthwave.mp3", "duration": 210},
-        {"id": "ch04_2", "name": "Cyberpunk Night", "url": "https://archive.org/download/synthwave/cyberpunk.mp3", "duration": 225},
-        {"id": "ch04_3", "name": "Defective Beats", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/defective%20-%20LofiTrap%20Style%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 180},
+        {"id": "ch04_1", "name": "Synthwave Dreams", "url": f"{R2_BASE}/audio/ch04_synthwave_dreams.mp3", "duration": 210},
+        {"id": "ch04_2", "name": "Cyberpunk Night", "url": f"{R2_BASE}/audio/ch04_cyberpunk_night.mp3", "duration": 225},
+        {"id": "ch04_3", "name": "Defective Beats", "url": f"{R2_BASE}/audio/ch04_defective_beats.mp3", "duration": 180},
     ],
     # CH05: Deep Space with Cosmos - vast cosmic ambience
     "ch05": [
-        {"id": "ch05_1", "name": "Cosmic Drift", "url": "https://archive.org/download/dx_ambient/05_ambient.mp3", "duration": 310},
-        {"id": "ch05_2", "name": "Deep Ambient", "url": "https://archive.org/download/dx_ambient/02_ambient.mp3", "duration": 320},
-        {"id": "ch05_3", "name": "Night Meditation", "url": "https://archive.org/download/dx_ambient/06_ambient.mp3", "duration": 285},
+        {"id": "ch05_1", "name": "Cosmic Drift", "url": f"{R2_BASE}/audio/ch05_cosmic_drift.mp3", "duration": 310},
+        {"id": "ch05_2", "name": "Deep Ambient", "url": f"{R2_BASE}/audio/ch05_deep_ambient.mp3", "duration": 320},
+        {"id": "ch05_3", "name": "Night Meditation", "url": f"{R2_BASE}/audio/ch05_night_meditation.mp3", "duration": 285},
     ],
     # CH06: Tokyo Drift with Kenji - neon city nights, city pop
     "ch06": [
-        {"id": "ch06_1", "name": "Finite Dreams", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/finite%20-%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 195},
-        {"id": "ch06_2", "name": "Onion - Lukrembo", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Onion%20%28Prod.%20by%20Lukrembo%29.mp3", "duration": 175},
-        {"id": "ch06_3", "name": "Tranquillity", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Tranquillity%20-%20Chill%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 190},
+        {"id": "ch06_1", "name": "Finite Dreams", "url": f"{R2_BASE}/audio/ch06_finite_dreams.mp3", "duration": 195},
+        {"id": "ch06_2", "name": "Onion - Lukrembo", "url": f"{R2_BASE}/audio/ch06_onion_lukrembo.mp3", "duration": 175},
+        {"id": "ch06_3", "name": "Tranquillity", "url": f"{R2_BASE}/audio/ch06_tranquillity.mp3", "duration": 190},
     ],
     # CH07: Sunday Morning with Claire - peaceful acoustic warmth
     "ch07": [
-        {"id": "ch07_1", "name": "Dancing On My Own", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Outgoing%20Hikikomori%20-%20Dancing%20On%20My%20Own%20%28No%20copyright%20lo%20fi%20beat%29.mp3", "duration": 195},
-        {"id": "ch07_2", "name": "Take Care - SURF", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%E3%81%91%EF%BD%8D%20SURF%20-%20Take%20Care.mp3", "duration": 185},
-        {"id": "ch07_3", "name": "Waves - Matt Quentin", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Matt%20Quentin%20-%20Waves.mp3", "duration": 200},
+        {"id": "ch07_1", "name": "Dancing On My Own", "url": f"{R2_BASE}/audio/ch07_dancing_on_my_own.mp3", "duration": 195},
+        {"id": "ch07_2", "name": "Take Care - SURF", "url": f"{R2_BASE}/audio/ch07_take_care_surf.mp3", "duration": 185},
+        {"id": "ch07_3", "name": "Waves - Matt Quentin", "url": f"{R2_BASE}/audio/ch07_waves.mp3", "duration": 200},
     ],
     # CH08: Focus with Alan - minimal, distraction-free ambient
     "ch08": [
-        {"id": "ch08_1", "name": "Focus Ambient", "url": "https://archive.org/download/dx_ambient/03_ambient.mp3", "duration": 280},
-        {"id": "ch08_2", "name": "Floating Ambient", "url": "https://archive.org/download/dx_ambient/04_ambient.mp3", "duration": 290},
-        {"id": "ch08_3", "name": "Ambient Space", "url": "https://archive.org/download/dx_ambient/01_ambient.mp3", "duration": 300},
+        {"id": "ch08_1", "name": "Focus Ambient", "url": f"{R2_BASE}/audio/ch08_focus_ambient.mp3", "duration": 280},
+        {"id": "ch08_2", "name": "Floating Ambient", "url": f"{R2_BASE}/audio/ch08_floating_ambient.mp3", "duration": 290},
+        {"id": "ch08_3", "name": "Ambient Space", "url": f"{R2_BASE}/audio/ch08_ambient_space.mp3", "duration": 300},
     ],
     # CH09: Melancholy with Daniel - sad, reflective, rainy nights
     "ch09": [
-        {"id": "ch09_1", "name": "Sunset Drive", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/flovry%20-%20car%20radio.mp3", "duration": 185},
-        {"id": "ch09_2", "name": "Deep Electronic", "url": "https://archive.org/download/dx_ambient/07_ambient.mp3", "duration": 275},
-        {"id": "ch09_3", "name": "Electronic Dreams", "url": "https://archive.org/download/dx_ambient/08_ambient.mp3", "duration": 290},
+        {"id": "ch09_1", "name": "Sunset Drive", "url": f"{R2_BASE}/audio/ch09_sunset_drive.mp3", "duration": 185},
+        {"id": "ch09_2", "name": "Deep Electronic", "url": f"{R2_BASE}/audio/ch09_deep_electronic.mp3", "duration": 275},
+        {"id": "ch09_3", "name": "Electronic Dreams", "url": f"{R2_BASE}/audio/ch09_electronic_dreams.mp3", "duration": 290},
     ],
     # CH10: Golden Hour with Iris - warm sunset, golden light
     "ch10": [
-        {"id": "ch10_1", "name": "Soft Piano Dreams", "url": "https://archive.org/download/dx_ambient/01_ambient.mp3", "duration": 300},
-        {"id": "ch10_2", "name": "Rainy Window Piano", "url": "https://archive.org/download/dx_ambient/02_ambient.mp3", "duration": 320},
-        {"id": "ch10_3", "name": "Evening Reflection", "url": "https://archive.org/download/dx_ambient/04_ambient.mp3", "duration": 290},
+        {"id": "ch10_1", "name": "Soft Piano Dreams", "url": f"{R2_BASE}/audio/ch10_soft_piano_dreams.mp3", "duration": 300},
+        {"id": "ch10_2", "name": "Rainy Window Piano", "url": f"{R2_BASE}/audio/ch10_rainy_window_piano.mp3", "duration": 320},
+        {"id": "ch10_3", "name": "Evening Reflection", "url": f"{R2_BASE}/audio/ch10_evening_reflection.mp3", "duration": 290},
     ],
 }
 
@@ -635,67 +638,58 @@ def extract_genres_from_query(query: str) -> List[str]:
     return genres if genres else ["ambient"]
 
 
-# Each channel agent has EXCLUSIVE videos - no sharing between channels
+# Each channel agent has EXCLUSIVE videos - served from R2 CDN
 CHANNEL_VIDEOS = {
     # CH01: Late Night with Maya - rain on windows, moody city nights
     "ch01": [
-        {"id": "ch01_v1", "name": "Rain on Window", "url": "https://assets.mixkit.co/videos/18308/18308-720.mp4", "tags": ["rain", "window", "night"]},
-        {"id": "ch01_v2", "name": "City Timelapse", "url": "https://assets.mixkit.co/videos/4077/4077-720.mp4", "tags": ["city", "timelapse", "night"]},
-        {"id": "ch01_v3", "name": "Liquid Motion", "url": "https://assets.mixkit.co/videos/27/27-720.mp4", "tags": ["liquid", "abstract", "flow"]},
+        {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "timelapse", "night"]},
+        {"id": "ch01_v2", "name": "Liquid Motion", "url": f"{R2_BASE}/video/ch01_liquid_motion.mp4", "tags": ["liquid", "abstract", "flow"]},
     ],
-    # CH02: Rain Café with Yuki - cozy rain, warm café vibes
+    # CH02: Rain Café with Yuki - cozy rain, warm café vibes (uses ch01 videos temporarily)
     "ch02": [
-        {"id": "ch02_v1", "name": "Rainy Street", "url": "https://assets.mixkit.co/videos/33951/33951-720.mp4", "tags": ["rain", "street", "city"]},
-        {"id": "ch02_v2", "name": "Rain Drops Close-up", "url": "https://assets.mixkit.co/videos/4271/4271-720.mp4", "tags": ["rain", "drops", "macro"]},
-        {"id": "ch02_v3", "name": "Forest Sunlight", "url": "https://assets.mixkit.co/videos/1164/1164-720.mp4", "tags": ["forest", "sunlight", "nature"]},
+        {"id": "ch02_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "timelapse", "night"]},
+        {"id": "ch02_v2", "name": "Liquid Motion", "url": f"{R2_BASE}/video/ch01_liquid_motion.mp4", "tags": ["liquid", "abstract", "flow"]},
     ],
-    # CH03: Jazz Noir with Vincent - smoky noir city
+    # CH03: Jazz Noir with Vincent - smoky noir city (uses ch04 videos temporarily)
     "ch03": [
-        {"id": "ch03_v1", "name": "City Lights", "url": "https://assets.mixkit.co/videos/650/650-720.mp4", "tags": ["city", "night", "noir"]},
-        {"id": "ch03_v2", "name": "Rain Puddles", "url": "https://assets.mixkit.co/videos/4278/4278-720.mp4", "tags": ["rain", "puddles", "street"]},
-        {"id": "ch03_v3", "name": "Downtown Traffic", "url": "https://assets.mixkit.co/videos/1134/1134-720.mp4", "tags": ["city", "traffic", "night"]},
+        {"id": "ch03_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "grid", "noir"]},
+        {"id": "ch03_v2", "name": "Color Gradient", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "colors", "abstract"]},
     ],
     # CH04: Synthwave with NEON - retro neon grids
     "ch04": [
-        {"id": "ch04_v1", "name": "Neon Grid", "url": "https://assets.mixkit.co/videos/35644/35644-720.mp4", "tags": ["neon", "grid", "synthwave"]},
-        {"id": "ch04_v2", "name": "Galaxy Travel", "url": "https://assets.mixkit.co/videos/4039/4039-720.mp4", "tags": ["galaxy", "space", "travel"]},
-        {"id": "ch04_v3", "name": "Color Gradient", "url": "https://assets.mixkit.co/videos/12/12-720.mp4", "tags": ["gradient", "colors", "abstract"]},
+        {"id": "ch04_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "grid", "synthwave"]},
+        {"id": "ch04_v2", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "space", "travel"]},
+        {"id": "ch04_v3", "name": "Color Gradient", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "colors", "abstract"]},
     ],
     # CH05: Deep Space with Cosmos - cosmic void
     "ch05": [
-        {"id": "ch05_v1", "name": "Stars in Space", "url": "https://assets.mixkit.co/videos/14185/14185-720.mp4", "tags": ["space", "stars", "night"]},
-        {"id": "ch05_v2", "name": "Nebula Flight", "url": "https://assets.mixkit.co/videos/39702/39702-720.mp4", "tags": ["nebula", "space", "cosmic"]},
-        {"id": "ch05_v3", "name": "Earth from Orbit", "url": "https://assets.mixkit.co/videos/3754/3754-720.mp4", "tags": ["earth", "orbit", "space"]},
+        {"id": "ch05_v1", "name": "Stars in Space", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["space", "stars", "night"]},
+        {"id": "ch05_v2", "name": "Cosmic Journey", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "ambient"]},
     ],
-    # CH06: Tokyo Drift with Kenji - neon city streets
+    # CH06: Tokyo Drift with Kenji - neon city streets (uses ch04 videos temporarily)
     "ch06": [
-        {"id": "ch06_v1", "name": "Tokyo Night", "url": "https://assets.mixkit.co/videos/4451/4451-1080.mp4", "tags": ["tokyo", "neon", "night"]},
-        {"id": "ch06_v2", "name": "Neon Streets", "url": "https://assets.mixkit.co/videos/3116/3116-720.mp4", "tags": ["neon", "street", "night"]},
-        {"id": "ch06_v3", "name": "City in Rain", "url": "https://assets.mixkit.co/videos/4634/4634-720.mp4", "tags": ["rain", "city", "night"]},
+        {"id": "ch06_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "night", "city"]},
+        {"id": "ch06_v2", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["space", "night", "travel"]},
     ],
     # CH07: Sunday Morning with Claire - peaceful nature
     "ch07": [
-        {"id": "ch07_v1", "name": "Morning Light", "url": "https://assets.mixkit.co/videos/26532/26532-720.mp4", "tags": ["morning", "light", "nature"]},
-        {"id": "ch07_v2", "name": "Ocean Waves", "url": "https://assets.mixkit.co/videos/1189/1189-720.mp4", "tags": ["ocean", "waves", "peaceful"]},
-        {"id": "ch07_v3", "name": "Clouds Timelapse", "url": "https://assets.mixkit.co/videos/1166/1166-720.mp4", "tags": ["clouds", "sky", "timelapse"]},
+        {"id": "ch07_v1", "name": "Flowers", "url": f"{R2_BASE}/video/ch07_flowers.mp4", "tags": ["flowers", "nature", "peaceful"]},
+        {"id": "ch07_v2", "name": "Golden Light", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "light", "warm"]},
     ],
     # CH08: Focus with Alan - minimal abstract
     "ch08": [
-        {"id": "ch08_v1", "name": "Minimal Waves", "url": "https://assets.mixkit.co/videos/914/914-1080.mp4", "tags": ["minimal", "abstract", "calm"]},
-        {"id": "ch08_v2", "name": "Particle Flow", "url": "https://assets.mixkit.co/videos/200/200-720.mp4", "tags": ["particles", "abstract", "motion"]},
-        {"id": "ch08_v3", "name": "Soft Gradient", "url": "https://assets.mixkit.co/videos/18/18-720.mp4", "tags": ["gradient", "soft", "minimal"]},
+        {"id": "ch08_v1", "name": "Minimal Waves", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "abstract", "calm"]},
+        {"id": "ch08_v2", "name": "Abstract Flow", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "motion", "focus"]},
     ],
-    # CH09: Melancholy with Daniel - reflective rain
+    # CH09: Melancholy with Daniel - reflective rain (uses ch01 videos temporarily)
     "ch09": [
-        {"id": "ch09_v1", "name": "Rain Window Reflection", "url": "https://assets.mixkit.co/videos/18312/18312-1080.mp4", "tags": ["rain", "window", "reflective"]},
-        {"id": "ch09_v2", "name": "Misty Forest", "url": "https://assets.mixkit.co/videos/1176/1176-720.mp4", "tags": ["mist", "forest", "moody"]},
-        {"id": "ch09_v3", "name": "Grey Clouds", "url": "https://assets.mixkit.co/videos/1172/1172-720.mp4", "tags": ["clouds", "grey", "melancholy"]},
+        {"id": "ch09_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "reflective"]},
+        {"id": "ch09_v2", "name": "Abstract Flow", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "moody", "motion"]},
     ],
     # CH10: Golden Hour with Iris - warm sunset
     "ch10": [
-        {"id": "ch10_v1", "name": "Golden Hour Sunset", "url": "https://assets.mixkit.co/videos/4119/4119-1080.mp4", "tags": ["sunset", "golden", "nature"]},
-        {"id": "ch10_v2", "name": "Sunset Beach", "url": "https://assets.mixkit.co/videos/1168/1168-720.mp4", "tags": ["beach", "sunset", "warm"]},
-        {"id": "ch10_v3", "name": "Golden Fields", "url": "https://assets.mixkit.co/videos/1171/1171-720.mp4", "tags": ["fields", "golden", "warm"]},
+        {"id": "ch10_v1", "name": "Golden Light", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "light", "warm"]},
+        {"id": "ch10_v2", "name": "Ocean Sunset", "url": f"{R2_BASE}/video/ch10_ocean_sunset.mp4", "tags": ["ocean", "sunset", "warm"]},
     ],
 }
 
