@@ -34,8 +34,10 @@ let rainContainer, rainDrops = []
 let memoryPanel, eventLog = []
 let simulationRunning = false
 
-// API Key
+// LLM Config - DEFAULT TO MOCK MODE IN DEV
 const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
+let useLiveLLM = false // Start with mock mode to save tokens
+let autoSimulation = false // Don't auto-start simulation
 
 async function init() {
   await app.init({
@@ -52,8 +54,8 @@ async function init() {
   console.log('Loading assets...')
   await Assets.load(Object.values(ASSETS))
 
-  // Initialize simulation with LLM
-  initSimulation(MOONSHOT_API_KEY)
+  // Initialize simulation - mock mode by default (no API calls)
+  initSimulation(useLiveLLM ? MOONSHOT_API_KEY : null)
 
   // Create layers
   createBuildingView()
@@ -78,12 +80,11 @@ async function init() {
   setTimeout(() => {
     showToast('the building', '11 PM · NYC · RAINING')
     addEvent('You approach the building on 2nd Avenue...')
+    addEvent('Press [S] to start simulation, [L] to toggle live LLM')
   }, 500)
 
-  // Start simulation after delay
-  setTimeout(() => {
-    startSimulation()
-  }, 2000)
+  // DON'T auto-start simulation - wait for user to press S
+  // This saves API tokens during development
 }
 
 function createBuildingView() {
@@ -480,13 +481,26 @@ function updateMemoryPanel() {
   })
 
   // Controls hint
+  const controlsText = simulationRunning
+    ? `[S] stop · [L] ${useLiveLLM ? 'mock' : 'live'} · [T] +1hr`
+    : `[S] start · [L] ${useLiveLLM ? 'mock' : 'live'} · ${currentView === 'apartment' ? '[ESC] back' : '[CLICK] enter'}`
+
   const controls = new Text({
-    text: currentView === 'apartment' ? '[ESC] back · [SPACE] pause · [T] +1hr' : '[CLICK] enter apartment',
+    text: controlsText,
     style: { fontFamily: 'monospace', fontSize: 10, fill: 0x444455 }
   })
   controls.x = W - 300
   controls.y = H - 30
   memoryPanel.addChild(controls)
+
+  // LLM status indicator
+  const llmStatus = new Text({
+    text: `${useLiveLLM ? '● LIVE LLM' : '○ MOCK'} ${simulationRunning ? '▶ RUNNING' : '■ STOPPED'}`,
+    style: { fontFamily: 'monospace', fontSize: 9, fill: useLiveLLM ? 0x88ff88 : 0x888888 }
+  })
+  llmStatus.x = W - 300
+  llmStatus.y = H - 45
+  memoryPanel.addChild(llmStatus)
 }
 
 function addEvent(text) {
@@ -503,42 +517,43 @@ function formatTime(minutes) {
   return `${h12}:${m.toString().padStart(2, '0')} ${period}`
 }
 
-async function startSimulation() {
+function startSimulation() {
   simulationRunning = true
-  addEvent('Simulation started...')
+  addEvent(`Simulation started (${useLiveLLM ? 'LIVE LLM' : 'MOCK MODE'})`)
+  runSimulationLoop()
+}
 
-  // Run tick every 3 seconds
-  const runTick = async () => {
-    if (!simulationRunning) return
+async function runSimulationLoop() {
+  if (!simulationRunning) return
 
-    try {
-      const state = await simulationTick({ verbose: false })
+  try {
+    const state = await simulationTick({ verbose: false })
 
-      // Check for new memories/events
-      for (const [id, char] of world.characters) {
-        const lastMem = char.memories[char.memories.length - 1]
-        if (lastMem && lastMem.tick === world.tick) {
-          if (lastMem.type === 'reflection') {
-            addEvent(`${char.name} reflects: "${lastMem.text.slice(0, 60)}..."`)
-          } else if (lastMem.type === 'dialogue') {
-            addEvent(`${char.name}: ${lastMem.text.slice(0, 50)}...`)
-          }
+    // Check for new memories/events
+    for (const [id, char] of world.characters) {
+      const lastMem = char.memories[char.memories.length - 1]
+      if (lastMem && lastMem.tick === world.tick) {
+        if (lastMem.type === 'reflection') {
+          addEvent(`${char.name} reflects: "${lastMem.text.slice(0, 60)}..."`)
+        } else if (lastMem.type === 'dialogue') {
+          addEvent(`${char.name}: ${lastMem.text.slice(0, 50)}...`)
         }
       }
-
-      // Redraw building if in building view
-      if (currentView === 'building') {
-        drawBuilding()
-      }
-    } catch (err) {
-      console.error('Tick error:', err)
     }
 
-    // Next tick
-    setTimeout(runTick, 3000)
+    // Redraw building if in building view
+    if (currentView === 'building') {
+      drawBuilding()
+    }
+  } catch (err) {
+    console.error('Tick error:', err)
+    addEvent(`Error: ${err.message}`)
   }
 
-  runTick()
+  // Next tick (only if still running)
+  if (simulationRunning) {
+    setTimeout(runSimulationLoop, 3000)
+  }
 }
 
 function handleResize() {
@@ -576,16 +591,47 @@ function setupKeyboard() {
         }
         break
 
+      case 's':
+      case 'S':
+        // Toggle simulation on/off
+        if (simulationRunning) {
+          simulationRunning = false
+          addEvent('Simulation STOPPED')
+          showToast('paused', 'SIMULATION STOPPED')
+        } else {
+          startSimulation()
+          showToast('running', useLiveLLM ? 'LIVE LLM MODE' : 'MOCK MODE')
+        }
+        break
+
+      case 'l':
+      case 'L':
+        // Toggle live LLM mode
+        useLiveLLM = !useLiveLLM
+        // Reinitialize with new mode
+        initSimulation(useLiveLLM ? MOONSHOT_API_KEY : null)
+        addEvent(`LLM mode: ${useLiveLLM ? 'LIVE (uses tokens)' : 'MOCK (free)'}`)
+        showToast(useLiveLLM ? 'live llm' : 'mock mode', useLiveLLM ? 'KIMI K2 · USES TOKENS' : 'NO API CALLS')
+        break
+
       case ' ':
         e.preventDefault()
-        simulationRunning = !simulationRunning
-        addEvent(simulationRunning ? 'Resumed' : 'Paused')
-        if (simulationRunning) startSimulation()
+        // Pause/resume (only if already running)
+        if (simulationRunning) {
+          simulationRunning = false
+          addEvent('Paused')
+        } else if (eventLog.some(e => e.includes('Simulation started'))) {
+          // Only resume if previously started
+          simulationRunning = true
+          addEvent('Resumed')
+          runSimulationLoop()
+        }
         break
 
       case 't':
       case 'T':
-        // Advance time by 1 hour (12 ticks)
+        // Advance time by 1 hour (12 ticks) - uses current LLM mode
+        addEvent('Advancing 1 hour...')
         for (let i = 0; i < 12; i++) {
           simulationTick({ verbose: false })
         }
