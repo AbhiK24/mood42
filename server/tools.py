@@ -111,14 +111,22 @@ async def get_validated_track(tracks: List[Dict], exclude_id: str = None) -> Opt
     return candidates[0] if candidates else None
 
 
-async def get_validated_video(videos: List[Dict]) -> Optional[Dict]:
+async def get_validated_video(videos: List[Dict], exclude_id: str = None) -> Optional[Dict]:
     """
     Get a validated video from the list.
     Checks URLs and returns only working ones.
+    Avoids repeating the same video (exclude_id).
     """
-    random.shuffle(videos)
+    # Filter out the current video to avoid repeats
+    available = [v for v in videos if v.get("id") != exclude_id] if exclude_id else videos
 
-    for video in videos:
+    # If all filtered out, allow current again (better than nothing)
+    if not available:
+        available = videos
+
+    random.shuffle(available)
+
+    for video in available:
         if await validate_video(video):
             return video
 
@@ -780,7 +788,7 @@ def extract_genres_from_query(query: str) -> List[str]:
 
 # ============ VIDEO SOURCES ============
 
-# Mixkit free videos (known working)
+# Mixkit free videos - expanded library for variety
 CURATED_VIDEOS = {
     "rain": [
         {
@@ -794,6 +802,24 @@ CURATED_VIDEOS = {
             "name": "Rainy Street",
             "url": "https://assets.mixkit.co/videos/33951/33951-720.mp4",
             "tags": ["rain", "street", "city"],
+        },
+        {
+            "id": "rain_drops",
+            "name": "Rain Drops Close-up",
+            "url": "https://assets.mixkit.co/videos/4271/4271-720.mp4",
+            "tags": ["rain", "drops", "macro"],
+        },
+        {
+            "id": "rain_puddles",
+            "name": "Rain Puddles",
+            "url": "https://assets.mixkit.co/videos/4278/4278-720.mp4",
+            "tags": ["rain", "puddles", "street"],
+        },
+        {
+            "id": "rain_city_night",
+            "name": "City in Rain",
+            "url": "https://assets.mixkit.co/videos/4634/4634-720.mp4",
+            "tags": ["rain", "city", "night"],
         },
     ],
     "city": [
@@ -809,6 +835,24 @@ CURATED_VIDEOS = {
             "url": "https://assets.mixkit.co/videos/650/650-720.mp4",
             "tags": ["city", "night", "noir"],
         },
+        {
+            "id": "city_timelapse",
+            "name": "City Timelapse",
+            "url": "https://assets.mixkit.co/videos/4077/4077-720.mp4",
+            "tags": ["city", "timelapse", "night"],
+        },
+        {
+            "id": "downtown_traffic",
+            "name": "Downtown Traffic",
+            "url": "https://assets.mixkit.co/videos/1134/1134-720.mp4",
+            "tags": ["city", "traffic", "night"],
+        },
+        {
+            "id": "neon_streets",
+            "name": "Neon Streets",
+            "url": "https://assets.mixkit.co/videos/3116/3116-720.mp4",
+            "tags": ["neon", "street", "night"],
+        },
     ],
     "nature": [
         {
@@ -823,6 +867,24 @@ CURATED_VIDEOS = {
             "url": "https://assets.mixkit.co/videos/26532/26532-720.mp4",
             "tags": ["morning", "light", "nature"],
         },
+        {
+            "id": "forest_sunlight",
+            "name": "Forest Sunlight",
+            "url": "https://assets.mixkit.co/videos/1164/1164-720.mp4",
+            "tags": ["forest", "sunlight", "nature"],
+        },
+        {
+            "id": "ocean_waves",
+            "name": "Ocean Waves",
+            "url": "https://assets.mixkit.co/videos/1189/1189-720.mp4",
+            "tags": ["ocean", "waves", "peaceful"],
+        },
+        {
+            "id": "clouds_timelapse",
+            "name": "Clouds Timelapse",
+            "url": "https://assets.mixkit.co/videos/1166/1166-720.mp4",
+            "tags": ["clouds", "sky", "timelapse"],
+        },
     ],
     "space": [
         {
@@ -830,6 +892,24 @@ CURATED_VIDEOS = {
             "name": "Stars in Space",
             "url": "https://assets.mixkit.co/videos/14185/14185-720.mp4",
             "tags": ["space", "stars", "night"],
+        },
+        {
+            "id": "galaxy_travel",
+            "name": "Galaxy Travel",
+            "url": "https://assets.mixkit.co/videos/4039/4039-720.mp4",
+            "tags": ["galaxy", "space", "travel"],
+        },
+        {
+            "id": "nebula_flight",
+            "name": "Nebula Flight",
+            "url": "https://assets.mixkit.co/videos/39702/39702-720.mp4",
+            "tags": ["nebula", "space", "cosmic"],
+        },
+        {
+            "id": "earth_orbit",
+            "name": "Earth from Orbit",
+            "url": "https://assets.mixkit.co/videos/3754/3754-720.mp4",
+            "tags": ["earth", "orbit", "space"],
         },
     ],
     "abstract": [
@@ -844,6 +924,24 @@ CURATED_VIDEOS = {
             "name": "Minimal Waves",
             "url": "https://assets.mixkit.co/videos/914/914-1080.mp4",
             "tags": ["minimal", "abstract", "calm"],
+        },
+        {
+            "id": "liquid_motion",
+            "name": "Liquid Motion",
+            "url": "https://assets.mixkit.co/videos/27/27-720.mp4",
+            "tags": ["liquid", "abstract", "flow"],
+        },
+        {
+            "id": "particle_flow",
+            "name": "Particle Flow",
+            "url": "https://assets.mixkit.co/videos/200/200-720.mp4",
+            "tags": ["particles", "abstract", "motion"],
+        },
+        {
+            "id": "color_gradient",
+            "name": "Color Gradient",
+            "url": "https://assets.mixkit.co/videos/12/12-720.mp4",
+            "tags": ["gradient", "colors", "abstract"],
         },
     ],
 }
@@ -964,25 +1062,34 @@ def get_tracks_for_channel(channel_id: str, mood: Optional[str] = None) -> List[
 
 
 def get_videos_for_channel(channel_id: str) -> List[Dict]:
-    """Get recommended videos for a channel based on its vibe."""
+    """Get recommended videos for a channel based on its vibe - expanded categories."""
+    # Each channel gets multiple video categories for variety
     channel_visuals = {
-        "ch01": ["rain"],              # Late Night
-        "ch02": ["rain"],              # Rain Cafe
-        "ch03": ["city"],              # Jazz Noir
-        "ch04": ["abstract"],          # Synthwave
-        "ch05": ["space"],             # Deep Space
-        "ch06": ["city"],              # Tokyo Drift
-        "ch07": ["nature"],            # Sunday Morning
-        "ch08": ["abstract"],          # Focus
-        "ch09": ["rain"],              # Melancholy
-        "ch10": ["nature"],            # Golden Hour
+        "ch01": ["rain", "city", "abstract"],       # Late Night - moody urban
+        "ch02": ["rain", "nature", "city"],         # Rain Cafe - cozy vibes
+        "ch03": ["city", "rain", "abstract"],       # Jazz Noir - urban noir
+        "ch04": ["abstract", "space", "city"],      # Synthwave - retro futurism
+        "ch05": ["space", "abstract", "nature"],    # Deep Space - cosmic
+        "ch06": ["city", "abstract", "rain"],       # Tokyo Drift - neon urbanism
+        "ch07": ["nature", "rain", "abstract"],     # Sunday Morning - peaceful
+        "ch08": ["abstract", "nature", "space"],    # Focus - minimal
+        "ch09": ["rain", "city", "nature"],         # Melancholy - emotional
+        "ch10": ["nature", "abstract", "city"],     # Golden Hour - warm tones
     }
 
-    categories = channel_visuals.get(channel_id, ["abstract"])
+    categories = channel_visuals.get(channel_id, ["abstract", "nature"])
     videos = []
 
     for category in categories:
         if category in CURATED_VIDEOS:
             videos.extend(CURATED_VIDEOS[category])
 
-    return videos
+    # Deduplicate by ID
+    seen_ids = set()
+    unique_videos = []
+    for video in videos:
+        if video["id"] not in seen_ids:
+            seen_ids.add(video["id"])
+            unique_videos.append(video)
+
+    return unique_videos

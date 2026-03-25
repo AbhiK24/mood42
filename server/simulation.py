@@ -257,9 +257,11 @@ class SimulationEngine:
         if not thought:
             thought = self._generate_thought(channel_id, region, "track_change")
 
-        # Select VALIDATED video for this track
+        # Select VALIDATED video for this track (avoid repeating current video)
         videos = get_videos_for_channel(channel_id)
-        video = await get_validated_video(videos) if videos else None
+        current_video = agent.get_region_state(region).current_video
+        current_video_id = current_video.get("id") if current_video else None
+        video = await get_validated_video(videos, exclude_id=current_video_id) if videos else None
 
         # Record in agent's memory (region-tagged)
         agent.record_track_played(new_track, self.world["tick"], thought, region)
