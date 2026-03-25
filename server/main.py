@@ -306,30 +306,16 @@ import pathlib
 # Get project root (parent of server directory)
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 
-# Check if we're in production (dist folder exists)
-DIST_PATH = PROJECT_ROOT / "dist"
-if DIST_PATH.exists():
-    # Serve from dist in production
-    app.mount("/assets", StaticFiles(directory=str(DIST_PATH / "assets")), name="assets")
+# Serve static assets
+app.mount("/assets", StaticFiles(directory=str(PROJECT_ROOT / "public" / "assets")), name="assets")
 
-    @app.get("/")
-    async def root():
-        return FileResponse(str(DIST_PATH / "index.html"))
-else:
-    # Serve from public in development
-    app.mount("/assets", StaticFiles(directory=str(PROJECT_ROOT / "public" / "assets")), name="assets")
+@app.get("/")
+async def root():
+    return FileResponse(str(PROJECT_ROOT / "index.html"))
 
-    @app.get("/")
-    async def root():
-        return FileResponse(str(PROJECT_ROOT / "index.html"))
-
-# Serve favicon
 @app.get("/favicon.svg")
 async def favicon():
-    favicon_path = PROJECT_ROOT / "public" / "favicon.svg"
-    if favicon_path.exists():
-        return FileResponse(str(favicon_path))
-    return {"error": "Not found"}, 404
+    return FileResponse(str(PROJECT_ROOT / "public" / "favicon.svg"))
 
 
 if __name__ == "__main__":

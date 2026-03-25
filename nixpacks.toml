@@ -1,17 +1,14 @@
 # mood42 build configuration for Railway
+# Python-only: FastAPI serves everything
 
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311"]
+nixPkgs = ["python311"]
 
 [phases.install]
 cmds = [
-    "npm ci || npm install",
     "python -m venv /app/.venv",
     "/app/.venv/bin/pip install -r server/requirements.txt"
 ]
-
-[phases.build]
-cmds = ["npm run build"]
 
 [start]
 cmd = "/app/.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port ${PORT:-3000}"
