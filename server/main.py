@@ -16,9 +16,9 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from simulation import SimulationEngine
-from channels import CHANNELS, TRACKS
-from geo import get_region_from_offset, get_viewer_context, REGIONS
+from server.simulation import SimulationEngine
+from server.channels import CHANNELS, TRACKS
+from server.geo import get_region_from_offset, get_viewer_context, REGIONS
 
 
 # SSE client connections - now keyed by channel:region

@@ -10,9 +10,9 @@ import os
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
 
-from channels import CHANNELS, TRACKS, get_channel_tracks
-from tools import get_tracks_for_channel, search_music, execute_tool
-from llm import (
+from server.channels import CHANNELS, TRACKS, get_channel_tracks
+from server.tools import get_tracks_for_channel, search_music, execute_tool
+from server.llm import (
     generate_programming_decision,
     generate_reflection,
     generate_plan,
@@ -20,8 +20,8 @@ from llm import (
     ALL_TOOLS,
     API_KEY,
 )
-from agent import ChannelAgent, create_channel_agents, MemoryType, REGIONS
-from geo import get_region_times, get_viewer_context, get_occasion
+from server.agent import ChannelAgent, create_channel_agents, MemoryType, REGIONS
+from server.geo import get_region_times, get_viewer_context, get_occasion
 
 
 class SimulationEngine:
