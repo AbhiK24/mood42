@@ -25,10 +25,11 @@ TIMEZONE_TO_REGION = {
 }
 
 
-def get_region_from_offset(offset_hours: int) -> str:
-    """Get region from UTC offset in hours."""
-    offset_hours = max(-12, min(14, offset_hours))
-    return TIMEZONE_TO_REGION.get(offset_hours, "europe")
+def get_region_from_offset(offset_hours: float) -> str:
+    """Get region from UTC offset in hours (handles half-hour zones like India +5.5)."""
+    offset_int = int(round(offset_hours))  # Round to nearest hour
+    offset_int = max(-12, min(14, offset_int))
+    return TIMEZONE_TO_REGION.get(offset_int, "europe")
 
 
 def get_local_time(offset_hours: int) -> Tuple[str, int]:

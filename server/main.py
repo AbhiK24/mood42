@@ -227,7 +227,7 @@ async def test_url(url: str):
 
 
 @app.get("/api/channels")
-async def get_channels(tz: Optional[int] = Query(None, description="UTC offset in hours")):
+async def get_channels(tz: Optional[float] = Query(None, description="UTC offset in hours")):
     """Get all channel states for viewer's region."""
     region = get_region_from_offset(tz) if tz is not None else "americas"
     return {
@@ -240,7 +240,7 @@ async def get_channels(tz: Optional[int] = Query(None, description="UTC offset i
 @app.get("/api/channels/{channel_id}")
 async def get_channel(
     channel_id: str,
-    tz: Optional[int] = Query(None, description="UTC offset in hours"),
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
 ):
     """Get single channel state with full agent details for viewer's region."""
     region = get_region_from_offset(tz) if tz is not None else "americas"
@@ -253,7 +253,7 @@ async def get_channel(
 @app.post("/api/channels/{channel_id}/join")
 async def join_channel(
     channel_id: str,
-    tz: Optional[int] = Query(None, description="UTC offset in hours"),
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
 ):
     """Increment viewer count for a channel in viewer's region."""
     region = get_region_from_offset(tz) if tz is not None else "americas"
@@ -273,7 +273,7 @@ async def join_channel(
 @app.post("/api/channels/{channel_id}/leave")
 async def leave_channel(
     channel_id: str,
-    tz: Optional[int] = Query(None, description="UTC offset in hours"),
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
 ):
     """Decrement viewer count for a channel in viewer's region."""
     region = get_region_from_offset(tz) if tz is not None else "americas"
@@ -292,7 +292,7 @@ async def leave_channel(
 
 @app.get("/api/viewer-context")
 async def get_viewer_context_api(
-    tz: Optional[int] = Query(None, description="UTC offset in hours"),
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
 ):
     """Get viewer context based on timezone."""
     region = get_region_from_offset(tz) if tz is not None else "americas"
@@ -315,7 +315,7 @@ async def event_generator(queue: asyncio.Queue):
 @app.get("/api/stream/all")
 async def stream_all(
     request: Request,
-    tz: Optional[int] = Query(None, description="UTC offset in hours"),
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
 ):
     """SSE stream for all channel updates, personalized by region."""
     region = get_region_from_offset(tz) if tz is not None else "americas"
@@ -360,7 +360,7 @@ async def stream_all(
 async def stream_channel(
     channel_id: str,
     request: Request,
-    tz: Optional[int] = Query(None, description="UTC offset in hours"),
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
 ):
     """SSE stream for single channel updates, personalized by region."""
     if channel_id not in CHANNELS:
