@@ -197,231 +197,71 @@ VERIFIED_ARCHIVE_ITEMS = [
     ("synthwave", "cyberpunk.mp3"),
 ]
 
-# Pre-curated tracks from Archive.org (verified working URLs only)
-CURATED_TRACKS = {
-    "lo-fi": [
-        {
-            "id": "hanging_lanterns",
-            "name": "Hanging Lanterns - Kalaido",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3",
-            "genres": ["lo-fi", "chill"],
-            "duration": 180,
-        },
-        {
-            "id": "first_snow",
-            "name": "First Snow - Kerusu",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kerusu%20-%20First%20Snow.mp3",
-            "genres": ["lo-fi", "chill"],
-            "duration": 195,
-        },
-        {
-            "id": "lofi_rain",
-            "name": "Lo-fi Rain Beat",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28FREE%29%20Lo-fi%20Type%20Beat%20-%20Rain.mp3",
-            "genres": ["lo-fi", "rain"],
-            "duration": 170,
-        },
-        {
-            "id": "waves_matt",
-            "name": "Waves - Matt Quentin",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Matt%20Quentin%20-%20Waves.mp3",
-            "genres": ["lo-fi", "warm"],
-            "duration": 200,
-        },
-        {
-            "id": "lofi_experiment",
-            "name": "Lofi Experimentin - Kronicle",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kronicle%20-%20Lofi%20Experimentin%20%28No%20Copyright%20Hip%20Hop%20Music%29.mp3",
-            "genres": ["lo-fi", "night"],
-            "duration": 185,
-        },
-        {
-            "id": "lofi_onion",
-            "name": "Onion - Lukrembo",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Onion%20%28Prod.%20by%20Lukrembo%29.mp3",
-            "genres": ["lo-fi", "chill"],
-            "duration": 175,
-        },
-        {
-            "id": "lofi_tranquillity",
-            "name": "Tranquillity - Chill Beat",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Tranquillity%20-%20Chill%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
-            "genres": ["lo-fi", "morning", "cafe"],
-            "duration": 190,
-        },
-        {
-            "id": "lofi_sunset",
-            "name": "Sunset Drive",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/flovry%20-%20car%20radio.mp3",
-            "genres": ["lo-fi", "evening"],
-            "duration": 185,
-        },
+# =============================================================================
+# EXCLUSIVE CHANNEL LIBRARIES - Each channel has its own unique audio/visual taste
+# =============================================================================
+
+# Each channel agent has EXCLUSIVE tracks - no sharing between channels
+CHANNEL_TRACKS = {
+    # CH01: Late Night with Maya - lo-fi, introspective night coding vibes
+    "ch01": [
+        {"id": "ch01_1", "name": "Hanging Lanterns - Kalaido", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3", "duration": 180},
+        {"id": "ch01_2", "name": "First Snow - Kerusu", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kerusu%20-%20First%20Snow.mp3", "duration": 195},
+        {"id": "ch01_3", "name": "Lofi Experimentin - Kronicle", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kronicle%20-%20Lofi%20Experimentin%20%28No%20Copyright%20Hip%20Hop%20Music%29.mp3", "duration": 185},
     ],
-    "jazz": [
-        {
-            "id": "swing_jazz",
-            "name": "Swing Jazz Grooves",
-            "url": "https://archive.org/download/lofi-music-swing-jazz-grooves-to-elevate-your-mood-feel-the-rhythm/LOFI%20Music%E3%80%80Swing%20Jazz%20Grooves%20to%20Elevate%20Your%20Mood%20%EF%BD%9C%20Feel%20the%20Rhythm%20.mp3",
-            "genres": ["jazz", "swing"],
-            "duration": 220,
-        },
-        {
-            "id": "jazz_noir_beat",
-            "name": "Jazz Type Beat - Lukrembo",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3",
-            "genres": ["jazz", "noir"],
-            "duration": 165,
-        },
-        {
-            "id": "jazz_chill",
-            "name": "Chill Jazzy Lofi",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNo%20Copyright%20Music%5D%20Chill%20Jazzy%20Lofi%20Hip-Hop%20Beat%20%28Copyright%20Free%29%20Music%20By%20KaizanBlu.mp3",
-            "genres": ["jazz", "cafe", "lofi"],
-            "duration": 180,
-        },
-        {
-            "id": "jazz_herbal",
-            "name": "Herbal Tea Jazz",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNon%20Copyrighted%20Music%5D%20Artificial.Music%20-%20Herbal%20Tea%20%5BLo-fi%5D.mp3",
-            "genres": ["jazz", "smooth", "lofi"],
-            "duration": 195,
-        },
-        {
-            "id": "jazz_deep_space",
-            "name": "Deep Space Jazz",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/deep%20space%20-%20Ambient%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
-            "genres": ["jazz", "ambient", "night"],
-            "duration": 200,
-        },
+    # CH02: Rain Café with Yuki - jazz café, cozy rain vibes
+    "ch02": [
+        {"id": "ch02_1", "name": "Lo-fi Rain Beat", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28FREE%29%20Lo-fi%20Type%20Beat%20-%20Rain.mp3", "duration": 170},
+        {"id": "ch02_2", "name": "Chill Jazzy Lofi", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNo%20Copyright%20Music%5D%20Chill%20Jazzy%20Lofi%20Hip-Hop%20Beat%20%28Copyright%20Free%29%20Music%20By%20KaizanBlu.mp3", "duration": 180},
+        {"id": "ch02_3", "name": "Herbal Tea Jazz", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNon%20Copyrighted%20Music%5D%20Artificial.Music%20-%20Herbal%20Tea%20%5BLo-fi%5D.mp3", "duration": 195},
     ],
-    "ambient": [
-        {
-            "id": "ambient_space_01",
-            "name": "Ambient Space - Dimaension X",
-            "url": "https://archive.org/download/dx_ambient/01_ambient.mp3",
-            "genres": ["ambient", "space"],
-            "duration": 300,
-        },
-        {
-            "id": "ambient_focus",
-            "name": "Focus Ambient",
-            "url": "https://archive.org/download/dx_ambient/03_ambient.mp3",
-            "genres": ["ambient", "minimal"],
-            "duration": 280,
-        },
-        {
-            "id": "ambient_deep",
-            "name": "Deep Ambient",
-            "url": "https://archive.org/download/dx_ambient/02_ambient.mp3",
-            "genres": ["ambient", "deep"],
-            "duration": 320,
-        },
-        {
-            "id": "ambient_04",
-            "name": "Floating Ambient",
-            "url": "https://archive.org/download/dx_ambient/04_ambient.mp3",
-            "genres": ["ambient", "floating"],
-            "duration": 290,
-        },
-        {
-            "id": "ambient_05",
-            "name": "Cosmic Drift",
-            "url": "https://archive.org/download/dx_ambient/05_ambient.mp3",
-            "genres": ["ambient", "cosmic"],
-            "duration": 310,
-        },
-        {
-            "id": "ambient_06",
-            "name": "Night Meditation",
-            "url": "https://archive.org/download/dx_ambient/06_ambient.mp3",
-            "genres": ["ambient", "meditation"],
-            "duration": 285,
-        },
+    # CH03: Jazz Noir with Vincent - smoky detective jazz
+    "ch03": [
+        {"id": "ch03_1", "name": "Swing Jazz Grooves", "url": "https://archive.org/download/lofi-music-swing-jazz-grooves-to-elevate-your-mood-feel-the-rhythm/LOFI%20Music%E3%80%80Swing%20Jazz%20Grooves%20to%20Elevate%20Your%20Mood%20%EF%BD%9C%20Feel%20the%20Rhythm%20.mp3", "duration": 220},
+        {"id": "ch03_2", "name": "Jazz Type Beat - Lukrembo", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3", "duration": 165},
+        {"id": "ch03_3", "name": "Deep Space Jazz", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/deep%20space%20-%20Ambient%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 200},
     ],
-    "synthwave": [
-        {
-            "id": "synthwave_main",
-            "name": "Synthwave Dreams",
-            "url": "https://archive.org/download/synthwave/synthwave.mp3",
-            "genres": ["synthwave", "neon"],
-            "duration": 210,
-        },
-        {
-            "id": "cyberpunk_main",
-            "name": "Cyberpunk Night",
-            "url": "https://archive.org/download/synthwave/cyberpunk.mp3",
-            "genres": ["synthwave", "cyberpunk"],
-            "duration": 225,
-        },
-        {
-            "id": "electronic_finite",
-            "name": "Finite Dreams",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/finite%20-%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
-            "genres": ["electronic", "lofi"],
-            "duration": 195,
-        },
-        {
-            "id": "electronic_defect",
-            "name": "Defective Beats",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/defective%20-%20LofiTrap%20Style%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
-            "genres": ["electronic", "trap"],
-            "duration": 180,
-        },
+    # CH04: Synthwave with NEON - retro-futuristic neon dreams
+    "ch04": [
+        {"id": "ch04_1", "name": "Synthwave Dreams", "url": "https://archive.org/download/synthwave/synthwave.mp3", "duration": 210},
+        {"id": "ch04_2", "name": "Cyberpunk Night", "url": "https://archive.org/download/synthwave/cyberpunk.mp3", "duration": 225},
+        {"id": "ch04_3", "name": "Defective Beats", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/defective%20-%20LofiTrap%20Style%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 180},
     ],
-    "acoustic": [
-        {
-            "id": "acoustic_dance",
-            "name": "Dancing On My Own",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Outgoing%20Hikikomori%20-%20Dancing%20On%20My%20Own%20%28No%20copyright%20lo%20fi%20beat%29.mp3",
-            "genres": ["acoustic", "peaceful"],
-            "duration": 195,
-        },
-        {
-            "id": "acoustic_surf",
-            "name": "Take Care - SURF",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%E3%81%91%EF%BD%8D%20SURF%20-%20Take%20Care.mp3",
-            "genres": ["acoustic", "gentle"],
-            "duration": 185,
-        },
+    # CH05: Deep Space with Cosmos - vast cosmic ambience
+    "ch05": [
+        {"id": "ch05_1", "name": "Cosmic Drift", "url": "https://archive.org/download/dx_ambient/05_ambient.mp3", "duration": 310},
+        {"id": "ch05_2", "name": "Deep Ambient", "url": "https://archive.org/download/dx_ambient/02_ambient.mp3", "duration": 320},
+        {"id": "ch05_3", "name": "Night Meditation", "url": "https://archive.org/download/dx_ambient/06_ambient.mp3", "duration": 285},
     ],
-    "piano": [
-        {
-            "id": "piano_ambient_01",
-            "name": "Soft Piano Dreams",
-            "url": "https://archive.org/download/dx_ambient/01_ambient.mp3",
-            "genres": ["piano", "soft", "ambient"],
-            "duration": 300,
-        },
-        {
-            "id": "piano_ambient_02",
-            "name": "Rainy Window Piano",
-            "url": "https://archive.org/download/dx_ambient/02_ambient.mp3",
-            "genres": ["piano", "rain", "ambient"],
-            "duration": 320,
-        },
-        {
-            "id": "piano_ambient_03",
-            "name": "Evening Reflection",
-            "url": "https://archive.org/download/dx_ambient/04_ambient.mp3",
-            "genres": ["piano", "reflection", "ambient"],
-            "duration": 290,
-        },
+    # CH06: Tokyo Drift with Kenji - neon city nights, city pop
+    "ch06": [
+        {"id": "ch06_1", "name": "Finite Dreams", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/finite%20-%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 195},
+        {"id": "ch06_2", "name": "Onion - Lukrembo", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Onion%20%28Prod.%20by%20Lukrembo%29.mp3", "duration": 175},
+        {"id": "ch06_3", "name": "Tranquillity", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Tranquillity%20-%20Chill%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3", "duration": 190},
     ],
-    "electronic": [
-        {
-            "id": "electronic_01",
-            "name": "Deep Electronic",
-            "url": "https://archive.org/download/dx_ambient/07_ambient.mp3",
-            "genres": ["electronic", "deep"],
-            "duration": 275,
-        },
-        {
-            "id": "electronic_02",
-            "name": "Electronic Dreams",
-            "url": "https://archive.org/download/dx_ambient/08_ambient.mp3",
-            "genres": ["electronic", "dreams"],
-            "duration": 290,
-        },
+    # CH07: Sunday Morning with Claire - peaceful acoustic warmth
+    "ch07": [
+        {"id": "ch07_1", "name": "Dancing On My Own", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Outgoing%20Hikikomori%20-%20Dancing%20On%20My%20Own%20%28No%20copyright%20lo%20fi%20beat%29.mp3", "duration": 195},
+        {"id": "ch07_2", "name": "Take Care - SURF", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%E3%81%91%EF%BD%8D%20SURF%20-%20Take%20Care.mp3", "duration": 185},
+        {"id": "ch07_3", "name": "Waves - Matt Quentin", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Matt%20Quentin%20-%20Waves.mp3", "duration": 200},
+    ],
+    # CH08: Focus with Alan - minimal, distraction-free ambient
+    "ch08": [
+        {"id": "ch08_1", "name": "Focus Ambient", "url": "https://archive.org/download/dx_ambient/03_ambient.mp3", "duration": 280},
+        {"id": "ch08_2", "name": "Floating Ambient", "url": "https://archive.org/download/dx_ambient/04_ambient.mp3", "duration": 290},
+        {"id": "ch08_3", "name": "Ambient Space", "url": "https://archive.org/download/dx_ambient/01_ambient.mp3", "duration": 300},
+    ],
+    # CH09: Melancholy with Daniel - sad, reflective, rainy nights
+    "ch09": [
+        {"id": "ch09_1", "name": "Sunset Drive", "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/flovry%20-%20car%20radio.mp3", "duration": 185},
+        {"id": "ch09_2", "name": "Deep Electronic", "url": "https://archive.org/download/dx_ambient/07_ambient.mp3", "duration": 275},
+        {"id": "ch09_3", "name": "Electronic Dreams", "url": "https://archive.org/download/dx_ambient/08_ambient.mp3", "duration": 290},
+    ],
+    # CH10: Golden Hour with Iris - warm sunset, golden light
+    "ch10": [
+        {"id": "ch10_1", "name": "Soft Piano Dreams", "url": "https://archive.org/download/dx_ambient/01_ambient.mp3", "duration": 300},
+        {"id": "ch10_2", "name": "Rainy Window Piano", "url": "https://archive.org/download/dx_ambient/02_ambient.mp3", "duration": 320},
+        {"id": "ch10_3", "name": "Evening Reflection", "url": "https://archive.org/download/dx_ambient/04_ambient.mp3", "duration": 290},
     ],
 }
 
@@ -785,9 +625,74 @@ def extract_genres_from_query(query: str) -> List[str]:
     return genres if genres else ["ambient"]
 
 
+# Each channel agent has EXCLUSIVE videos - no sharing between channels
+CHANNEL_VIDEOS = {
+    # CH01: Late Night with Maya - rain on windows, moody city nights
+    "ch01": [
+        {"id": "ch01_v1", "name": "Rain on Window", "url": "https://assets.mixkit.co/videos/18308/18308-720.mp4", "tags": ["rain", "window", "night"]},
+        {"id": "ch01_v2", "name": "City Timelapse", "url": "https://assets.mixkit.co/videos/4077/4077-720.mp4", "tags": ["city", "timelapse", "night"]},
+        {"id": "ch01_v3", "name": "Liquid Motion", "url": "https://assets.mixkit.co/videos/27/27-720.mp4", "tags": ["liquid", "abstract", "flow"]},
+    ],
+    # CH02: Rain Café with Yuki - cozy rain, warm café vibes
+    "ch02": [
+        {"id": "ch02_v1", "name": "Rainy Street", "url": "https://assets.mixkit.co/videos/33951/33951-720.mp4", "tags": ["rain", "street", "city"]},
+        {"id": "ch02_v2", "name": "Rain Drops Close-up", "url": "https://assets.mixkit.co/videos/4271/4271-720.mp4", "tags": ["rain", "drops", "macro"]},
+        {"id": "ch02_v3", "name": "Forest Sunlight", "url": "https://assets.mixkit.co/videos/1164/1164-720.mp4", "tags": ["forest", "sunlight", "nature"]},
+    ],
+    # CH03: Jazz Noir with Vincent - smoky noir city
+    "ch03": [
+        {"id": "ch03_v1", "name": "City Lights", "url": "https://assets.mixkit.co/videos/650/650-720.mp4", "tags": ["city", "night", "noir"]},
+        {"id": "ch03_v2", "name": "Rain Puddles", "url": "https://assets.mixkit.co/videos/4278/4278-720.mp4", "tags": ["rain", "puddles", "street"]},
+        {"id": "ch03_v3", "name": "Downtown Traffic", "url": "https://assets.mixkit.co/videos/1134/1134-720.mp4", "tags": ["city", "traffic", "night"]},
+    ],
+    # CH04: Synthwave with NEON - retro neon grids
+    "ch04": [
+        {"id": "ch04_v1", "name": "Neon Grid", "url": "https://assets.mixkit.co/videos/35644/35644-720.mp4", "tags": ["neon", "grid", "synthwave"]},
+        {"id": "ch04_v2", "name": "Galaxy Travel", "url": "https://assets.mixkit.co/videos/4039/4039-720.mp4", "tags": ["galaxy", "space", "travel"]},
+        {"id": "ch04_v3", "name": "Color Gradient", "url": "https://assets.mixkit.co/videos/12/12-720.mp4", "tags": ["gradient", "colors", "abstract"]},
+    ],
+    # CH05: Deep Space with Cosmos - cosmic void
+    "ch05": [
+        {"id": "ch05_v1", "name": "Stars in Space", "url": "https://assets.mixkit.co/videos/14185/14185-720.mp4", "tags": ["space", "stars", "night"]},
+        {"id": "ch05_v2", "name": "Nebula Flight", "url": "https://assets.mixkit.co/videos/39702/39702-720.mp4", "tags": ["nebula", "space", "cosmic"]},
+        {"id": "ch05_v3", "name": "Earth from Orbit", "url": "https://assets.mixkit.co/videos/3754/3754-720.mp4", "tags": ["earth", "orbit", "space"]},
+    ],
+    # CH06: Tokyo Drift with Kenji - neon city streets
+    "ch06": [
+        {"id": "ch06_v1", "name": "Tokyo Night", "url": "https://assets.mixkit.co/videos/4451/4451-1080.mp4", "tags": ["tokyo", "neon", "night"]},
+        {"id": "ch06_v2", "name": "Neon Streets", "url": "https://assets.mixkit.co/videos/3116/3116-720.mp4", "tags": ["neon", "street", "night"]},
+        {"id": "ch06_v3", "name": "City in Rain", "url": "https://assets.mixkit.co/videos/4634/4634-720.mp4", "tags": ["rain", "city", "night"]},
+    ],
+    # CH07: Sunday Morning with Claire - peaceful nature
+    "ch07": [
+        {"id": "ch07_v1", "name": "Morning Light", "url": "https://assets.mixkit.co/videos/26532/26532-720.mp4", "tags": ["morning", "light", "nature"]},
+        {"id": "ch07_v2", "name": "Ocean Waves", "url": "https://assets.mixkit.co/videos/1189/1189-720.mp4", "tags": ["ocean", "waves", "peaceful"]},
+        {"id": "ch07_v3", "name": "Clouds Timelapse", "url": "https://assets.mixkit.co/videos/1166/1166-720.mp4", "tags": ["clouds", "sky", "timelapse"]},
+    ],
+    # CH08: Focus with Alan - minimal abstract
+    "ch08": [
+        {"id": "ch08_v1", "name": "Minimal Waves", "url": "https://assets.mixkit.co/videos/914/914-1080.mp4", "tags": ["minimal", "abstract", "calm"]},
+        {"id": "ch08_v2", "name": "Particle Flow", "url": "https://assets.mixkit.co/videos/200/200-720.mp4", "tags": ["particles", "abstract", "motion"]},
+        {"id": "ch08_v3", "name": "Soft Gradient", "url": "https://assets.mixkit.co/videos/18/18-720.mp4", "tags": ["gradient", "soft", "minimal"]},
+    ],
+    # CH09: Melancholy with Daniel - reflective rain
+    "ch09": [
+        {"id": "ch09_v1", "name": "Rain Window Reflection", "url": "https://assets.mixkit.co/videos/18312/18312-1080.mp4", "tags": ["rain", "window", "reflective"]},
+        {"id": "ch09_v2", "name": "Misty Forest", "url": "https://assets.mixkit.co/videos/1176/1176-720.mp4", "tags": ["mist", "forest", "moody"]},
+        {"id": "ch09_v3", "name": "Grey Clouds", "url": "https://assets.mixkit.co/videos/1172/1172-720.mp4", "tags": ["clouds", "grey", "melancholy"]},
+    ],
+    # CH10: Golden Hour with Iris - warm sunset
+    "ch10": [
+        {"id": "ch10_v1", "name": "Golden Hour Sunset", "url": "https://assets.mixkit.co/videos/4119/4119-1080.mp4", "tags": ["sunset", "golden", "nature"]},
+        {"id": "ch10_v2", "name": "Sunset Beach", "url": "https://assets.mixkit.co/videos/1168/1168-720.mp4", "tags": ["beach", "sunset", "warm"]},
+        {"id": "ch10_v3", "name": "Golden Fields", "url": "https://assets.mixkit.co/videos/1171/1171-720.mp4", "tags": ["fields", "golden", "warm"]},
+    ],
+}
+
+
 # ============ VIDEO SOURCES ============
 
-# Mixkit free videos - expanded library for variety
+# Mixkit free videos - expanded library for variety (LEGACY - kept for fallback)
 CURATED_VIDEOS = {
     "rain": [
         {
@@ -1026,69 +931,61 @@ async def execute_tool(tool_name: str, arguments: Dict) -> Dict:
 # ============ CONTENT RECOMMENDATIONS ============
 
 def get_tracks_for_channel(channel_id: str, mood: Optional[str] = None) -> List[Dict]:
-    """Get recommended tracks for a channel based on its vibe - expanded library."""
-    channel_vibes = {
-        "ch01": ["lo-fi", "ambient", "piano"],           # Late Night - Maya
-        "ch02": ["jazz", "lo-fi", "piano"],              # Rain Cafe - Yuki
-        "ch03": ["jazz", "piano"],                       # Jazz Noir - Vincent
-        "ch04": ["synthwave", "electronic"],             # Synthwave - NEON
-        "ch05": ["ambient", "electronic"],               # Deep Space - Cosmos
-        "ch06": ["synthwave", "jazz", "electronic"],     # Tokyo Drift - Kenji
-        "ch07": ["acoustic", "lo-fi", "piano"],          # Sunday Morning - Claire
-        "ch08": ["ambient", "lo-fi", "electronic"],      # Focus - Alan
-        "ch09": ["jazz", "lo-fi", "piano"],              # Melancholy - Daniel
-        "ch10": ["lo-fi", "acoustic", "ambient"],        # Golden Hour - Iris
-    }
+    """Get EXCLUSIVE tracks for a channel - each agent has their own unique library."""
+    # Use exclusive channel tracks
+    if channel_id in CHANNEL_TRACKS:
+        tracks = CHANNEL_TRACKS[channel_id].copy()
+        random.shuffle(tracks)
+        return tracks
 
+    # Fallback to old shared library (shouldn't happen)
+    print(f"[Tracks] WARNING: No exclusive tracks for {channel_id}, using fallback")
+    channel_vibes = {
+        "ch01": ["lo-fi", "ambient", "piano"],
+        "ch02": ["jazz", "lo-fi", "piano"],
+        "ch03": ["jazz", "piano"],
+        "ch04": ["synthwave", "electronic"],
+        "ch05": ["ambient", "electronic"],
+        "ch06": ["synthwave", "jazz", "electronic"],
+        "ch07": ["acoustic", "lo-fi", "piano"],
+        "ch08": ["ambient", "lo-fi", "electronic"],
+        "ch09": ["jazz", "lo-fi", "piano"],
+        "ch10": ["lo-fi", "acoustic", "ambient"],
+    }
     genres = channel_vibes.get(channel_id, ["lo-fi", "ambient"])
     tracks = []
-
     for genre in genres:
         if genre in CURATED_TRACKS:
             tracks.extend(CURATED_TRACKS[genre])
-
-    # Deduplicate
-    seen_ids = set()
-    unique_tracks = []
-    for track in tracks:
-        if track["id"] not in seen_ids:
-            seen_ids.add(track["id"])
-            unique_tracks.append(track)
-
-    # Shuffle to provide variety
-    random.shuffle(unique_tracks)
-    return unique_tracks
+    random.shuffle(tracks)
+    return tracks
 
 
 def get_videos_for_channel(channel_id: str) -> List[Dict]:
-    """Get recommended videos for a channel based on its vibe - expanded categories."""
-    # Each channel gets multiple video categories for variety
-    channel_visuals = {
-        "ch01": ["rain", "city", "abstract"],       # Late Night - moody urban
-        "ch02": ["rain", "nature", "city"],         # Rain Cafe - cozy vibes
-        "ch03": ["city", "rain", "abstract"],       # Jazz Noir - urban noir
-        "ch04": ["abstract", "space", "city"],      # Synthwave - retro futurism
-        "ch05": ["space", "abstract", "nature"],    # Deep Space - cosmic
-        "ch06": ["city", "abstract", "rain"],       # Tokyo Drift - neon urbanism
-        "ch07": ["nature", "rain", "abstract"],     # Sunday Morning - peaceful
-        "ch08": ["abstract", "nature", "space"],    # Focus - minimal
-        "ch09": ["rain", "city", "nature"],         # Melancholy - emotional
-        "ch10": ["nature", "abstract", "city"],     # Golden Hour - warm tones
-    }
+    """Get EXCLUSIVE videos for a channel - each agent has their own unique visual library."""
+    # Use exclusive channel videos
+    if channel_id in CHANNEL_VIDEOS:
+        videos = CHANNEL_VIDEOS[channel_id].copy()
+        random.shuffle(videos)
+        return videos
 
+    # Fallback to old shared library (shouldn't happen)
+    print(f"[Videos] WARNING: No exclusive videos for {channel_id}, using fallback")
+    channel_visuals = {
+        "ch01": ["rain", "city", "abstract"],
+        "ch02": ["rain", "nature", "city"],
+        "ch03": ["city", "rain", "abstract"],
+        "ch04": ["abstract", "space", "city"],
+        "ch05": ["space", "abstract", "nature"],
+        "ch06": ["city", "abstract", "rain"],
+        "ch07": ["nature", "rain", "abstract"],
+        "ch08": ["abstract", "nature", "space"],
+        "ch09": ["rain", "city", "nature"],
+        "ch10": ["nature", "abstract", "city"],
+    }
     categories = channel_visuals.get(channel_id, ["abstract", "nature"])
     videos = []
-
     for category in categories:
         if category in CURATED_VIDEOS:
             videos.extend(CURATED_VIDEOS[category])
-
-    # Deduplicate by ID
-    seen_ids = set()
-    unique_videos = []
-    for video in videos:
-        if video["id"] not in seen_ids:
-            seen_ids.add(video["id"])
-            unique_videos.append(video)
-
-    return unique_videos
+    return videos
