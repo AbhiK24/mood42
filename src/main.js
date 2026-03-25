@@ -39,14 +39,11 @@ const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
 let useLiveLLM = false // Start with mock mode to save tokens
 let autoSimulation = false // Don't auto-start simulation
 
-// Audio - lo-fi background music
+// Audio - background music
 let bgMusic = null
 let musicPlaying = false
 const MUSIC_TRACKS = [
-  // Free lo-fi / jazz tracks (royalty-free)
-  'https://cdn.pixabay.com/audio/2024/11/04/audio_a8a0779da9.mp3', // lofi-chill
-  'https://cdn.pixabay.com/audio/2022/10/25/audio_552d6f8fc0.mp3', // jazz-piano
-  'https://cdn.pixabay.com/audio/2024/04/23/audio_d06431eb61.mp3', // lofi-rain
+  '/assets/ambient.mp3', // local hosted track
 ]
 let currentTrack = 0
 
