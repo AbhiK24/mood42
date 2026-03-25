@@ -76,6 +76,7 @@ class RegionState:
     current_track: Optional[Dict] = None
     current_video: Optional[Dict] = None  # Current video playing
     current_mood: str = "focused"
+    current_thought: Optional[str] = None  # Agent's current thought for this region
     viewer_count: int = 0
     track_history: List[Dict] = field(default_factory=list)
     last_track_change: int = 0
@@ -91,6 +92,7 @@ class RegionState:
             "current_track": self.current_track,
             "current_video": self.current_video,
             "current_mood": self.current_mood,
+            "current_thought": self.current_thought,
             "viewer_count": self.viewer_count,
             "local_time": self.local_time,
             "weather": self.weather,

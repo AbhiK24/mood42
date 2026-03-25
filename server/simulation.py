@@ -324,9 +324,10 @@ class SimulationEngine:
         agent.record_track_played(new_track, self.world["tick"], thought, region)
         agent.record_mood_shift(mood, f"track change to {new_track['name']}", self.world["tick"], region)
 
-        # Store video in region state
+        # Store video and thought in region state
         region_state = agent.get_region_state(region)
         region_state.current_video = video
+        region_state.current_thought = thought
 
         print(f"[{channel_id}:{region}] Now playing: {new_track['name']}")
         if video:
@@ -470,7 +471,7 @@ class SimulationEngine:
             "agent": {
                 "name": channel["agent"]["name"],
                 "persona": channel["agent"]["persona"],
-                "thought": None,  # Get from recent memories
+                "thought": region_state.current_thought,
                 "traits": channel["agent"].get("traits", []),
             },
             "currentTrack": region_state.current_track,
