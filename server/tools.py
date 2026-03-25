@@ -2,14 +2,129 @@
 Content Discovery Tools for mood42 Agents
 Search for copyright-free music and videos
 PROACTIVE discovery - agents actively search for new content
+WITH URL VALIDATION - verify content is accessible before using
 """
 
 import httpx
+import asyncio
 import random
 import re
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from urllib.parse import quote_plus
+
+
+# ============ URL VALIDATION ============
+
+# Cache for URL health checks: url -> (is_valid, last_checked_timestamp)
+_url_cache: Dict[str, Tuple[bool, float]] = {}
+URL_CACHE_TTL = 300  # 5 minutes cache for URL checks
+URL_CHECK_TIMEOUT = 5.0  # 5 second timeout for HEAD requests
+
+# Track verified working URLs (confirmed good)
+_verified_urls: set = set()
+# Track broken URLs (don't retry for a while)
+_broken_urls: Dict[str, float] = {}
+BROKEN_URL_COOLDOWN = 600  # Don't retry broken URLs for 10 minutes
+
+
+async def check_url_health(url: str) -> bool:
+    """
+    Check if a URL is accessible (returns 200 or 302).
+    Uses caching to avoid hammering servers.
+    """
+    if not url:
+        return False
+
+    now = time.time()
+
+    # Check if URL is in broken list
+    if url in _broken_urls:
+        if now - _broken_urls[url] < BROKEN_URL_COOLDOWN:
+            return False
+        else:
+            del _broken_urls[url]
+
+    # Check if already verified
+    if url in _verified_urls:
+        return True
+
+    # Check cache
+    if url in _url_cache:
+        is_valid, checked_at = _url_cache[url]
+        if now - checked_at < URL_CACHE_TTL:
+            return is_valid
+
+    # Actually check the URL
+    try:
+        async with httpx.AsyncClient(timeout=URL_CHECK_TIMEOUT, follow_redirects=False) as client:
+            response = await client.head(url)
+            # 200 = OK, 302/301 = redirect (Archive.org uses this)
+            is_valid = response.status_code in [200, 301, 302]
+
+            _url_cache[url] = (is_valid, now)
+
+            if is_valid:
+                _verified_urls.add(url)
+                print(f"[URL] ✓ Verified: {url[:60]}...")
+            else:
+                _broken_urls[url] = now
+                print(f"[URL] ✗ Broken ({response.status_code}): {url[:60]}...")
+
+            return is_valid
+    except Exception as e:
+        print(f"[URL] ✗ Error checking {url[:50]}...: {e}")
+        _broken_urls[url] = now
+        _url_cache[url] = (False, now)
+        return False
+
+
+async def validate_track(track: Dict) -> bool:
+    """Validate a track's audio URL is accessible."""
+    if not track or not track.get("url"):
+        return False
+    return await check_url_health(track["url"])
+
+
+async def validate_video(video: Dict) -> bool:
+    """Validate a video URL is accessible."""
+    if not video or not video.get("url"):
+        return False
+    return await check_url_health(video["url"])
+
+
+async def get_validated_track(tracks: List[Dict], exclude_id: str = None) -> Optional[Dict]:
+    """
+    Get a validated track from the list.
+    Checks URLs and returns only working ones.
+    """
+    # Shuffle for variety
+    candidates = [t for t in tracks if t.get("id") != exclude_id]
+    random.shuffle(candidates)
+
+    for track in candidates:
+        if await validate_track(track):
+            return track
+
+    # If no tracks validated, return first one anyway (let it fail gracefully)
+    print(f"[URL] Warning: No validated tracks found, using fallback")
+    return candidates[0] if candidates else None
+
+
+async def get_validated_video(videos: List[Dict]) -> Optional[Dict]:
+    """
+    Get a validated video from the list.
+    Checks URLs and returns only working ones.
+    """
+    random.shuffle(videos)
+
+    for video in videos:
+        if await validate_video(video):
+            return video
+
+    # Fallback
+    print(f"[URL] Warning: No validated videos found, using fallback")
+    return videos[0] if videos else None
 
 
 # ============ MUSIC SOURCES ============

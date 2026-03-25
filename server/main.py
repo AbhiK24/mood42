@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.simulation import SimulationEngine
 from server.channels import CHANNELS, TRACKS
 from server.geo import get_region_from_offset, get_viewer_context, REGIONS
+from server.tools import _verified_urls, _broken_urls, check_url_health
 
 
 # SSE client connections - now keyed by channel:region
@@ -202,7 +203,27 @@ async def ops_dashboard():
         "health_pct": round(ok_streams / total_streams * 100, 1) if total_streams > 0 else 0,
     }
 
+    # URL validation stats
+    ops_data["url_health"] = {
+        "verified_count": len(_verified_urls),
+        "broken_count": len(_broken_urls),
+        "verified_urls": list(_verified_urls)[:10],  # Show first 10
+        "broken_urls": list(_broken_urls.keys())[:10],
+    }
+
     return ops_data
+
+
+@app.get("/api/ops/test-url")
+async def test_url(url: str):
+    """Test if a URL is accessible."""
+    is_valid = await check_url_health(url)
+    return {
+        "url": url,
+        "valid": is_valid,
+        "verified_count": len(_verified_urls),
+        "broken_count": len(_broken_urls),
+    }
 
 
 @app.get("/api/channels")

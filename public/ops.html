@@ -38,7 +38,7 @@
 
         .summary {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(7, 1fr);
             gap: 16px;
             margin-bottom: 32px;
         }
@@ -213,6 +213,14 @@
             <div class="label">Server Tick</div>
             <div class="value" id="tick">--</div>
         </div>
+        <div class="stat-card">
+            <div class="label">URLs Verified</div>
+            <div class="value ok" id="urls-verified">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">URLs Broken</div>
+            <div class="value broken" id="urls-broken">--</div>
+        </div>
     </div>
 
     <div class="channels-grid" id="channels-grid">
@@ -259,6 +267,12 @@
             document.getElementById('stale-streams').textContent = data.summary.stale;
             document.getElementById('broken-streams').textContent = data.summary.broken;
             document.getElementById('tick').textContent = data.tick;
+
+            // URL health stats
+            if (data.url_health) {
+                document.getElementById('urls-verified').textContent = data.url_health.verified_count;
+                document.getElementById('urls-broken').textContent = data.url_health.broken_count;
+            }
 
             // Channels grid
             const grid = document.getElementById('channels-grid');

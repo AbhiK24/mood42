@@ -11,7 +11,16 @@ from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
 
 from server.channels import CHANNELS, TRACKS, get_channel_tracks
-from server.tools import get_tracks_for_channel, search_music, execute_tool, proactive_discover, get_videos_for_channel
+from server.tools import (
+    get_tracks_for_channel,
+    search_music,
+    execute_tool,
+    proactive_discover,
+    get_videos_for_channel,
+    get_validated_track,
+    get_validated_video,
+    validate_track,
+)
 from server.llm import (
     generate_programming_decision,
     generate_reflection,
@@ -209,12 +218,18 @@ class SimulationEngine:
                     print(f"[{channel_id}:{region}] Agent searching: {search_query}")
                     search_results = await search_music(search_query, mood)
                     if search_results:
-                        new_track = random.choice(search_results)
+                        # Validate search results before using
+                        for result in search_results:
+                            if await validate_track(result):
+                                new_track = result
+                                break
 
-                # Otherwise use selected track_id
+                # Otherwise use selected track_id (validate it first)
                 if not new_track and decision.get("track_id"):
                     track_id = decision["track_id"]
-                    new_track = next((t for t in tracks if t["id"] == track_id), None)
+                    candidate = next((t for t in tracks if t["id"] == track_id), None)
+                    if candidate and await validate_track(candidate):
+                        new_track = candidate
 
             except Exception as e:
                 print(f"[{channel_id}:{region}] LLM decision failed: {e}")
@@ -223,26 +238,28 @@ class SimulationEngine:
         if not new_track:
             period = viewer_context.get("period", "night")
             discovered = await proactive_discover(channel_id, mood, period)
-            if discovered:
+            if discovered and await validate_track(discovered):
                 new_track = discovered
                 thought = f"Found something fresh: {discovered['name']}"
                 print(f"[{channel_id}:{region}] Proactive discovery: {discovered['name']}")
 
-        # Fallback: random selection from expanded library
+        # Fallback: get a VALIDATED track from the library
         if not new_track:
             current_id = agent.get_region_state(region).current_track
             current_track_id = current_id["id"] if current_id else None
-            available = [t for t in tracks if t["id"] != current_track_id]
-            if not available:
-                available = tracks
-            new_track = random.choice(available)
+            new_track = await get_validated_track(tracks, exclude_id=current_track_id)
+
+        # Final safety check
+        if not new_track:
+            print(f"[{channel_id}:{region}] ERROR: No valid tracks available!")
+            return
 
         if not thought:
             thought = self._generate_thought(channel_id, region, "track_change")
 
-        # Select matching video for this track
+        # Select VALIDATED video for this track
         videos = get_videos_for_channel(channel_id)
-        video = random.choice(videos) if videos else None
+        video = await get_validated_video(videos) if videos else None
 
         # Record in agent's memory (region-tagged)
         agent.record_track_played(new_track, self.world["tick"], thought, region)
