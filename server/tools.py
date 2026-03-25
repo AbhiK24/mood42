@@ -899,35 +899,35 @@ CHANNEL_VIDEOS = {
     "ch03": [
         {"id": "ch03_v1", "name": "Noir Gradients", "url": f"{R2_BASE}/video/ch04_color_gradient.mp4", "tags": ["gradient", "noir", "smoky"]},
     ],
-    # CH04: NEON-7 - neon grid (exclusive)
+    # CH04: NEON-7 - galaxy travel synthwave (exclusive)
     "ch04": [
-        {"id": "ch04_v1", "name": "Neon Grid", "url": f"{R2_BASE}/video/ch04_neon_grid.mp4", "tags": ["neon", "grid", "synthwave"]},
+        {"id": "ch04_v1", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "synthwave", "neon"]},
     ],
-    # CH05: Cosmos - cosmic void + stars (exclusive, 2 videos)
+    # CH05: Cosmos - cosmic eclipse + aurora (exclusive, 2 videos)
     "ch05": [
-        {"id": "ch05_v1", "name": "Cosmic Void", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "void"]},
-        {"id": "ch05_v2", "name": "Distant Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "space", "infinite"]},
+        {"id": "ch05_v1", "name": "Eclipse Cosmic", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "eclipse"]},
+        {"id": "ch05_v2", "name": "Aurora Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "aurora", "infinite"]},
     ],
-    # CH06: Kenji - galaxy travel for tokyo night drive (exclusive)
+    # CH06: Kenji - neon city night drive (exclusive)
     "ch06": [
-        {"id": "ch06_v1", "name": "Galaxy Drive", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "night", "drive"]},
+        {"id": "ch06_v1", "name": "Neon City", "url": f"{R2_BASE}/video/ch06_neon_city.mp4", "tags": ["neon", "city", "night"]},
     ],
-    # CH07: Claire - garden flowers (exclusive)
+    # CH07: Claire - flowers bloom (exclusive)
     "ch07": [
-        {"id": "ch07_v1", "name": "Garden Flowers", "url": f"{R2_BASE}/video/ch07_flowers.mp4", "tags": ["flowers", "nature", "peaceful"]},
+        {"id": "ch07_v1", "name": "Flowers Bloom", "url": f"{R2_BASE}/video/ch07_flowers.mp4", "tags": ["flowers", "nature", "peaceful"]},
     ],
     # CH08: Alan - abstract focus + minimal (exclusive, 2 videos)
     "ch08": [
-        {"id": "ch08_v1", "name": "Abstract Flow", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "focus", "minimal"]},
+        {"id": "ch08_v1", "name": "Abstract Lines", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "focus", "lines"]},
         {"id": "ch08_v2", "name": "Minimal Motion", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "clean", "simple"]},
     ],
-    # CH09: Daniel - ocean sunset for melancholy (exclusive)
+    # CH09: Daniel - ocean waves melancholy (exclusive)
     "ch09": [
-        {"id": "ch09_v1", "name": "Ocean Melancholy", "url": f"{R2_BASE}/video/ch10_ocean_sunset.mp4", "tags": ["ocean", "melancholy", "reflective"]},
+        {"id": "ch09_v1", "name": "Ocean Waves", "url": f"{R2_BASE}/video/ch09_ocean.mp4", "tags": ["ocean", "waves", "melancholy"]},
     ],
-    # CH10: Iris - golden light (exclusive)
+    # CH10: Iris - golden moon light (exclusive)
     "ch10": [
-        {"id": "ch10_v1", "name": "Golden Light", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "warm", "sunset"]},
+        {"id": "ch10_v1", "name": "Golden Moon", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "moon", "sunset"]},
     ],
 }
 
