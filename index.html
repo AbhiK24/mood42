@@ -456,6 +456,48 @@
       50% { opacity: 0.4; }
     }
 
+    .agent-thought {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(255,255,255,0.6);
+      margin-top: 8px;
+      max-width: 400px;
+      animation: thought-fade 0.5s ease-out;
+    }
+
+    .agent-thought:empty {
+      display: none;
+    }
+
+    @keyframes thought-fade {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.6);
+      margin-top: 4px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     .channel-nav {
       display: flex;
       gap: 12px;
@@ -797,6 +839,7 @@
             <span class="music-icon">♪</span>
             <span id="track-name">Loading...</span>
           </div>
+          <div class="agent-thought" id="agent-thought"></div>
         </div>
         <div class="channel-nav">
           <button class="nav-btn" id="prev-ch">← PREV</button>
@@ -1355,6 +1398,131 @@
     if (channelParam) {
       openChannel(channelParam);
     }
+
+    // ========== SIMULATION SSE INTEGRATION ==========
+    let eventSource = null;
+    let simulationEnabled = true; // Set to false to use static mode
+
+    // Connect to simulation server
+    async function connectToSimulation(channelId) {
+      if (!simulationEnabled) return;
+
+      // Disconnect existing connection
+      disconnectSimulation();
+
+      try {
+        // Connect to channel-specific SSE stream
+        eventSource = new EventSource(`/api/stream/${channelId}`);
+
+        eventSource.addEventListener('init', (e) => {
+          const data = JSON.parse(e.data);
+          console.log('[Simulation] Connected:', data);
+          updateFromSimulation(data);
+        });
+
+        eventSource.addEventListener('channel:update', (e) => {
+          const data = JSON.parse(e.data);
+          console.log('[Simulation] Update:', data);
+          updateFromSimulation(data);
+        });
+
+        eventSource.addEventListener('world:time', (e) => {
+          const data = JSON.parse(e.data);
+          // Update clock with simulated time
+          const timeEl = document.getElementById('ch-time');
+          if (timeEl && data.timeString) {
+            timeEl.textContent = data.timeString;
+          }
+        });
+
+        eventSource.onerror = (e) => {
+          console.warn('[Simulation] SSE error, falling back to static mode');
+          simulationEnabled = false;
+          disconnectSimulation();
+        };
+
+        // Notify server we joined
+        fetch(`/api/channels/${channelId}/join`, { method: 'POST' }).catch(() => {});
+
+      } catch (err) {
+        console.warn('[Simulation] Connection failed:', err);
+        simulationEnabled = false;
+      }
+    }
+
+    function disconnectSimulation() {
+      if (eventSource) {
+        // Notify server we left
+        if (currentChannel) {
+          fetch(`/api/channels/${currentChannel.id}/leave`, { method: 'POST' }).catch(() => {});
+        }
+        eventSource.close();
+        eventSource = null;
+      }
+    }
+
+    function updateFromSimulation(data) {
+      // Update agent thought
+      const thoughtEl = document.getElementById('agent-thought');
+      if (thoughtEl && data.thought) {
+        thoughtEl.textContent = `"${data.thought}"`;
+        thoughtEl.style.animation = 'none';
+        thoughtEl.offsetHeight; // Trigger reflow
+        thoughtEl.style.animation = 'thought-fade 0.5s ease-out';
+      }
+
+      // Update track name
+      if (data.track || data.currentTrack) {
+        const track = data.track || data.currentTrack;
+        const trackEl = document.getElementById('track-name');
+        if (trackEl && track.name) {
+          trackEl.textContent = track.name;
+        }
+
+        // Sync audio if track changed
+        if (track.url && audio.src !== track.url) {
+          const wasPlaying = musicPlaying;
+          audio.src = track.url;
+
+          // Sync to current position
+          if (track.startedAt) {
+            const elapsed = (Date.now() - track.startedAt) / 1000;
+            const duration = track.duration || 180;
+            audio.currentTime = elapsed % duration;
+          }
+
+          if (wasPlaying) {
+            audio.play().catch(() => {});
+          }
+        }
+      }
+    }
+
+    // Patch openChannel to connect to simulation
+    const originalOpenChannel = openChannel;
+    openChannel = function(channelId) {
+      originalOpenChannel(channelId);
+      connectToSimulation(channelId);
+    };
+
+    // Patch closeChannel to disconnect
+    const originalCloseChannel = closeChannel;
+    closeChannel = function() {
+      disconnectSimulation();
+      originalCloseChannel();
+      // Clear thought
+      const thoughtEl = document.getElementById('agent-thought');
+      if (thoughtEl) thoughtEl.textContent = '';
+    };
+
+    // Try to check if simulation server is available
+    fetch('/api/health').then(r => r.json()).then(data => {
+      console.log('[Simulation] Server available:', data);
+      simulationEnabled = true;
+    }).catch(() => {
+      console.log('[Simulation] Server not available, using static mode');
+      simulationEnabled = false;
+    });
   </script>
 </body>
 </html>
