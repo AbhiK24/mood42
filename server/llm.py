@@ -282,11 +282,11 @@ Respond with JSON:
     "reflection": "Your introspective thought (2-3 sentences, in character, thoughtful)",
     "viewer_insights": "What you understand about your viewers right now and how to serve them (1-2 sentences)",
     "actions": [
-        // Include 1-3 concrete actions you want to take
+        // Include 1-3 concrete actions. QUERY MUST BE PLAIN SEARCH TERMS like "people walking city night" - NOT urls!
         // Types: "search_video", "search_audio", "change_mood", "update_search_bias"
-        {{"type": "search_video", "query": "search terms", "region": "region or 'all'", "reason": "why"}},
-        {{"type": "search_audio", "query": "search terms", "region": "region or 'all'", "reason": "why"}},
-        {{"type": "update_search_bias", "bias": "humans|cities|nature|abstract", "reason": "why"}}
+        {{"type": "search_video", "query": "woman coffee shop window rain", "region": "americas", "reason": "evening viewers need cozy human presence"}},
+        {{"type": "search_audio", "query": "lo-fi piano soft ambient", "region": "asia", "reason": "morning energy needs gentle start"}},
+        {{"type": "update_search_bias", "bias": "humans", "reason": "viewers connect better with human presence in videos"}}
     ]
 }}
 
@@ -407,54 +407,79 @@ Match your personality and current mood: {from_agent.get('mood', 'focused')}"""
 
 async def fetch_regional_news(regions: List[str] = None) -> Dict[str, str]:
     """
-    Fetch current news/events for each region to inform agent decisions.
-    Uses web search to get a brief summary of what's happening.
+    Fetch current context for each region to inform agent decisions.
+    Uses pre-defined regional context since live news APIs are unreliable.
     """
     if regions is None:
         regions = ["americas", "europe", "asia", "oceania"]
 
-    region_queries = {
-        "americas": "trending news USA today brief",
-        "europe": "trending news Europe today brief",
-        "asia": "trending news Asia Japan Korea today brief",
-        "oceania": "trending news Australia today brief",
+    from datetime import datetime, timezone, timedelta
+
+    # Get current time-based context for each region
+    region_offsets = {
+        "americas": -5,
+        "europe": 1,
+        "asia": 8,
+        "oceania": 11,
     }
 
     news = {}
+    now = datetime.now(timezone.utc)
 
     for region in regions:
-        query = region_queries.get(region, f"news {region} today")
+        offset = region_offsets.get(region, 0)
+        local_time = now + timedelta(hours=offset)
+        hour = local_time.hour
+        weekday = local_time.strftime("%A")
 
-        try:
-            # Use a simple news search via DuckDuckGo instant answers
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(
-                    "https://api.duckduckgo.com/",
-                    params={
-                        "q": query,
-                        "format": "json",
-                        "no_html": 1,
-                        "skip_disambig": 1,
-                    }
-                )
+        # Generate contextual awareness based on time
+        if region == "americas":
+            if 6 <= hour < 10:
+                news[region] = f"{weekday} morning rush - commuters grabbing coffee, early risers at work"
+            elif 10 <= hour < 14:
+                news[region] = f"{weekday} midday - lunch breaks, meetings, focused work sessions"
+            elif 14 <= hour < 18:
+                news[region] = f"{weekday} afternoon - productivity slump hours, need for focus music"
+            elif 18 <= hour < 22:
+                news[region] = f"{weekday} evening - dinner time, unwinding from work, relaxation mode"
+            else:
+                news[region] = f"Late night {weekday} - night owls, insomniacs, late workers seeking ambient company"
 
-                if response.status_code == 200:
-                    data = response.json()
-                    # Get abstract or related topics
-                    abstract = data.get("Abstract", "")
-                    if abstract:
-                        news[region] = abstract[:200]
-                    elif data.get("RelatedTopics"):
-                        topics = [t.get("Text", "")[:100] for t in data["RelatedTopics"][:2] if t.get("Text")]
-                        news[region] = "; ".join(topics)
-                    else:
-                        news[region] = ""
-                else:
-                    news[region] = ""
+        elif region == "europe":
+            if 6 <= hour < 10:
+                news[region] = f"{weekday} morning in Europe - coffee culture, commute time, fresh start energy"
+            elif 10 <= hour < 14:
+                news[region] = f"{weekday} midday Europe - work mode, cafe breaks, cultural lunch traditions"
+            elif 14 <= hour < 18:
+                news[region] = f"{weekday} afternoon Europe - tea time UK, siesta cultures, steady work"
+            elif 18 <= hour < 22:
+                news[region] = f"{weekday} evening Europe - dinner traditions, social hours, leisure time"
+            else:
+                news[region] = f"European night - clubs closing, late cafes, solitary listeners"
 
-        except Exception as e:
-            print(f"[News] Failed to fetch for {region}: {e}")
-            news[region] = ""
+        elif region == "asia":
+            if 6 <= hour < 10:
+                news[region] = f"{weekday} morning Asia - early commutes, meditation time, tea ceremonies"
+            elif 10 <= hour < 14:
+                news[region] = f"{weekday} midday Asia - intense work culture, lunch rush, productivity peak"
+            elif 14 <= hour < 18:
+                news[region] = f"{weekday} afternoon Asia - office culture, coffee breaks, evening prep"
+            elif 18 <= hour < 22:
+                news[region] = f"{weekday} evening Asia - dinner time, family hours, winding down"
+            else:
+                news[region] = f"Asian night - neon city vibes, karaoke hours, late-night culture"
+
+        elif region == "oceania":
+            if 6 <= hour < 10:
+                news[region] = f"{weekday} morning down under - beach vibes, coffee runs, laid-back start"
+            elif 10 <= hour < 14:
+                news[region] = f"{weekday} midday Oceania - work mode, coastal offices, lunch by the water"
+            elif 14 <= hour < 18:
+                news[region] = f"{weekday} afternoon Oceania - beach-adjacent productivity, sunset anticipation"
+            elif 18 <= hour < 22:
+                news[region] = f"{weekday} evening Oceania - BBQ time, sunset sessions, relaxed vibes"
+            else:
+                news[region] = f"Oceanic night - stargazing hours, quiet contemplation, remote stillness"
 
     return news
 

@@ -503,6 +503,16 @@ class SimulationEngine:
             region = action.get("region", "all")
             reason = action.get("reason", "reflection-triggered")
 
+            # Validate query is a string, not a list or other type
+            if isinstance(query, list):
+                query = " ".join(str(q) for q in query if isinstance(q, str) and not q.startswith("http"))
+            if not isinstance(query, str) or query.startswith("http"):
+                print(f"[{channel_id}] Skipping action with invalid query: {query}")
+                continue
+            query = query.strip()
+            if not query or len(query) < 3:
+                continue
+
             try:
                 if action_type == "search_video":
                     print(f"[{channel_id}] Reflection action: searching videos for '{query}'")
