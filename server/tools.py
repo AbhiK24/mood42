@@ -983,45 +983,45 @@ def extract_genres_from_query(query: str) -> List[str]:
 CHANNEL_VIDEOS = {
     # CH01: Maya - city timelapse (exclusive)
     "ch01": [
-        {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "lo-fi"]},
+        {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "lo-fi"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
     # CH02: Yuki - rain cafe cozy (exclusive)
     "ch02": [
-        {"id": "ch02_v1", "name": "Rain Cafe", "url": f"{R2_BASE}/video/ch02_rain_cafe.mp4", "tags": ["rain", "cozy", "cafe"]},
+        {"id": "ch02_v1", "name": "Rain Cafe", "url": f"{R2_BASE}/video/ch02_rain_cafe.mp4", "tags": ["rain", "cozy", "cafe"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
     # CH03: Vincent - jazz noir city (exclusive)
     "ch03": [
-        {"id": "ch03_v1", "name": "Jazz Noir", "url": f"{R2_BASE}/video/ch03_jazz_noir.mp4", "tags": ["jazz", "noir", "night"]},
+        {"id": "ch03_v1", "name": "Jazz Noir", "url": f"{R2_BASE}/video/ch03_jazz_noir.mp4", "tags": ["jazz", "noir", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
     # CH04: NEON-7 - galaxy travel synthwave (exclusive)
     "ch04": [
-        {"id": "ch04_v1", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "synthwave", "neon"]},
+        {"id": "ch04_v1", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "synthwave", "neon"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
     ],
     # CH05: Cosmos - cosmic eclipse + aurora (exclusive, 2 videos)
     "ch05": [
-        {"id": "ch05_v1", "name": "Eclipse Cosmic", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "eclipse"]},
-        {"id": "ch05_v2", "name": "Aurora Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "aurora", "infinite"]},
+        {"id": "ch05_v1", "name": "Eclipse Cosmic", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "eclipse"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch05_v2", "name": "Aurora Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "aurora", "infinite"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
     ],
     # CH06: Kenji - tokyo night drive (exclusive)
     "ch06": [
-        {"id": "ch06_v1", "name": "Tokyo Night", "url": f"{R2_BASE}/video/ch06_tokyo_night.mp4", "tags": ["tokyo", "neon", "night"]},
+        {"id": "ch06_v1", "name": "Tokyo Night", "url": f"{R2_BASE}/video/ch06_tokyo_night.mp4", "tags": ["tokyo", "neon", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
     # CH07: Claire - sunday morning nature (exclusive)
     "ch07": [
-        {"id": "ch07_v1", "name": "Sunday Nature", "url": f"{R2_BASE}/video/ch07_sunday_nature.mp4", "tags": ["nature", "morning", "peaceful"]},
+        {"id": "ch07_v1", "name": "Sunday Nature", "url": f"{R2_BASE}/video/ch07_sunday_nature.mp4", "tags": ["nature", "morning", "peaceful"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
     # CH08: Alan - abstract focus + minimal (exclusive, 2 videos)
     "ch08": [
-        {"id": "ch08_v1", "name": "Abstract Lines", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "focus", "lines"]},
-        {"id": "ch08_v2", "name": "Minimal Motion", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "clean", "simple"]},
+        {"id": "ch08_v1", "name": "Abstract Lines", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "focus", "lines"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch08_v2", "name": "Minimal Motion", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "clean", "simple"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
     ],
     # CH09: Daniel - ocean waves melancholy (exclusive)
     "ch09": [
-        {"id": "ch09_v1", "name": "Ocean Waves", "url": f"{R2_BASE}/video/ch09_ocean.mp4", "tags": ["ocean", "waves", "melancholy"]},
+        {"id": "ch09_v1", "name": "Ocean Waves", "url": f"{R2_BASE}/video/ch09_ocean.mp4", "tags": ["ocean", "waves", "melancholy"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
     ],
     # CH10: Iris - golden moon light (exclusive)
     "ch10": [
-        {"id": "ch10_v1", "name": "Golden Moon", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "moon", "sunset"]},
+        {"id": "ch10_v1", "name": "Golden Moon", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "moon", "sunset"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
     ],
 }
 

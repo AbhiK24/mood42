@@ -14,6 +14,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["lo-fi", "chill"],
         "mood": ["focused", "calm"],
         "duration": 180,
+        "attribution": "Hanging Lanterns by Kalaido (Archive.org, CC)",
+        "source": "archive.org",
     },
     "first_snow": {
         "id": "first_snow",
@@ -22,6 +24,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["lo-fi", "chill"],
         "mood": ["peaceful", "nostalgic"],
         "duration": 195,
+        "attribution": "First Snow by Kerusu (Archive.org, CC)",
+        "source": "archive.org",
     },
     "lofi_rain": {
         "id": "lofi_rain",
@@ -30,6 +34,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["lo-fi", "rain"],
         "mood": ["melancholic", "reflective"],
         "duration": 170,
+        "attribution": "Lo-fi Rain Type Beat (Archive.org, Free)",
+        "source": "archive.org",
     },
     "waves": {
         "id": "waves",
@@ -38,6 +44,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["lo-fi", "warm"],
         "mood": ["nostalgic", "peaceful"],
         "duration": 200,
+        "attribution": "Waves by Matt Quentin (Archive.org, CC)",
+        "source": "archive.org",
     },
 
     # Jazz
@@ -48,6 +56,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["jazz", "swing"],
         "mood": ["cozy", "warm"],
         "duration": 220,
+        "attribution": "Swing Jazz Grooves (Archive.org, CC)",
+        "source": "archive.org",
     },
     "jazz_noir": {
         "id": "jazz_noir",
@@ -56,6 +66,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["jazz", "noir"],
         "mood": ["mysterious", "smoky"],
         "duration": 165,
+        "attribution": "Jazz Type Beat by Lukrembo (Archive.org, Free)",
+        "source": "archive.org",
     },
 
     # Synthwave / Electronic
@@ -66,6 +78,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["synthwave", "retro"],
         "mood": ["energetic", "nostalgic"],
         "duration": 240,
+        "attribution": "Synthwave Dreams (Archive.org, CC)",
+        "source": "archive.org",
     },
     "cyberpunk_night": {
         "id": "cyberpunk_night",
@@ -74,6 +88,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["synthwave", "cyberpunk"],
         "mood": ["urban", "energetic"],
         "duration": 210,
+        "attribution": "Cyberpunk Night (Archive.org, CC)",
+        "source": "archive.org",
     },
 
     # Ambient / Space
@@ -84,6 +100,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["ambient", "space"],
         "mood": ["transcendent", "calm"],
         "duration": 300,
+        "attribution": "Ambient Space by Dimaension X (Archive.org, CC)",
+        "source": "archive.org",
     },
     "focus_ambient": {
         "id": "focus_ambient",
@@ -92,6 +110,8 @@ TRACKS: Dict[str, Dict] = {
         "genres": ["ambient", "minimal"],
         "mood": ["focused", "productive"],
         "duration": 280,
+        "attribution": "Focus Ambient by Dimaension X (Archive.org, CC)",
+        "source": "archive.org",
     },
 }
 
