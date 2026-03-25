@@ -415,6 +415,7 @@ class SimulationEngine:
                 "traits": channel["agent"].get("traits", []),
             },
             "currentTrack": region_state.current_track,
+            "currentVideo": region_state.current_video,
             "currentMood": region_state.current_mood,
             "viewerCount": region_state.viewer_count,
             "color": channel["color"],

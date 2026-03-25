@@ -1532,10 +1532,33 @@
       }
     }
 
-    // Patch openChannel to connect to simulation
+    // Patch openChannel to fetch LIVE state from server first
     const originalOpenChannel = openChannel;
-    openChannel = function(channelId) {
+    openChannel = async function(channelId) {
+      // Call original to set up UI
       originalOpenChannel(channelId);
+
+      // Immediately fetch current state from server (don't wait for SSE)
+      try {
+        const response = await fetch(apiUrl(`/api/channels/${channelId}`));
+        if (response.ok) {
+          const liveState = await response.json();
+          console.log('[Simulation] Got live state:', liveState);
+
+          // Update with live track immediately
+          if (liveState.currentTrack) {
+            updateFromSimulation({
+              track: liveState.currentTrack,
+              thought: liveState.agent?.thought,
+              video: liveState.currentVideo,
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[Simulation] Failed to fetch live state:', err);
+      }
+
+      // Then connect to SSE for ongoing updates
       connectToSimulation(channelId);
     };
 
