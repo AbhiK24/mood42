@@ -11,8 +11,6 @@ import asyncio
 import random
 import re
 import time
-import subprocess
-import os
 from typing import List, Dict, Optional, Tuple
 from urllib.parse import quote_plus, quote
 
@@ -30,13 +28,8 @@ _verified_urls: set = set()
 _broken_urls: Dict[str, float] = {}
 BROKEN_URL_COOLDOWN = 600  # Don't retry broken URLs for 10 minutes
 
-# ============ R2 VIDEO STORAGE ============
-R2_BUCKET = "mood42-assets"
+# ============ VIDEO DISCOVERY ============
 R2_PUBLIC_URL = "https://pub-c60e3a4de388402ba5e40acbc497a6d6.r2.dev"
-VIDEO_TEMP_DIR = "/tmp/mood42-assets/video"
-
-# Track videos already in R2 to avoid re-downloading
-_r2_video_cache: Dict[str, str] = {}  # filename -> r2_url
 
 # Archive.org collections for video discovery
 ARCHIVE_VIDEO_COLLECTIONS = [
@@ -119,84 +112,40 @@ async def search_video_archive(query: str, max_results: int = 5) -> List[Dict]:
     return results
 
 
+async def validate_video_url(url: str) -> bool:
+    """Check if a video URL is accessible."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            response = await client.head(url)
+            return response.status_code == 200
+    except Exception:
+        return False
+
+
 async def download_video_to_r2(video: Dict, channel_id: str) -> Optional[str]:
     """
-    Download a video and upload to R2.
-    Returns R2 URL if successful, None otherwise.
+    Validate video URL and return it for use.
+    Archive.org URLs are used directly (reliable).
+    R2 upload happens in batch via CLI later.
     """
     if not video or not video.get("url"):
         return None
 
-    # Create descriptive filename from video name
-    name = video.get("name", "video")
-    # Clean filename: lowercase, replace spaces with underscores, remove special chars
-    clean_name = re.sub(r'[^a-z0-9_]', '', name.lower().replace(' ', '_').replace('-', '_'))
-    clean_name = clean_name[:40]  # Limit length
-    filename = f"{channel_id}_{clean_name}.mp4"
+    url = video["url"]
 
-    # Check if already in R2
-    if filename in _r2_video_cache:
-        print(f"[Video] Already in R2: {filename}")
-        return _r2_video_cache[filename]
-
-    local_path = f"{VIDEO_TEMP_DIR}/{filename}"
-    os.makedirs(VIDEO_TEMP_DIR, exist_ok=True)
-
-    try:
-        # Download video
-        print(f"[Video] Downloading: {video['name'][:40]}...")
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-            response = await client.get(video["url"])
-            if response.status_code != 200:
-                print(f"[Video] Download failed: HTTP {response.status_code}")
-                return None
-
-            # Check content type
-            content_type = response.headers.get("content-type", "")
-            if "video" not in content_type and "octet-stream" not in content_type:
-                print(f"[Video] Not a video: {content_type}")
-                return None
-
-            # Save locally
-            with open(local_path, "wb") as f:
-                f.write(response.content)
-
-            size = os.path.getsize(local_path)
-            if size < 500_000:  # Less than 500KB is probably an error
-                print(f"[Video] File too small: {size} bytes")
-                os.remove(local_path)
-                return None
-
-            print(f"[Video] Downloaded: {filename} ({size // 1024} KB)")
-
-        # Upload to R2
-        print(f"[Video] Uploading to R2: {filename}")
-        result = subprocess.run(
-            ["wrangler", "r2", "object", "put", f"{R2_BUCKET}/video/{filename}",
-             "--file", local_path, "--remote"],
-            capture_output=True,
-            timeout=120
-        )
-
-        if result.returncode != 0:
-            print(f"[Video] R2 upload failed: {result.stderr.decode()[:100]}")
-            return None
-
-        r2_url = f"{R2_PUBLIC_URL}/video/{filename}"
-        _r2_video_cache[filename] = r2_url
-        print(f"[Video] Uploaded to R2: {r2_url}")
-
-        return r2_url
-
-    except Exception as e:
-        print(f"[Video] Error: {e}")
+    # Validate the URL is accessible
+    if await validate_video_url(url):
+        print(f"[Video] Validated: {video.get('name', 'video')[:40]}")
+        return url
+    else:
+        print(f"[Video] URL not accessible: {url[:60]}...")
         return None
 
 
 async def proactive_video_discover(channel_id: str, taste: List[str], current_videos: List[str] = None) -> Optional[Dict]:
     """
     Agent discovers new videos based on their taste.
-    Downloads to R2 and returns video object ready to use.
+    Returns validated Archive.org video ready to use.
     """
     # Build search query from taste
     queries = []
@@ -215,7 +164,7 @@ async def proactive_video_discover(channel_id: str, taste: List[str], current_vi
     print(f"[Video Discovery] {channel_id} searching: {query}")
 
     # Search Archive.org
-    results = await search_video_archive(query, max_results=3)
+    results = await search_video_archive(query, max_results=5)
 
     if not results:
         print(f"[Video Discovery] No results for: {query}")
@@ -228,20 +177,23 @@ async def proactive_video_discover(channel_id: str, taste: List[str], current_vi
     if not available:
         available = results  # Use any if all filtered
 
-    # Pick one and download to R2
-    video = random.choice(available)
-    r2_url = await download_video_to_r2(video, channel_id)
+    # Try each result until we find one that works
+    random.shuffle(available)
+    for video in available:
+        valid_url = await download_video_to_r2(video, channel_id)
+        if valid_url:
+            # Create clean name for the video
+            clean_name = re.sub(r'[^a-zA-Z0-9\s]', '', video["name"])[:40].strip()
+            return {
+                "id": f"{channel_id}_discovered_{int(time.time())}",
+                "name": clean_name or "Discovered Video",
+                "url": valid_url,
+                "tags": query.split(),
+                "source": "archive.org",
+                "_verified": True,
+            }
 
-    if r2_url:
-        return {
-            "id": f"{channel_id}_discovered_{int(time.time())}",
-            "name": video["name"],
-            "url": r2_url,
-            "tags": query.split(),
-            "source": "discovered",
-            "_verified": True,  # Just uploaded, so it's valid
-        }
-
+    print(f"[Video Discovery] No valid videos found for: {query}")
     return None
 
 
