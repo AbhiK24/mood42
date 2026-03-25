@@ -337,6 +337,7 @@ async def get_agent_memory(
                 "importance": m.importance,
                 "region": m.region,
                 "tick": m.tick,
+                "timestamp": m.timestamp,
             }
             for m in all_memories
         ],
@@ -345,6 +346,7 @@ async def get_agent_memory(
                 "text": m.text,
                 "importance": m.importance,
                 "tick": m.tick,
+                "timestamp": m.timestamp,
             }
             for m in reflections
         ],
