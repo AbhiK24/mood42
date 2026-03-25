@@ -1,5 +1,7 @@
 // mood42 — tune in. zone out.
-import { Application, Container, Graphics, Text, Sprite, Assets, BlurFilter } from 'pixi.js'
+// Infinite drag canvas with animated channel previews
+
+import { Application, Container, Graphics, Text, Sprite, Assets, BlurFilter, DisplacementFilter } from 'pixi.js'
 import gsap from 'gsap'
 
 // Simulation imports
@@ -47,25 +49,24 @@ import { showToast } from './hud/hud.js'
 
 const app = new Application()
 
-// Channel color palettes for procedural backgrounds
+// Channel color palettes
 const CHANNEL_PALETTES = {
-  ch01: { primary: 0x1a1520, secondary: 0x2d2235, accent: 0xe8c89a, name: 'Late Night' },
-  ch02: { primary: 0x1a1812, secondary: 0x2d2820, accent: 0x8b7355, name: 'Rain Café' },
-  ch03: { primary: 0x12121a, secondary: 0x1e1e2d, accent: 0x4a4a6a, name: 'Jazz Noir' },
-  ch04: { primary: 0x1a0a1a, secondary: 0x2d1030, accent: 0xff00ff, name: 'Synthwave' },
-  ch05: { primary: 0x08080f, secondary: 0x0f0f1a, accent: 0x1a1a3a, name: 'Deep Space' },
-  ch06: { primary: 0x1a0a12, secondary: 0x2d1520, accent: 0xff4d6d, name: 'Tokyo Drift' },
-  ch07: { primary: 0x1a1810, secondary: 0x2d2818, accent: 0xffd700, name: 'Sunday Morning' },
-  ch08: { primary: 0x101418, secondary: 0x182028, accent: 0x4a9fff, name: 'Focus' },
-  ch09: { primary: 0x101520, secondary: 0x182030, accent: 0x6688aa, name: 'Melancholy' },
-  ch10: { primary: 0x1a1208, secondary: 0x2d2010, accent: 0xffa500, name: 'Golden Hour' },
+  ch01: { primary: 0x1a1520, secondary: 0x2d2235, accent: 0xe8c89a, glow: '#e8c89a', name: 'Late Night' },
+  ch02: { primary: 0x1a1812, secondary: 0x2d2820, accent: 0x8b7355, glow: '#8b7355', name: 'Rain Café' },
+  ch03: { primary: 0x12121a, secondary: 0x1e1e2d, accent: 0x4a4a6a, glow: '#6a6a9a', name: 'Jazz Noir' },
+  ch04: { primary: 0x1a0a1a, secondary: 0x2d1030, accent: 0xff00ff, glow: '#ff00ff', name: 'Synthwave' },
+  ch05: { primary: 0x08080f, secondary: 0x0f0f1a, accent: 0x3a3a8a, glow: '#5a5aba', name: 'Deep Space' },
+  ch06: { primary: 0x1a0a12, secondary: 0x2d1520, accent: 0xff4d6d, glow: '#ff4d6d', name: 'Tokyo Drift' },
+  ch07: { primary: 0x1a1810, secondary: 0x2d2818, accent: 0xffd700, glow: '#ffd700', name: 'Sunday Morning' },
+  ch08: { primary: 0x101418, secondary: 0x182028, accent: 0x4a9fff, glow: '#4a9fff', name: 'Focus' },
+  ch09: { primary: 0x101520, secondary: 0x182030, accent: 0x6688aa, glow: '#6688aa', name: 'Melancholy' },
+  ch10: { primary: 0x1a1208, secondary: 0x2d2010, accent: 0xffa500, glow: '#ffa500', name: 'Golden Hour' },
 }
 
-// Assets - legacy scenes + all channel-specific scenes
+// Assets
 const ASSETS = {
   sceneFocused: '/assets/scene_focused.png',
   sceneWithdrawn: '/assets/scene_withdrawn.png',
-  // Channel-specific assets
   ch01: '/assets/channels/ch01_late_night.png',
   ch02: '/assets/channels/ch02_rain_cafe.png',
   ch03: '/assets/channels/ch03_jazz_noir.png',
@@ -81,42 +82,79 @@ const ASSETS = {
 // State
 let currentView = 'wall'
 let currentChannel = null
-let wallContainer, channelContainer, hudContainer
-let rainContainer, rainDrops = []
+let worldContainer, wallContainer, channelContainer
+let channelCards = []
 let particleContainer, particles = []
 let musicPlaying = false
-let simulationRunning = false
 let useLiveLLM = false
-let clockText = null
+
+// Drag state for infinite canvas
+let isDragging = false
+let dragStartX = 0
+let dragStartY = 0
+let worldOffsetX = 0
+let worldOffsetY = 0
+let targetOffsetX = 0
+let targetOffsetY = 0
+let velocityX = 0
+let velocityY = 0
+let lastDragX = 0
+let lastDragY = 0
+
+// Canvas dimensions (much larger than viewport for infinite feel)
+const WORLD_WIDTH = 4000
+const WORLD_HEIGHT = 3000
+
+// Channel card positions - scattered artistic layout
+const CARD_POSITIONS = [
+  { x: 0.15, y: 0.18, scale: 1.1, rotation: -2 },
+  { x: 0.45, y: 0.12, scale: 0.95, rotation: 1.5 },
+  { x: 0.75, y: 0.22, scale: 1.0, rotation: -1 },
+  { x: 0.25, y: 0.45, scale: 1.15, rotation: 2 },
+  { x: 0.55, y: 0.38, scale: 1.05, rotation: -2.5 },
+  { x: 0.85, y: 0.48, scale: 0.9, rotation: 1 },
+  { x: 0.12, y: 0.72, scale: 1.0, rotation: -1.5 },
+  { x: 0.42, y: 0.68, scale: 1.1, rotation: 2.5 },
+  { x: 0.72, y: 0.75, scale: 0.95, rotation: -1 },
+  { x: 0.92, y: 0.82, scale: 1.0, rotation: 1.5 },
+]
 
 // API Key
 const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
 
 /**
- * Get user's local time formatted
+ * Get user's local time
  */
 function getLocalTime() {
   const now = new Date()
-  const hours = now.getHours().toString().padStart(2, '0')
-  const minutes = now.getMinutes().toString().padStart(2, '0')
-  return `${hours}:${minutes}`
+  return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 /**
- * Get time period description
+ * Get time period
  */
 function getTimePeriod() {
   const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'morning'
-  if (hour >= 12 && hour < 17) return 'afternoon'
-  if (hour >= 17 && hour < 21) return 'evening'
-  return 'late night'
+  if (hour >= 5 && hour < 12) return 'morning broadcast'
+  if (hour >= 12 && hour < 17) return 'afternoon session'
+  if (hour >= 17 && hour < 21) return 'evening programming'
+  return 'late night stream'
+}
+
+/**
+ * Update HTML clock elements
+ */
+function updateHTMLClock() {
+  const clockEl = document.getElementById('clock')
+  const periodEl = document.getElementById('time-period')
+  if (clockEl) clockEl.textContent = getLocalTime()
+  if (periodEl) periodEl.textContent = getTimePeriod()
 }
 
 async function init() {
   await app.init({
     resizeTo: window,
-    backgroundColor: 0x08080c,
+    backgroundColor: 0x0a0a0c,
     antialias: true,
     resolution: Math.min(window.devicePixelRatio, 2),
     autoDensity: true,
@@ -134,11 +172,9 @@ async function init() {
   initSimulation(useLiveLLM ? MOONSHOT_API_KEY : null)
 
   // Create views
-  createWallView()
+  createInfiniteCanvas()
   createChannelView()
-  createParticles()
-  createRain()
-  createHUD()
+  createAmbientParticles()
 
   // Start with wall
   showWall()
@@ -146,305 +182,359 @@ async function init() {
   // Animation loop
   app.ticker.add(update)
 
-  // Update clock every minute
-  setInterval(() => {
-    if (clockText && currentView === 'wall') {
-      clockText.text = getLocalTime()
-    }
-  }, 1000)
+  // Update clock
+  updateHTMLClock()
+  setInterval(updateHTMLClock, 1000)
 
-  // Controls
+  // Setup interactions
+  setupDragInteraction()
   setupKeyboard()
   window.addEventListener('resize', handleResize)
   handleResize()
 }
 
-// ============ PARTICLES (ambient floating dots) ============
+// ============ AMBIENT PARTICLES ============
 
-function createParticles() {
+function createAmbientParticles() {
   particleContainer = new Container()
   particleContainer.label = 'particles'
   app.stage.addChild(particleContainer)
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 80; i++) {
     particles.push({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      size: 1 + Math.random() * 2,
-      alpha: 0.1 + Math.random() * 0.2,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.15,
+      size: 0.5 + Math.random() * 1.5,
+      alpha: 0.05 + Math.random() * 0.1,
+      pulse: Math.random() * Math.PI * 2,
     })
   }
 }
 
-// ============ WALL VIEW ============
+// ============ INFINITE CANVAS ============
 
-function createWallView() {
+function createInfiniteCanvas() {
+  // World container that moves with drag
+  worldContainer = new Container()
+  worldContainer.label = 'world'
+  app.stage.addChild(worldContainer)
+
+  // Wall container inside world
   wallContainer = new Container()
   wallContainer.label = 'wall'
-  app.stage.addChild(wallContainer)
+  worldContainer.addChild(wallContainer)
+
+  // Center the world initially
+  worldOffsetX = (window.innerWidth - WORLD_WIDTH) / 2
+  worldOffsetY = (window.innerHeight - WORLD_HEIGHT) / 2
+  targetOffsetX = worldOffsetX
+  targetOffsetY = worldOffsetY
 }
 
 function showWall() {
   currentView = 'wall'
   currentChannel = null
-  wallContainer.visible = true
-  channelContainer.visible = false
-  drawWall()
+  worldContainer.visible = true
+  if (channelContainer) channelContainer.visible = false
+  drawInfiniteWall()
 }
 
-function drawWall() {
-  const W = app.screen.width
-  const H = app.screen.height
-
+function drawInfiniteWall() {
   wallContainer.removeChildren()
+  channelCards = []
 
-  // Gradient background
+  // Large world background
   const bg = new Graphics()
-  bg.rect(0, 0, W, H)
-  bg.fill({ color: 0x08080c })
+  bg.rect(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
+  bg.fill({ color: 0x0a0a0c })
   wallContainer.addChild(bg)
 
-  // Subtle gradient overlay
-  const gradientOverlay = new Graphics()
-  gradientOverlay.rect(0, 0, W, H * 0.4)
-  gradientOverlay.fill({ color: 0x12121a, alpha: 0.5 })
-  wallContainer.addChild(gradientOverlay)
+  // Subtle grid pattern
+  const grid = new Graphics()
+  const gridSize = 100
+  for (let x = 0; x < WORLD_WIDTH; x += gridSize) {
+    grid.moveTo(x, 0)
+    grid.lineTo(x, WORLD_HEIGHT)
+    grid.stroke({ color: 0x151518, width: 1 })
+  }
+  for (let y = 0; y < WORLD_HEIGHT; y += gridSize) {
+    grid.moveTo(0, y)
+    grid.lineTo(WORLD_WIDTH, y)
+    grid.stroke({ color: 0x151518, width: 1 })
+  }
+  wallContainer.addChild(grid)
 
-  // Header section
-  const headerY = H * 0.08
+  // Create channel cards with scattered positions
+  const channels = Object.keys(CHANNELS)
+  channels.forEach((channelId, index) => {
+    const channel = getChannel(channelId)
+    if (!channel) return
 
-  // Logo / Title
-  const logo = new Text({
-    text: 'mood42',
-    style: {
-      fontFamily: 'monospace',
-      fontSize: Math.min(48, W * 0.05),
-      fill: 0xffffff,
-      fontWeight: 'bold',
-      letterSpacing: 6,
-    }
+    const pos = CARD_POSITIONS[index]
+    const x = pos.x * WORLD_WIDTH
+    const y = pos.y * WORLD_HEIGHT
+
+    createChannelCard(channel, x, y, pos.scale, pos.rotation, index)
   })
-  logo.x = W / 2 - logo.width / 2
-  logo.y = headerY
-  wallContainer.addChild(logo)
+}
 
-  // Tagline
-  const tagline = new Text({
-    text: 'tune in. zone out.',
-    style: {
-      fontFamily: 'monospace',
-      fontSize: Math.min(14, W * 0.015),
-      fill: 0x666677,
-      letterSpacing: 4,
-    }
-  })
-  tagline.x = W / 2 - tagline.width / 2
-  tagline.y = headerY + logo.height + 8
-  wallContainer.addChild(tagline)
+function createChannelCard(channel, x, y, scale, rotation, index) {
+  const palette = CHANNEL_PALETTES[channel.id]
+  const cardWidth = 320
+  const cardHeight = 200
 
-  // Clock (user's local time)
-  clockText = new Text({
-    text: getLocalTime(),
-    style: {
-      fontFamily: 'monospace',
-      fontSize: 12,
-      fill: 0x444455,
-    }
-  })
-  clockText.x = W - clockText.width - 30
-  clockText.y = 25
-  wallContainer.addChild(clockText)
+  const card = new Container()
+  card.x = x
+  card.y = y
+  card.scale.set(scale)
+  card.rotation = (rotation * Math.PI) / 180
+  card.pivot.set(cardWidth / 2, cardHeight / 2)
+  wallContainer.addChild(card)
 
-  // Time period indicator
-  const timePeriod = new Text({
-    text: getTimePeriod(),
-    style: {
-      fontFamily: 'monospace',
-      fontSize: 10,
-      fill: 0x333344,
-      letterSpacing: 2,
-    }
-  })
-  timePeriod.x = W - timePeriod.width - 30
-  timePeriod.y = 42
-  wallContainer.addChild(timePeriod)
+  // Card data for animations
+  card.channelId = channel.id
+  card.baseX = x
+  card.baseY = y
+  card.floatOffset = Math.random() * Math.PI * 2
+  card.floatSpeed = 0.3 + Math.random() * 0.2
+  card.floatAmplitude = 3 + Math.random() * 4
 
-  // Channel grid - cinematic cards
-  const gridStartY = H * 0.22
-  const gridEndY = H * 0.85
-  const gridH = gridEndY - gridStartY
-  const gridW = Math.min(W * 0.92, 1400)
-  const gridX = (W - gridW) / 2
+  // Glow effect behind card
+  const glow = new Graphics()
+  glow.roundRect(-20, -20, cardWidth + 40, cardHeight + 40, 20)
+  glow.fill({ color: palette.accent, alpha: 0.08 })
+  const blurFilter = new BlurFilter({ strength: 15 })
+  glow.filters = [blurFilter]
+  card.addChild(glow)
 
-  const cols = WALL_LAYOUT.cols
-  const rows = WALL_LAYOUT.rows
-  const gapX = Math.min(20, W * 0.015)
-  const gapY = Math.min(25, H * 0.025)
-  const cellW = (gridW - gapX * (cols - 1)) / cols
-  const cellH = (gridH - gapY * (rows - 1)) / rows
+  // Main card background
+  const cardBg = new Graphics()
+  cardBg.roundRect(0, 0, cardWidth, cardHeight, 12)
+  cardBg.fill({ color: palette.primary })
+  card.addChild(cardBg)
 
-  WALL_LAYOUT.channels.forEach((row, rowIdx) => {
-    row.forEach((channelId, colIdx) => {
-      const channel = getChannel(channelId)
-      if (!channel) return
+  // Inner gradient layer
+  const innerGrad = new Graphics()
+  innerGrad.roundRect(0, 0, cardWidth, cardHeight * 0.5, 12)
+  innerGrad.fill({ color: palette.secondary, alpha: 0.6 })
+  card.addChild(innerGrad)
 
-      const palette = CHANNEL_PALETTES[channelId]
-      const x = gridX + colIdx * (cellW + gapX)
-      const y = gridStartY + rowIdx * (cellH + gapY)
+  // Preview image (animated)
+  try {
+    const previewTexture = Assets.get(ASSETS[channel.id])
+    if (previewTexture) {
+      const preview = new Sprite(previewTexture)
+      preview.width = cardWidth - 24
+      preview.height = cardHeight - 70
+      preview.x = 12
+      preview.y = 12
+      preview.alpha = 0.7
 
-      // Channel card container
-      const card = new Container()
-      card.x = x
-      card.y = y
-      wallContainer.addChild(card)
+      // Create mask for preview
+      const previewMask = new Graphics()
+      previewMask.roundRect(12, 12, cardWidth - 24, cardHeight - 70, 8)
+      previewMask.fill({ color: 0xffffff })
+      card.addChild(previewMask)
+      preview.mask = previewMask
 
-      // Card background with gradient effect
-      const cardBg = new Graphics()
-      cardBg.roundRect(0, 0, cellW, cellH, 12)
-      cardBg.fill({ color: palette.primary })
-      card.addChild(cardBg)
+      card.addChild(preview)
 
-      // Inner gradient layer
-      const innerGradient = new Graphics()
-      innerGradient.roundRect(0, 0, cellW, cellH * 0.6, 12)
-      innerGradient.fill({ color: palette.secondary, alpha: 0.6 })
-      card.addChild(innerGradient)
-
-      // Accent glow at bottom
-      const accentGlow = new Graphics()
-      accentGlow.roundRect(0, cellH - 4, cellW, 4, 2)
-      accentGlow.fill({ color: palette.accent })
-      card.addChild(accentGlow)
-
-      // Ambient glow effect
-      const glow = new Graphics()
-      glow.roundRect(0, 0, cellW, cellH, 12)
-      glow.fill({ color: palette.accent, alpha: 0.03 })
-      card.addChild(glow)
-
-      // Channel number (top left, subtle)
-      const chNum = new Text({
-        text: channelId.replace('ch0', '').replace('ch', ''),
-        style: {
-          fontFamily: 'monospace',
-          fontSize: Math.min(32, cellW * 0.18),
-          fill: palette.accent,
-          alpha: 0.15,
-          fontWeight: 'bold',
-        }
-      })
-      chNum.x = cellW - chNum.width - 12
-      chNum.y = 8
-      chNum.alpha = 0.2
-      card.addChild(chNum)
-
-      // Channel name
-      const name = new Text({
-        text: channel.name,
-        style: {
-          fontFamily: 'monospace',
-          fontSize: Math.min(16, cellW * 0.09),
-          fill: 0xffffff,
-          fontWeight: 'bold',
-        }
-      })
-      name.x = 16
-      name.y = cellH * 0.35
-      card.addChild(name)
-
-      // Agent name with persona hint
-      const agentName = new Text({
-        text: channel.agent.name,
-        style: {
-          fontFamily: 'monospace',
-          fontSize: Math.min(11, cellW * 0.06),
-          fill: palette.accent,
-        }
-      })
-      agentName.x = 16
-      agentName.y = cellH * 0.35 + name.height + 4
-      card.addChild(agentName)
-
-      // Agent role/vibe
-      const agentVibe = new Text({
-        text: channel.agent.taste.slice(0, 2).join(' · '),
-        style: {
-          fontFamily: 'monospace',
-          fontSize: Math.min(9, cellW * 0.05),
-          fill: 0x555566,
-        }
-      })
-      agentVibe.x = 16
-      agentVibe.y = cellH - 28
-      card.addChild(agentVibe)
-
-      // Live indicator dot
-      const liveDot = new Graphics()
-      liveDot.circle(0, 0, 3)
-      liveDot.fill({ color: palette.accent })
-      liveDot.x = 16
-      liveDot.y = 16
-      card.addChild(liveDot)
-
-      // Pulse animation on live dot
-      gsap.to(liveDot, {
-        alpha: 0.3,
-        duration: 1.5,
+      // Animate preview - subtle zoom/pan
+      gsap.to(preview, {
+        x: preview.x - 5 + Math.random() * 10,
+        duration: 4 + Math.random() * 3,
         ease: 'sine.inOut',
         yoyo: true,
         repeat: -1,
       })
 
-      // Interaction
-      cardBg.eventMode = 'static'
-      cardBg.cursor = 'pointer'
-
-      cardBg.on('pointerover', () => {
-        gsap.to(card.scale, { x: 1.02, y: 1.02, duration: 0.2 })
-        gsap.to(glow, { alpha: 0.12, duration: 0.2 })
-        gsap.to(accentGlow, { alpha: 1, duration: 0.2 })
+      gsap.to(preview.scale, {
+        x: 1.05,
+        y: 1.05,
+        duration: 6 + Math.random() * 4,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
       })
+    }
+  } catch (e) {
+    // Fallback if texture not found
+  }
 
-      cardBg.on('pointerout', () => {
-        gsap.to(card.scale, { x: 1, y: 1, duration: 0.2 })
-        gsap.to(glow, { alpha: 0.03, duration: 0.2 })
-        gsap.to(accentGlow, { alpha: 1, duration: 0.2 })
-      })
+  // Accent line at bottom
+  const accentLine = new Graphics()
+  accentLine.roundRect(0, cardHeight - 4, cardWidth, 4, 2)
+  accentLine.fill({ color: palette.accent, alpha: 0.8 })
+  card.addChild(accentLine)
 
-      cardBg.on('pointerdown', () => {
-        tuneIn(channelId)
-      })
-    })
+  // Pulsing accent animation
+  gsap.to(accentLine, {
+    alpha: 0.4,
+    duration: 2 + Math.random(),
+    ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1,
   })
 
-  // Footer
-  const footerText = new Text({
-    text: '10 channels · 10 minds · always on',
+  // Channel number (top right)
+  const chNum = new Text({
+    text: channel.id.replace('ch0', '').replace('ch', ''),
     style: {
-      fontFamily: 'monospace',
-      fontSize: 11,
-      fill: 0x333344,
-      letterSpacing: 2,
+      fontFamily: 'Space Mono, monospace',
+      fontSize: 28,
+      fill: palette.accent,
+      fontWeight: 'bold',
     }
   })
-  footerText.x = W / 2 - footerText.width / 2
-  footerText.y = H - 50
-  wallContainer.addChild(footerText)
+  chNum.x = cardWidth - chNum.width - 16
+  chNum.y = cardHeight - 45
+  chNum.alpha = 0.25
+  card.addChild(chNum)
 
-  // Controls hint
-  const controls = new Text({
-    text: '[1-0] tune in · [M] music',
+  // Channel name
+  const name = new Text({
+    text: channel.name,
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
+      fontSize: 14,
+      fill: 0xffffff,
+      fontWeight: 'bold',
+    }
+  })
+  name.x = 16
+  name.y = cardHeight - 50
+  card.addChild(name)
+
+  // Agent name
+  const agentName = new Text({
+    text: channel.agent.name,
+    style: {
+      fontFamily: 'Space Mono, monospace',
       fontSize: 10,
-      fill: 0x222233,
+      fill: palette.accent,
     }
   })
-  controls.x = W / 2 - controls.width / 2
-  controls.y = H - 30
-  wallContainer.addChild(controls)
+  agentName.x = 16
+  agentName.y = cardHeight - 30
+  card.addChild(agentName)
+
+  // Live dot
+  const liveDot = new Graphics()
+  liveDot.circle(0, 0, 4)
+  liveDot.fill({ color: palette.accent })
+  liveDot.x = 20
+  liveDot.y = 26
+  card.addChild(liveDot)
+
+  // Pulse live dot
+  gsap.to(liveDot.scale, {
+    x: 1.4,
+    y: 1.4,
+    duration: 1.2,
+    ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1,
+  })
+
+  gsap.to(liveDot, {
+    alpha: 0.3,
+    duration: 1.2,
+    ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1,
+  })
+
+  // Interaction
+  cardBg.eventMode = 'static'
+  cardBg.cursor = 'pointer'
+
+  cardBg.on('pointerover', () => {
+    if (isDragging) return
+    gsap.to(card.scale, { x: scale * 1.08, y: scale * 1.08, duration: 0.3, ease: 'power2.out' })
+    gsap.to(glow, { alpha: 0.2, duration: 0.3 })
+  })
+
+  cardBg.on('pointerout', () => {
+    gsap.to(card.scale, { x: scale, y: scale, duration: 0.3, ease: 'power2.out' })
+    gsap.to(glow, { alpha: 0.08, duration: 0.3 })
+  })
+
+  cardBg.on('pointerdown', (e) => {
+    if (!isDragging) {
+      tuneIn(channel.id)
+    }
+  })
+
+  // Staggered entrance animation
+  card.alpha = 0
+  card.scale.set(scale * 0.8)
+  gsap.to(card, {
+    alpha: 1,
+    duration: 0.8,
+    delay: index * 0.1,
+    ease: 'power2.out',
+  })
+  gsap.to(card.scale, {
+    x: scale,
+    y: scale,
+    duration: 0.8,
+    delay: index * 0.1,
+    ease: 'back.out(1.5)',
+  })
+
+  channelCards.push(card)
+}
+
+// ============ DRAG INTERACTION ============
+
+function setupDragInteraction() {
+  const canvas = app.canvas
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (currentView !== 'wall') return
+    isDragging = true
+    dragStartX = e.clientX
+    dragStartY = e.clientY
+    lastDragX = e.clientX
+    lastDragY = e.clientY
+    document.body.style.cursor = 'grabbing'
+  })
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!isDragging || currentView !== 'wall') return
+
+    const dx = e.clientX - lastDragX
+    const dy = e.clientY - lastDragY
+
+    velocityX = dx * 0.6
+    velocityY = dy * 0.6
+
+    targetOffsetX += dx
+    targetOffsetY += dy
+
+    lastDragX = e.clientX
+    lastDragY = e.clientY
+  })
+
+  canvas.addEventListener('pointerup', () => {
+    isDragging = false
+    document.body.style.cursor = 'grab'
+  })
+
+  canvas.addEventListener('pointerleave', () => {
+    isDragging = false
+    document.body.style.cursor = 'grab'
+  })
+
+  // Mouse wheel for smooth pan
+  canvas.addEventListener('wheel', (e) => {
+    if (currentView !== 'wall') return
+    e.preventDefault()
+    targetOffsetX -= e.deltaX * 0.5
+    targetOffsetY -= e.deltaY * 0.5
+  }, { passive: false })
 }
 
 // ============ CHANNEL VIEW ============
@@ -462,10 +552,9 @@ function tuneIn(channelId) {
 
   currentView = 'channel'
   currentChannel = channel
-  wallContainer.visible = false
+  worldContainer.visible = false
   channelContainer.visible = true
 
-  // Record tune-in as viewer interaction
   addChannelMemory(channelId, {
     type: 'viewer_interaction',
     content: 'A viewer tuned in',
@@ -474,8 +563,6 @@ function tuneIn(channelId) {
 
   drawChannel()
   showToast(channel.name, `${channel.agent.name.toUpperCase()} IS PROGRAMMING`)
-
-  // Start channel programming (mock or live)
   programChannel(channelId)
 }
 
@@ -488,59 +575,56 @@ function drawChannel() {
 
   channelContainer.removeChildren()
 
-  // Dynamic background based on channel
+  // Background
   const bg = new Graphics()
   bg.rect(0, 0, W, H)
   bg.fill({ color: palette.primary })
   channelContainer.addChild(bg)
 
-  // Gradient layers for depth
-  const gradLayer1 = new Graphics()
-  gradLayer1.rect(0, 0, W, H * 0.5)
-  gradLayer1.fill({ color: palette.secondary, alpha: 0.7 })
-  channelContainer.addChild(gradLayer1)
+  // Gradient layers
+  const grad1 = new Graphics()
+  grad1.rect(0, 0, W, H * 0.5)
+  grad1.fill({ color: palette.secondary, alpha: 0.7 })
+  channelContainer.addChild(grad1)
 
-  const gradLayer2 = new Graphics()
-  gradLayer2.rect(0, H * 0.7, W, H * 0.3)
-  gradLayer2.fill({ color: 0x000000, alpha: 0.5 })
-  channelContainer.addChild(gradLayer2)
+  const grad2 = new Graphics()
+  grad2.rect(0, H * 0.7, W, H * 0.3)
+  grad2.fill({ color: 0x000000, alpha: 0.5 })
+  channelContainer.addChild(grad2)
 
-  // Get current visual from channel state - use channel-specific asset
-  const state = getChannelState(currentChannel.id)
+  // Channel visual
   const channelAsset = getChannelAsset(currentChannel.id)
-
-  // Visual (using channel-specific scene)
   const visual = Sprite.from(channelAsset)
   visual.anchor.set(0.5)
   const scale = Math.max(W / visual.texture.width, H / visual.texture.height)
   visual.scale.set(scale * 1.05)
   visual.position.set(W / 2, H / 2)
-  visual.alpha = 0.85  // Show the unique channel image more prominently
+  visual.alpha = 0.85
   channelContainer.addChild(visual)
 
   // Breathing animation
   gsap.to(visual, {
     scaleX: scale * 1.07,
     scaleY: scale * 1.06,
-    duration: 6,
+    duration: 8,
     ease: 'sine.inOut',
     yoyo: true,
     repeat: -1,
   })
 
-  // Vignette overlay
+  // Vignette
   const vignette = new Graphics()
-  vignette.rect(0, 0, W, H * 0.25)
+  vignette.rect(0, 0, W, H * 0.2)
   vignette.fill({ color: 0x000000, alpha: 0.7 })
-  vignette.rect(0, H * 0.8, W, H * 0.2)
+  vignette.rect(0, H * 0.85, W, H * 0.15)
   vignette.fill({ color: 0x000000, alpha: 0.8 })
   channelContainer.addChild(vignette)
 
-  // Channel info (top left)
+  // Channel info
   const chLabel = new Text({
     text: `CH ${currentChannel.id.replace('ch0', '').replace('ch', '')}`,
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
       fontSize: 11,
       fill: palette.accent,
       letterSpacing: 2,
@@ -553,7 +637,7 @@ function drawChannel() {
   const chName = new Text({
     text: currentChannel.name.toUpperCase(),
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
       fontSize: Math.min(36, W * 0.04),
       fill: 0xffffff,
       fontWeight: 'bold',
@@ -564,11 +648,10 @@ function drawChannel() {
   chName.y = 58
   channelContainer.addChild(chName)
 
-  // Agent info
   const agentInfo = new Text({
     text: `programmed by ${currentChannel.agent.name}`,
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
       fontSize: 12,
       fill: 0x888899,
     }
@@ -577,29 +660,13 @@ function drawChannel() {
   agentInfo.y = 58 + chName.height + 8
   channelContainer.addChild(agentInfo)
 
-  // Agent persona snippet (first sentence)
-  const personaSnippet = currentChannel.agent.persona.split('.')[0] + '.'
-  const persona = new Text({
-    text: personaSnippet,
-    style: {
-      fontFamily: 'monospace',
-      fontSize: 10,
-      fill: 0x555566,
-      fontStyle: 'italic',
-      wordWrap: true,
-      wordWrapWidth: Math.min(W * 0.35, 450),
-    }
-  })
-  persona.x = 40
-  persona.y = 58 + chName.height + 30
-  channelContainer.addChild(persona)
-
-  // Current mood/vibe (bottom left)
+  // Current mood
+  const state = getChannelState(currentChannel.id)
   const currentMood = state?.mood || currentChannel.currentMood
   const moodText = new Text({
     text: `● ${currentMood}`,
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
       fontSize: 14,
       fill: palette.accent,
     }
@@ -608,13 +675,13 @@ function drawChannel() {
   moodText.y = H - 100
   channelContainer.addChild(moodText)
 
-  // Now playing (from music state)
+  // Now playing
   const musicState = getMusicState()
   if (musicState.currentTrack) {
     const nowPlaying = new Text({
       text: `♪ ${musicState.currentTrack.name}`,
       style: {
-        fontFamily: 'monospace',
+        fontFamily: 'Space Mono, monospace',
         fontSize: 11,
         fill: 0x888899,
       }
@@ -624,12 +691,12 @@ function drawChannel() {
     channelContainer.addChild(nowPlaying)
   }
 
-  // Agent thought (if available)
+  // Agent thought
   if (state && state.lastThought) {
     const thought = new Text({
       text: `"${state.lastThought}"`,
       style: {
-        fontFamily: 'monospace',
+        fontFamily: 'Space Mono, monospace',
         fontSize: 12,
         fill: 0x666677,
         fontStyle: 'italic',
@@ -642,11 +709,11 @@ function drawChannel() {
     channelContainer.addChild(thought)
   }
 
-  // Local time display (top right)
+  // Time
   const timeDisplay = new Text({
     text: getLocalTime(),
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
       fontSize: 14,
       fill: 0x444455,
     }
@@ -655,11 +722,11 @@ function drawChannel() {
   timeDisplay.y = 40
   channelContainer.addChild(timeDisplay)
 
-  // Status indicator
+  // Status
   const status = new Text({
     text: useLiveLLM ? '● LIVE' : '○ AMBIENT',
     style: {
-      fontFamily: 'monospace',
+      fontFamily: 'Space Mono, monospace',
       fontSize: 10,
       fill: useLiveLLM ? palette.accent : 0x444455,
     }
@@ -668,13 +735,13 @@ function drawChannel() {
   status.y = 58
   channelContainer.addChild(status)
 
-  // Memory stream (right side, subtle)
+  // Memory stream
   const memories = getRecentMemories(currentChannel.id, 4)
   if (memories.length > 0) {
     const memoryTitle = new Text({
       text: 'MEMORY',
       style: {
-        fontFamily: 'monospace',
+        fontFamily: 'Space Mono, monospace',
         fontSize: 9,
         fill: 0x333344,
         letterSpacing: 2,
@@ -689,7 +756,7 @@ function drawChannel() {
       const memText = new Text({
         text: `${timeAgo}m · ${mem.content.substring(0, 28)}${mem.content.length > 28 ? '...' : ''}`,
         style: {
-          fontFamily: 'monospace',
+          fontFamily: 'Space Mono, monospace',
           fontSize: 9,
           fill: 0x444455,
         }
@@ -699,19 +766,6 @@ function drawChannel() {
       channelContainer.addChild(memText)
     })
   }
-
-  // Controls hint
-  const controls = new Text({
-    text: '[ESC] back · [N/P] switch · [M] music · [R] reprogram · [L] live ai',
-    style: {
-      fontFamily: 'monospace',
-      fontSize: 10,
-      fill: 0x333344,
-    }
-  })
-  controls.x = W / 2 - controls.width / 2
-  controls.y = H - 25
-  channelContainer.addChild(controls)
 }
 
 async function programChannel(channelId) {
@@ -793,40 +847,45 @@ function fallbackProgramming(channelId) {
   })
 }
 
-// ============ RAIN EFFECT ============
-
-function createRain() {
-  rainContainer = new Container()
-  rainContainer.label = 'rain'
-  app.stage.addChild(rainContainer)
-
-  const rainGraphics = new Graphics()
-  rainContainer.addChild(rainGraphics)
-
-  for (let i = 0; i < 100; i++) {
-    rainDrops.push({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      speed: 4 + Math.random() * 6,
-      length: 8 + Math.random() * 12,
-      opacity: 0.03 + Math.random() * 0.08,
-    })
-  }
-}
-
-// ============ HUD ============
-
-function createHUD() {
-  hudContainer = new Container()
-  hudContainer.label = 'hud'
-  app.stage.addChild(hudContainer)
-}
-
 // ============ UPDATE LOOP ============
 
-function update() {
+function update(ticker) {
   const W = app.screen.width
   const H = app.screen.height
+  const time = ticker.lastTime / 1000
+
+  if (currentView === 'wall') {
+    // Smooth drag following
+    if (!isDragging) {
+      // Apply momentum
+      targetOffsetX += velocityX
+      targetOffsetY += velocityY
+      velocityX *= 0.92
+      velocityY *= 0.92
+    }
+
+    // Clamp to bounds
+    const minX = -WORLD_WIDTH + W * 0.3
+    const maxX = W * 0.7
+    const minY = -WORLD_HEIGHT + H * 0.3
+    const maxY = H * 0.7
+
+    targetOffsetX = Math.max(minX, Math.min(maxX, targetOffsetX))
+    targetOffsetY = Math.max(minY, Math.min(maxY, targetOffsetY))
+
+    // Smooth interpolation
+    worldOffsetX += (targetOffsetX - worldOffsetX) * 0.15
+    worldOffsetY += (targetOffsetY - worldOffsetY) * 0.15
+
+    worldContainer.x = worldOffsetX
+    worldContainer.y = worldOffsetY
+
+    // Animate floating cards
+    channelCards.forEach((card) => {
+      const floatY = Math.sin(time * card.floatSpeed + card.floatOffset) * card.floatAmplitude
+      card.y = card.baseY + floatY
+    })
+  }
 
   // Particles
   const particleGraphics = particleContainer.children[0] || new Graphics()
@@ -836,38 +895,17 @@ function update() {
   particles.forEach(p => {
     p.x += p.vx
     p.y += p.vy
+    p.pulse += 0.02
 
     if (p.x < 0) p.x = W
     if (p.x > W) p.x = 0
     if (p.y < 0) p.y = H
     if (p.y > H) p.y = 0
 
+    const pulseAlpha = p.alpha * (0.6 + 0.4 * Math.sin(p.pulse))
     particleGraphics.circle(p.x, p.y, p.size)
-    particleGraphics.fill({ color: 0xffffff, alpha: p.alpha * (currentView === 'wall' ? 0.5 : 0.3) })
+    particleGraphics.fill({ color: 0xffffff, alpha: pulseAlpha * (currentView === 'wall' ? 0.6 : 0.3) })
   })
-
-  // Rain
-  rainContainer.alpha = currentView === 'channel' ? 0.5 : 0.15
-  const rainGraphics = rainContainer.children[0]
-  if (rainGraphics) {
-    rainGraphics.clear()
-
-    const rainColor = currentChannel ? CHANNEL_PALETTES[currentChannel.id]?.accent || 0x6688aa : 0x6688aa
-
-    rainDrops.forEach(drop => {
-      drop.y += drop.speed
-      drop.x -= drop.speed * 0.05
-
-      if (drop.y > H) {
-        drop.y = -20
-        drop.x = Math.random() * W
-      }
-
-      rainGraphics.moveTo(drop.x, drop.y)
-      rainGraphics.lineTo(drop.x - drop.length * 0.05, drop.y + drop.length)
-      rainGraphics.stroke({ color: rainColor, alpha: drop.opacity, width: 1 })
-    })
-  }
 }
 
 // ============ CONTROLS ============
@@ -944,7 +982,10 @@ function handleResize() {
   const H = window.innerHeight
 
   if (currentView === 'wall') {
-    drawWall()
+    // Recenter on resize
+    targetOffsetX = (W - WORLD_WIDTH) / 2
+    targetOffsetY = (H - WORLD_HEIGHT) / 2
+    drawInfiniteWall()
   } else {
     drawChannel()
   }
@@ -952,11 +993,6 @@ function handleResize() {
   particles.forEach(p => {
     p.x = Math.random() * W
     p.y = Math.random() * H
-  })
-
-  rainDrops.forEach(drop => {
-    drop.x = Math.random() * W
-    drop.y = Math.random() * H
   })
 }
 
