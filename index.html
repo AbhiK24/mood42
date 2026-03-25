@@ -237,7 +237,26 @@
     .card-agent {
       font-size: 14px;
       color: rgba(255,255,255,0.75);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card-now-playing {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 10px;
+      min-height: 16px;
+    }
+    .card-now-playing .now-icon {
+      opacity: 0.6;
+    }
+    .card-now-playing .now-track {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
     }
 
     .card-tags {
@@ -1531,8 +1550,9 @@
             <div class="card-number" style="color: ${ch.color}">CH ${ch.num}</div>
             <h3 class="card-title">${ch.name}</h3>
             <p class="card-agent">${ch.agent}</p>
-            <div class="card-tags">
-              ${ch.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+            <div class="card-now-playing" id="now-${ch.id}">
+              <span class="now-icon">♪</span>
+              <span class="now-track">—</span>
             </div>
           </div>
         `;
@@ -1540,7 +1560,35 @@
         card.addEventListener('click', () => openChannel(ch.id));
         grid.appendChild(card);
       });
+
+      // Fetch live data to show what's playing
+      fetchLiveChannelPreviews();
     }
+
+    // Fetch live channel data and update previews
+    async function fetchLiveChannelPreviews() {
+      try {
+        const response = await fetch('/api/channels');
+        if (!response.ok) return;
+        const data = await response.json();
+        const channels = data.channels || [];
+
+        channels.forEach(ch => {
+          const el = document.getElementById(`now-${ch.id}`);
+          if (el) {
+            const track = ch.currentTrack;
+            if (track && track.name) {
+              el.querySelector('.now-track').textContent = track.name;
+            }
+          }
+        });
+      } catch (e) {
+        console.log('[Preview] Could not fetch live data');
+      }
+    }
+
+    // Refresh previews periodically
+    setInterval(fetchLiveChannelPreviews, 30000);
 
     // Open channel
     function openChannel(channelId) {
