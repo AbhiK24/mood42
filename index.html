@@ -1515,12 +1515,11 @@
           <div class="card-media">
             <video
               id="preview-${ch.id}"
-              src="${ch.preview}"
               autoplay
               loop
               muted
               playsinline
-              preload="auto"
+              poster="${ch.poster}"
             ></video>
           </div>
           <div class="card-overlay"></div>
@@ -1559,13 +1558,19 @@
           const video = ch.currentVideo;
           if (video && video.url) {
             const videoEl = document.getElementById(`preview-${ch.id}`);
-            if (videoEl && videoEl.src !== video.url) {
-              videoEl.src = video.url;
+            if (videoEl) {
+              const currentSrc = videoEl.src || '';
+              // Only update if different (avoid reload)
+              if (!currentSrc.includes(video.url.split('/').pop())) {
+                videoEl.src = video.url;
+                videoEl.load();
+                videoEl.play().catch(() => {});
+              }
             }
           }
         });
       } catch (e) {
-        console.log('[Preview] Could not fetch live data');
+        console.log('[Preview] Could not fetch live data:', e);
       }
     }
 
