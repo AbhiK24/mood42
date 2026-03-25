@@ -7,6 +7,7 @@ Now with geo-awareness: each region gets personalized content
 import random
 import time
 import os
+import asyncio
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
 
@@ -180,23 +181,34 @@ class SimulationEngine:
             "regions": region_times,
         })
 
-        # Process each channel
+        # Process each channel with timeout protection
         for ch_id, agent in self.channel_agents.items():
-            # Update agent context for each region
-            for region in REGIONS:
-                region_info = region_times[region]
-                agent.update_region_context(
-                    region=region,
-                    local_time=region_info["time"],
-                    weather=None,  # Could fetch real weather
-                    occasion=get_occasion(region).get("name") if get_occasion(region) else None,
+            try:
+                # Update agent context for each region
+                for region in REGIONS:
+                    region_info = region_times[region]
+                    agent.update_region_context(
+                        region=region,
+                        local_time=region_info["time"],
+                        weather=None,  # Could fetch real weather
+                        occasion=get_occasion(region).get("name") if get_occasion(region) else None,
+                    )
+
+                # Check if any region needs a track change (with 10s timeout per channel)
+                await asyncio.wait_for(
+                    self._process_channel_regions(ch_id, agent),
+                    timeout=10.0
                 )
 
-            # Check if any region needs a track change
-            await self._process_channel_regions(ch_id, agent)
-
-            # Process generative agent behaviors (reflection, planning)
-            await self._process_agent_behaviors(ch_id, agent)
+                # Process generative agent behaviors (reflection, planning)
+                await asyncio.wait_for(
+                    self._process_agent_behaviors(ch_id, agent),
+                    timeout=5.0
+                )
+            except asyncio.TimeoutError:
+                print(f"[{ch_id}] TIMEOUT - skipping this tick")
+            except Exception as e:
+                print(f"[{ch_id}] ERROR in tick: {e}")
 
         # Occasional inter-agent interactions (every ~10 ticks)
         if self.world["tick"] % 10 == 0 and self.use_llm:
@@ -294,20 +306,26 @@ class SimulationEngine:
             except Exception as e:
                 print(f"[{channel_id}:{region}] LLM decision failed: {e}")
 
-        # Try proactive discovery if no track selected yet
-        if not new_track:
-            period = viewer_context.get("period", "night")
-            discovered = await proactive_discover(channel_id, mood, period)
-            if discovered and await validate_track(discovered):
-                new_track = discovered
-                thought = f"Found something fresh: {discovered['name']}"
-                print(f"[{channel_id}:{region}] Proactive discovery: {discovered['name']}")
-
-        # Fallback: get a VALIDATED track from the library
+        # Fallback: use exclusive library directly (fast, pre-verified)
         if not new_track:
             current_id = agent.get_region_state(region).current_track
             current_track_id = current_id["id"] if current_id else None
             new_track = await get_validated_track(tracks, exclude_id=current_track_id)
+
+        # Only try proactive discovery occasionally (10% chance) to find new content
+        if not new_track and random.random() < 0.1:
+            period = viewer_context.get("period", "night")
+            try:
+                discovered = await asyncio.wait_for(
+                    proactive_discover(channel_id, mood, period),
+                    timeout=3.0
+                )
+                if discovered and await validate_track(discovered):
+                    new_track = discovered
+                    thought = f"Found something fresh: {discovered['name']}"
+                    print(f"[{channel_id}:{region}] Proactive discovery: {discovered['name']}")
+            except asyncio.TimeoutError:
+                pass  # Skip discovery if too slow
 
         # Final safety check
         if not new_track:

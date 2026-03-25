@@ -42,7 +42,7 @@ async def call_kimi(
         body["tool_choice"] = "auto"
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=8.0) as client:
             response = await client.post(
                 f"{MOONSHOT_BASE_URL}/chat/completions",
                 headers={
