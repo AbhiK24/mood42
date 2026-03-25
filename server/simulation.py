@@ -505,13 +505,25 @@ class SimulationEngine:
 
             # Validate query is a string, not a list or other type
             if isinstance(query, list):
-                query = " ".join(str(q) for q in query if isinstance(q, str) and not q.startswith("http"))
-            if not isinstance(query, str) or query.startswith("http"):
-                print(f"[{channel_id}] Skipping action with invalid query: {query}")
+                # Filter out URLs and join remaining strings
+                valid_parts = [str(q) for q in query if isinstance(q, str) and not q.startswith("http")]
+                query = " ".join(valid_parts)
+                print(f"[{channel_id}] Converted list query to: '{query}'")
+
+            if not isinstance(query, str):
+                print(f"[{channel_id}] Skipping action - query not a string: {type(query)}")
                 continue
+
+            if query.startswith("http"):
+                print(f"[{channel_id}] Skipping action - query is URL: {query[:50]}...")
+                continue
+
             query = query.strip()
             if not query or len(query) < 3:
+                print(f"[{channel_id}] Skipping action - query too short or empty")
                 continue
+
+            print(f"[{channel_id}] Executing action: {action_type} with query: '{query}'")
 
             try:
                 if action_type == "search_video":
