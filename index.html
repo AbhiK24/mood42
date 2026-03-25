@@ -732,7 +732,21 @@
       letter-spacing: 0.1em;
     }
 
-    @media (max-width: 900px) {
+    /* ========== RESPONSIVE - TABLET ========== */
+    @media (max-width: 1024px) {
+      .channel-content {
+        padding: 32px;
+      }
+
+      .channel-info {
+        margin-top: 100px;
+        max-width: 450px;
+      }
+
+      .channel-name {
+        font-size: clamp(28px, 5vw, 42px);
+      }
+
       .profile-content {
         grid-template-columns: 1fr;
       }
@@ -747,7 +761,7 @@
       }
 
       .profile-article {
-        padding: 40px 24px;
+        padding: 40px 32px;
       }
 
       .profile-stats {
@@ -756,54 +770,306 @@
       }
     }
 
-    /* Responsive */
+    /* ========== RESPONSIVE - MOBILE ========== */
     @media (max-width: 768px) {
+      :root {
+        --grid-gap: 8px;
+      }
+
       header {
-        padding: 16px 20px;
+        padding: 12px 16px;
+      }
+
+      .live-badge {
+        font-size: 10px;
+      }
+
+      .clock {
+        font-size: 12px;
       }
 
       main {
-        padding: 80px 16px 40px;
+        padding: 70px 12px 32px;
+      }
+
+      .hero {
+        padding: 24px 0 40px;
+      }
+
+      .hero-logo {
+        height: 48px;
+      }
+
+      .hero-subtitle {
+        font-size: 14px;
       }
 
       .grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
+      }
+
+      .card {
+        aspect-ratio: 16/9;
       }
 
       .card-content {
         padding: 12px;
       }
 
+      .card-number {
+        font-size: 10px;
+        margin-bottom: 4px;
+      }
+
       .card-title {
-        font-size: 14px;
+        font-size: 16px;
+        margin-bottom: 4px;
       }
 
       .card-agent {
         font-size: 11px;
+        margin-bottom: 8px;
       }
 
       .card-tags {
         display: none;
       }
 
+      .card-live {
+        top: 10px;
+        left: 10px;
+        padding: 4px 8px;
+        font-size: 8px;
+      }
+
+      /* Channel Page Mobile */
       .channel-content {
-        padding: 20px;
+        padding: 16px;
       }
 
       .back-btn {
-        top: 20px;
-        left: 20px;
+        top: 16px;
+        left: 16px;
+        padding: 8px 12px;
+        font-size: 11px;
+      }
+
+      .channel-info {
+        margin-top: 70px;
+        max-width: 100%;
+      }
+
+      .channel-num {
+        font-size: 11px;
+      }
+
+      .channel-name {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      .channel-agent {
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      .agent-avatar {
+        width: 32px;
+        height: 32px;
+      }
+
+      .channel-desc {
+        font-size: 13px;
+        line-height: 1.5;
+        max-width: 100%;
+      }
+
+      .channel-header {
+        flex-direction: column;
+      }
+
+      .channel-controls {
+        position: absolute;
+        top: 16px;
+        right: 16px;
       }
 
       .channel-time {
-        font-size: 32px;
+        font-size: 24px;
+        opacity: 0.2;
+      }
+
+      .channel-footer {
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-start;
+      }
+
+      .now-playing {
+        width: 100%;
+      }
+
+      .now-playing-label {
+        font-size: 10px;
+      }
+
+      .now-playing-track {
+        font-size: 14px;
+      }
+
+      .agent-thought {
+        font-size: 12px;
+        max-width: 100%;
+      }
+
+      .channel-nav {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .nav-btn {
+        padding: 12px 16px;
+        font-size: 11px;
+        flex: 1;
+        text-align: center;
+        min-height: 44px;
+      }
+
+      /* Profile Mobile */
+      .profile-close {
+        top: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+      }
+
+      .profile-article {
+        padding: 24px 16px;
+      }
+
+      .profile-name {
+        font-size: 28px;
+      }
+
+      .profile-quote {
+        font-size: 18px;
+        padding-left: 16px;
+      }
+
+      .profile-body {
+        font-size: 14px;
+      }
+
+      footer {
+        padding: 24px 16px;
+        font-size: 11px;
       }
     }
 
+    /* ========== RESPONSIVE - SMALL MOBILE ========== */
+    @media (max-width: 480px) {
+      main {
+        padding: 60px 8px 24px;
+      }
+
+      .hero {
+        padding: 16px 0 32px;
+      }
+
+      .hero-logo {
+        height: 40px;
+      }
+
+      .hero-subtitle {
+        font-size: 12px;
+      }
+
+      .grid {
+        gap: 8px;
+      }
+
+      .card-title {
+        font-size: 14px;
+      }
+
+      .channel-content {
+        padding: 12px;
+      }
+
+      .back-btn {
+        top: 12px;
+        left: 12px;
+        padding: 6px 10px;
+        font-size: 10px;
+      }
+
+      .channel-info {
+        margin-top: 60px;
+      }
+
+      .channel-name {
+        font-size: 20px;
+      }
+
+      .channel-desc {
+        font-size: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .channel-time {
+        font-size: 20px;
+      }
+
+      .nav-btn {
+        padding: 10px 12px;
+        font-size: 10px;
+      }
+
+      .profile-hero {
+        height: 40vh;
+      }
+
+      .profile-name {
+        font-size: 24px;
+      }
+
+      .profile-quote {
+        font-size: 16px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+    }
+
+    /* ========== RESPONSIVE - LARGE DESKTOP ========== */
     @media (min-width: 1200px) {
       .grid {
         grid-template-columns: repeat(3, 1fr);
+      }
+
+      .channel-info {
+        max-width: 550px;
+      }
+
+      .channel-name {
+        font-size: 52px;
+      }
+    }
+
+    /* ========== RESPONSIVE - ULTRA WIDE ========== */
+    @media (min-width: 1600px) {
+      main {
+        max-width: 1800px;
+      }
+
+      .grid {
+        grid-template-columns: repeat(4, 1fr);
       }
     }
   </style>
