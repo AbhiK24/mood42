@@ -242,17 +242,24 @@
 
     .card-now-playing {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 10px;
       color: rgba(255,255,255,0.5);
       margin-bottom: 10px;
-      min-height: 16px;
+    }
+    .card-now-playing .now-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     .card-now-playing .now-icon {
       opacity: 0.6;
+      width: 12px;
+      text-align: center;
     }
-    .card-now-playing .now-track {
+    .card-now-playing .now-track,
+    .card-now-playing .now-video {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1550,9 +1557,12 @@
             <div class="card-number" style="color: ${ch.color}">CH ${ch.num}</div>
             <h3 class="card-title">${ch.name}</h3>
             <p class="card-agent">${ch.agent}</p>
+            <div class="card-tags">
+              ${ch.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
             <div class="card-now-playing" id="now-${ch.id}">
-              <span class="now-icon">♪</span>
-              <span class="now-track">—</span>
+              <div class="now-row"><span class="now-icon">♪</span><span class="now-track">—</span></div>
+              <div class="now-row"><span class="now-icon">▶</span><span class="now-video">—</span></div>
             </div>
           </div>
         `;
@@ -1576,9 +1586,17 @@
         channels.forEach(ch => {
           const el = document.getElementById(`now-${ch.id}`);
           if (el) {
+            // Update track name
             const track = ch.currentTrack;
             if (track && track.name) {
-              el.querySelector('.now-track').textContent = track.name;
+              const trackEl = el.querySelector('.now-track');
+              if (trackEl) trackEl.textContent = track.name;
+            }
+            // Update video name
+            const video = ch.currentVideo;
+            if (video && video.name) {
+              const videoEl = el.querySelector('.now-video');
+              if (videoEl) videoEl.textContent = video.name;
             }
           }
         });
