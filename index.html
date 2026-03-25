@@ -240,31 +240,6 @@
       margin-bottom: 8px;
     }
 
-    .card-now-playing {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      font-size: 10px;
-      color: rgba(255,255,255,0.5);
-      margin-bottom: 10px;
-    }
-    .card-now-playing .now-row {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .card-now-playing .now-icon {
-      opacity: 0.6;
-      width: 12px;
-      text-align: center;
-    }
-    .card-now-playing .now-track,
-    .card-now-playing .now-video {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 180px;
-    }
 
     .card-tags {
       display: flex;
@@ -1540,6 +1515,7 @@
         card.innerHTML = `
           <div class="card-media">
             <video
+              id="preview-${ch.id}"
               src="${ch.preview}"
               autoplay
               loop
@@ -1560,10 +1536,6 @@
             <div class="card-tags">
               ${ch.tags.map(t => `<span class="tag">${t}</span>`).join('')}
             </div>
-            <div class="card-now-playing" id="now-${ch.id}">
-              <div class="now-row"><span class="now-icon">♪</span><span class="now-track">—</span></div>
-              <div class="now-row"><span class="now-icon">▶</span><span class="now-video">—</span></div>
-            </div>
           </div>
         `;
 
@@ -1575,7 +1547,7 @@
       fetchLiveChannelPreviews();
     }
 
-    // Fetch live channel data and update previews
+    // Fetch live channel data and update preview videos to show actual live content
     async function fetchLiveChannelPreviews() {
       try {
         const response = await fetch('/api/channels');
@@ -1584,19 +1556,12 @@
         const channels = data.channels || [];
 
         channels.forEach(ch => {
-          const el = document.getElementById(`now-${ch.id}`);
-          if (el) {
-            // Update track name
-            const track = ch.currentTrack;
-            if (track && track.name) {
-              const trackEl = el.querySelector('.now-track');
-              if (trackEl) trackEl.textContent = track.name;
-            }
-            // Update video name
-            const video = ch.currentVideo;
-            if (video && video.name) {
-              const videoEl = el.querySelector('.now-video');
-              if (videoEl) videoEl.textContent = video.name;
+          // Update the preview video to show the actual live video
+          const video = ch.currentVideo;
+          if (video && video.url) {
+            const videoEl = document.getElementById(`preview-${ch.id}`);
+            if (videoEl && videoEl.src !== video.url) {
+              videoEl.src = video.url;
             }
           }
         });
