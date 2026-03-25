@@ -305,6 +305,54 @@ async def get_channel(
     return state
 
 
+@app.get("/api/channels/{channel_id}/memory")
+async def get_agent_memory(
+    channel_id: str,
+    tz: Optional[float] = Query(None, description="UTC offset in hours"),
+):
+    """Get agent's full memory, reflections, and plans."""
+    region = get_region_from_offset(tz) if tz is not None else "americas"
+    agent = sim.channel_agents.get(channel_id)
+    if not agent:
+        return {"error": "Channel not found"}, 404
+
+    # Get memories by type
+    from server.agent import MemoryType
+
+    all_memories = agent.memories[-50:]  # Last 50 memories
+    reflections = [m for m in agent.memories if m.type == MemoryType.REFLECTION][-10:]
+    plans = agent.plans[-5:]
+
+    return {
+        "channel_id": channel_id,
+        "agent_name": agent.name,
+        "total_memories": len(agent.memories),
+        "reflections_made": agent.reflections_made,
+        "tracks_played": agent.tracks_played,
+        "energy": agent.energy,
+        "memories": [
+            {
+                "text": m.text,
+                "type": m.type.value,
+                "importance": m.importance,
+                "region": m.region,
+                "tick": m.tick,
+            }
+            for m in all_memories
+        ],
+        "reflections": [
+            {
+                "text": m.text,
+                "importance": m.importance,
+                "tick": m.tick,
+            }
+            for m in reflections
+        ],
+        "plans": [p.to_dict() for p in plans],
+        "cross_region_summary": agent.get_cross_region_summary(),
+    }
+
+
 @app.post("/api/channels/{channel_id}/join")
 async def join_channel(
     channel_id: str,

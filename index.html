@@ -762,6 +762,122 @@
       gap: 4px;
     }
 
+    /* Agent Memory Panel */
+    .memory-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .memory-toggle:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .memory-toggle.active {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.3);
+    }
+    .memory-icon {
+      font-size: 16px;
+    }
+
+    .memory-panel {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .memory-panel.show {
+      display: block;
+    }
+    .memory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .memory-header h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: #fff;
+    }
+    .memory-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+    .memory-section {
+      margin-bottom: 20px;
+    }
+    .memory-section h4 {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .memory-item {
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.8);
+    }
+    .memory-item .memory-type {
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.5);
+      margin-right: 8px;
+    }
+    .memory-item.reflection {
+      border-left: 2px solid #e8c89a;
+      background: rgba(232,200,154,0.05);
+    }
+    .memory-item.plan {
+      border-left: 2px solid #7eb8da;
+      background: rgba(126,184,218,0.05);
+    }
+    .memory-summary {
+      font-family: 'Kode Mono', monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      background: rgba(0,0,0,0.3);
+      padding: 12px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+    .memory-empty {
+      color: rgba(255,255,255,0.4);
+      font-style: italic;
+      font-size: 12px;
+    }
+
     .stat-value {
       font-family: 'Kode Mono', monospace;
       font-size: 24px;
@@ -1229,6 +1345,43 @@
           <div class="profile-stat">
             <span class="stat-value" id="profile-vibe"></span>
             <span class="stat-label">Vibe</span>
+          </div>
+        </div>
+
+        <!-- Agent Memory Button -->
+        <button class="memory-toggle" id="memory-toggle">
+          <span class="memory-icon">🧠</span>
+          <span>View Agent Memory</span>
+        </button>
+
+        <!-- Agent Memory Panel -->
+        <div class="memory-panel" id="memory-panel">
+          <div class="memory-header">
+            <h3>Agent Memory Stream</h3>
+            <div class="memory-stats">
+              <span id="memory-count">0 memories</span>
+              <span id="memory-reflections">0 reflections</span>
+            </div>
+          </div>
+
+          <div class="memory-section">
+            <h4>Recent Memories</h4>
+            <div class="memory-list" id="memory-list"></div>
+          </div>
+
+          <div class="memory-section">
+            <h4>Reflections</h4>
+            <div class="memory-list" id="reflection-list"></div>
+          </div>
+
+          <div class="memory-section">
+            <h4>Current Plans</h4>
+            <div class="memory-list" id="plan-list"></div>
+          </div>
+
+          <div class="memory-section">
+            <h4>Cross-Region Status</h4>
+            <pre class="memory-summary" id="region-summary"></pre>
           </div>
         </div>
       </div>
@@ -1715,6 +1868,77 @@
 
     function closeProfile() {
       agentProfile.classList.remove('active');
+      // Hide memory panel when closing profile
+      document.getElementById('memory-panel').classList.remove('show');
+      document.getElementById('memory-toggle').classList.remove('active');
+    }
+
+    // ========== AGENT MEMORY ==========
+    const memoryToggle = document.getElementById('memory-toggle');
+    const memoryPanel = document.getElementById('memory-panel');
+
+    memoryToggle.addEventListener('click', async () => {
+      memoryToggle.classList.toggle('active');
+      memoryPanel.classList.toggle('show');
+
+      if (memoryPanel.classList.contains('show') && currentChannel) {
+        // Fetch memory data
+        try {
+          const response = await fetch(`/api/channels/${currentChannel.id}/memory?tz=${viewerTZ}`);
+          const data = await response.json();
+          renderMemory(data);
+        } catch (e) {
+          console.error('[Memory] Failed to fetch:', e);
+          document.getElementById('memory-list').innerHTML = '<div class="memory-empty">Failed to load memory</div>';
+        }
+      }
+    });
+
+    function renderMemory(data) {
+      // Update stats
+      document.getElementById('memory-count').textContent = `${data.total_memories} memories`;
+      document.getElementById('memory-reflections').textContent = `${data.reflections_made} reflections`;
+
+      // Render memories (most recent first)
+      const memoryList = document.getElementById('memory-list');
+      if (data.memories && data.memories.length > 0) {
+        memoryList.innerHTML = data.memories.slice().reverse().slice(0, 20).map(m => `
+          <div class="memory-item">
+            <span class="memory-type">${m.type}</span>
+            ${m.text}
+          </div>
+        `).join('');
+      } else {
+        memoryList.innerHTML = '<div class="memory-empty">No memories yet</div>';
+      }
+
+      // Render reflections
+      const reflectionList = document.getElementById('reflection-list');
+      if (data.reflections && data.reflections.length > 0) {
+        reflectionList.innerHTML = data.reflections.slice().reverse().map(r => `
+          <div class="memory-item reflection">
+            ${r.text}
+          </div>
+        `).join('');
+      } else {
+        reflectionList.innerHTML = '<div class="memory-empty">No reflections yet</div>';
+      }
+
+      // Render plans
+      const planList = document.getElementById('plan-list');
+      if (data.plans && data.plans.length > 0) {
+        planList.innerHTML = data.plans.map(p => `
+          <div class="memory-item plan">
+            <strong>${p.time}</strong>: ${p.action} (${p.duration} min)
+            ${p.completed ? '<span style="color:#7eb8da">✓</span>' : ''}
+          </div>
+        `).join('');
+      } else {
+        planList.innerHTML = '<div class="memory-empty">No active plans</div>';
+      }
+
+      // Region summary
+      document.getElementById('region-summary').textContent = data.cross_region_summary || 'No data';
     }
 
     // Event listeners
