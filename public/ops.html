@@ -271,6 +271,11 @@
             border-radius: 3px;
             margin-left: 8px;
         }
+        .added-date {
+            font-size: 9px;
+            color: #666;
+            margin-left: 8px;
+        }
 
         .status-dot {
             width: 6px;
@@ -530,10 +535,12 @@
                             ${ch.videos.map(v => {
                                 const isDup = duplicateUrls[v.url];
                                 const dupChannels = isDup ? isDup.filter(c => c !== chId) : [];
+                                const addedDate = v.added_at ? new Date(v.added_at * 1000).toLocaleDateString() : '';
                                 return `
                                     <div class="media-item ${isDup ? 'duplicate' : ''}">
                                         <span>
                                             ${v.name}
+                                            ${addedDate ? `<span class="added-date">added ${addedDate}</span>` : ''}
                                             ${isDup ? `<span class="duplicate-badge">also in ${dupChannels.join(', ')}</span>` : ''}
                                         </span>
                                         <a href="${v.url}" target="_blank">▶ play</a>

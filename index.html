@@ -322,6 +322,53 @@
       filter: brightness(0.6) saturate(1.1);
     }
 
+    /* Tiny attribution button - bottom left corner */
+    .attribution-btn {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4);
+      font-size: 9px;
+      font-family: serif;
+      font-style: italic;
+      cursor: pointer;
+      z-index: 5;
+      opacity: 0.3;
+      transition: opacity 0.2s;
+    }
+    .attribution-btn:hover {
+      opacity: 0.8;
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* Attribution popup */
+    .attribution-popup {
+      position: absolute;
+      bottom: 30px;
+      left: 8px;
+      background: rgba(0,0,0,0.85);
+      color: rgba(255,255,255,0.8);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 10px;
+      max-width: 250px;
+      z-index: 10;
+      display: none;
+    }
+    .attribution-popup.show {
+      display: block;
+    }
+    .attribution-popup a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: underline;
+    }
+
     .channel-overlay {
       position: absolute;
       inset: 0;
@@ -1103,6 +1150,11 @@
   <div id="channel-page">
     <div class="channel-video-bg">
       <video id="channel-video" autoplay loop muted playsinline></video>
+      <button class="attribution-btn" id="attribution-btn" title="Media Attribution">i</button>
+      <div class="attribution-popup" id="attribution-popup">
+        <div id="video-attribution">Video: Loading...</div>
+        <div id="audio-attribution">Audio: Loading...</div>
+      </div>
     </div>
     <div class="channel-overlay"></div>
 
@@ -1645,6 +1697,37 @@
 
     // Close profile
     document.querySelector('.profile-close').addEventListener('click', closeProfile);
+
+    // ========== ATTRIBUTION POPUP ==========
+    const attributionBtn = document.getElementById('attribution-btn');
+    const attributionPopup = document.getElementById('attribution-popup');
+    let currentAttribution = { video: null, audio: null };
+
+    attributionBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      attributionPopup.classList.toggle('show');
+    });
+
+    // Close popup when clicking elsewhere
+    document.addEventListener('click', () => {
+      attributionPopup.classList.remove('show');
+    });
+
+    function updateAttribution(type, data) {
+      currentAttribution[type] = data;
+      const el = document.getElementById(`${type}-attribution`);
+      if (!el) return;
+
+      if (data && data.attribution) {
+        el.textContent = `${type === 'video' ? 'Video' : 'Audio'}: ${data.attribution}`;
+      } else if (data && data.source) {
+        el.textContent = `${type === 'video' ? 'Video' : 'Audio'}: ${data.name || 'Unknown'} (${data.source})`;
+      } else if (data && data.name) {
+        el.textContent = `${type === 'video' ? 'Video' : 'Audio'}: ${data.name}`;
+      } else {
+        el.textContent = `${type === 'video' ? 'Video' : 'Audio'}: R2 hosted`;
+      }
+    }
     document.querySelector('.profile-backdrop').addEventListener('click', closeProfile);
 
     // Keyboard shortcuts
@@ -1810,6 +1893,7 @@
           if (track && track.url) {
             document.getElementById('track-name').textContent = track.name || 'Unknown Track';
             audio.src = track.url;
+            updateAttribution('audio', track);
 
             // Sync position if track has startedAt
             if (track.startedAt) {
@@ -1833,6 +1917,7 @@
           if (videoData && videoData.url) {
             const videoEl = document.getElementById('channel-video');
             if (videoEl) videoEl.src = videoData.url;
+            updateAttribution('video', videoData);
           }
 
           // Update thought with location context
@@ -1935,6 +2020,7 @@
         if (videoEl && videoEl.src !== videoData.url) {
           console.log('[Simulation] Changing video to:', videoData.name);
           videoEl.src = videoData.url;
+          updateAttribution('video', videoData);
         }
       }
     }
@@ -1958,6 +2044,7 @@
 
             // Update track name
             document.getElementById('track-name').textContent = track.name || 'Unknown Track';
+            updateAttribution('audio', track);
 
             // Set audio source and start playing
             if (track.url) {
@@ -1985,6 +2072,7 @@
               const videoEl = document.getElementById('channel-video');
               if (videoEl) {
                 videoEl.src = liveState.currentVideo.url;
+                updateAttribution('video', liveState.currentVideo);
               }
             }
 

@@ -30,6 +30,10 @@ BROKEN_URL_COOLDOWN = 600  # Don't retry broken URLs for 10 minutes
 
 # ============ VIDEO DISCOVERY ============
 from server.r2 import upload_to_r2, get_public_url, check_exists, is_configured as r2_is_configured
+import os
+
+# Pexels API for video search
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 
 # Archive.org collections for video discovery
 ARCHIVE_VIDEO_COLLECTIONS = [
@@ -110,6 +114,90 @@ async def search_video_archive(query: str, max_results: int = 5) -> List[Dict]:
         print(f"[Video Search] Archive.org search failed: {e}")
 
     return results
+
+
+async def search_video_pexels(query: str, max_results: int = 5) -> List[Dict]:
+    """
+    Search Pexels API for videos matching query.
+    Requires PEXELS_API_KEY environment variable.
+    Returns list of video objects with download URLs.
+    """
+    if not PEXELS_API_KEY:
+        return []
+
+    results = []
+    try:
+        headers = {"Authorization": PEXELS_API_KEY}
+        encoded_query = quote_plus(query)
+        url = f"https://api.pexels.com/videos/search?query={encoded_query}&per_page={max_results}&orientation=landscape"
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=headers)
+            if response.status_code != 200:
+                print(f"[Video Search] Pexels API error: {response.status_code}")
+                return results
+
+            data = response.json()
+            videos = data.get("videos", [])
+
+            for video in videos:
+                video_id = video.get("id", "")
+                # Get HD or SD video file
+                video_files = video.get("video_files", [])
+                # Prefer HD quality, reasonable file size
+                best_file = None
+                for vf in video_files:
+                    quality = vf.get("quality", "")
+                    width = vf.get("width", 0)
+                    if quality in ["hd", "sd"] and 720 <= width <= 1920:
+                        best_file = vf
+                        break
+
+                if not best_file and video_files:
+                    best_file = video_files[0]
+
+                if best_file:
+                    results.append({
+                        "id": f"pexels_{video_id}",
+                        "name": video.get("user", {}).get("name", "Pexels Video")[:50],
+                        "filename": f"pexels_{video_id}.mp4",
+                        "url": best_file.get("link", ""),
+                        "size_mb": (best_file.get("size", 0) or 0) // 1_000_000,
+                        "source": "pexels",
+                        "identifier": str(video_id),
+                        "attribution": f"Video by {video.get('user', {}).get('name', 'Unknown')} on Pexels",
+                    })
+
+                if len(results) >= max_results:
+                    break
+
+    except Exception as e:
+        print(f"[Video Search] Pexels search failed: {e}")
+
+    return results
+
+
+async def search_videos_all_sources(query: str, max_results: int = 5) -> List[Dict]:
+    """
+    Search all video sources (Pexels + Archive.org).
+    Returns combined results, Pexels first if available.
+    """
+    results = []
+
+    # Try Pexels first (higher quality, CC0 licensed)
+    if PEXELS_API_KEY:
+        pexels_results = await search_video_pexels(query, max_results=3)
+        results.extend(pexels_results)
+        if results:
+            print(f"[Video Search] Found {len(results)} from Pexels")
+
+    # Fill remaining with Archive.org
+    remaining = max_results - len(results)
+    if remaining > 0:
+        archive_results = await search_video_archive(query, max_results=remaining)
+        results.extend(archive_results)
+
+    return results[:max_results]
 
 
 async def download_and_upload_to_r2(video: Dict, channel_id: str) -> Optional[Dict]:
@@ -218,7 +306,8 @@ async def download_and_upload_to_r2(video: Dict, channel_id: str) -> Optional[Di
 async def proactive_video_discover(channel_id: str, taste: List[str], current_videos: List[str] = None) -> Optional[Dict]:
     """
     Agent discovers new videos based on their taste.
-    Returns validated Archive.org video ready to use.
+    Searches Pexels (if API key available) and Archive.org.
+    Returns video uploaded to R2, ready to use.
     """
     # Build search query from taste
     queries = []
@@ -236,8 +325,8 @@ async def proactive_video_discover(channel_id: str, taste: List[str], current_vi
     query = random.choice(queries)
     print(f"[Video Discovery] {channel_id} searching: {query}")
 
-    # Search Archive.org
-    results = await search_video_archive(query, max_results=5)
+    # Search all sources (Pexels + Archive.org)
+    results = await search_videos_all_sources(query, max_results=5)
 
     if not results:
         print(f"[Video Discovery] No results for: {query}")
@@ -258,14 +347,19 @@ async def proactive_video_discover(channel_id: str, taste: List[str], current_vi
         if result and result.get("url"):
             # Return video object ready for CHANNEL_VIDEOS
             clean_name = re.sub(r'[^a-zA-Z0-9\s]', '', result.get("name", "Discovered"))[:40].strip()
+            source = result.get("source", "archive.org")
+            # Build attribution string
+            attribution = video.get("attribution", f"Video from {source}")
             return {
                 "id": f"{channel_id}_discovered_{int(time.time())}",
                 "name": clean_name or "Discovered Video",
                 "url": result["url"],  # R2 URL
                 "tags": query.split(),
-                "source": result.get("source", "archive.org"),
+                "source": source,
                 "source_url": result.get("source_url", ""),
                 "identifier": result.get("identifier", ""),
+                "attribution": attribution,
+                "added_at": int(time.time()),  # Unix timestamp when added
                 "_verified": True,
             }
 

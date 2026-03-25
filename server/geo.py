@@ -64,18 +64,22 @@ TIMEZONE_TO_LOCATION = {
 
 
 def get_location_from_offset(offset_hours: float) -> Dict:
-    """Get specific location info from timezone offset."""
+    """Get specific location info from timezone offset.
+    Returns country and vibe only (no city for privacy).
+    """
     # Try exact match first (for half-hour zones like India +5.5)
     if offset_hours in TIMEZONE_TO_LOCATION:
-        return TIMEZONE_TO_LOCATION[offset_hours]
+        loc = TIMEZONE_TO_LOCATION[offset_hours]
+        return {"country": loc["country"], "vibe": loc["vibe"]}
 
     # Try rounded match
     rounded = round(offset_hours)
     if float(rounded) in TIMEZONE_TO_LOCATION:
-        return TIMEZONE_TO_LOCATION[float(rounded)]
+        loc = TIMEZONE_TO_LOCATION[float(rounded)]
+        return {"country": loc["country"], "vibe": loc["vibe"]}
 
     # Fallback
-    return {"city": "somewhere", "country": "unknown", "vibe": "quiet hours"}
+    return {"country": "unknown", "vibe": "quiet hours"}
 
 
 def get_region_from_offset(offset_hours: float) -> str:
