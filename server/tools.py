@@ -271,6 +271,10 @@ CHANNEL_TRACKS = {
     ],
 }
 
+# Legacy shared tracks - kept empty for backwards compatibility
+# All tracks are now exclusive per-channel in CHANNEL_TRACKS above
+CURATED_TRACKS: Dict[str, List[Dict]] = {}
+
 
 async def search_music(query: str, mood: Optional[str] = None) -> List[Dict]:
     """
