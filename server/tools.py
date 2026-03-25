@@ -29,7 +29,7 @@ _broken_urls: Dict[str, float] = {}
 BROKEN_URL_COOLDOWN = 600  # Don't retry broken URLs for 10 minutes
 
 # ============ VIDEO DISCOVERY ============
-R2_PUBLIC_URL = "https://pub-c60e3a4de388402ba5e40acbc497a6d6.r2.dev"
+from server.r2 import upload_to_r2, get_public_url, check_exists, is_configured as r2_is_configured
 
 # Archive.org collections for video discovery
 ARCHIVE_VIDEO_COLLECTIONS = [
@@ -112,33 +112,106 @@ async def search_video_archive(query: str, max_results: int = 5) -> List[Dict]:
     return results
 
 
-async def validate_video_url(url: str) -> bool:
-    """Check if a video URL is accessible."""
-    try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            response = await client.head(url)
-            return response.status_code == 200
-    except Exception:
-        return False
-
-
-async def download_video_to_r2(video: Dict, channel_id: str) -> Optional[str]:
+async def download_and_upload_to_r2(video: Dict, channel_id: str) -> Optional[Dict]:
     """
-    Validate video URL and return it for use.
-    Archive.org URLs are used directly (reliable).
-    R2 upload happens in batch via CLI later.
+    Download video from source and upload to R2.
+    Returns dict with R2 URL and metadata if successful.
+
+    Args:
+        video: Video info from search (url, name, source, identifier)
+        channel_id: Channel requesting the video
+
+    Returns:
+        Dict with r2_url, name, attribution, etc. or None
     """
     if not video or not video.get("url"):
         return None
 
-    url = video["url"]
+    if not r2_is_configured():
+        print("[Video] R2 not configured - skipping upload")
+        return None
 
-    # Validate the URL is accessible
-    if await validate_video_url(url):
-        print(f"[Video] Validated: {video.get('name', 'video')[:40]}")
-        return url
-    else:
-        print(f"[Video] URL not accessible: {url[:60]}...")
+    source_url = video["url"]
+    video_name = video.get("name", "unknown")
+    source = video.get("source", "unknown")
+    identifier = video.get("identifier", "")
+
+    # Create clean filename
+    clean_name = re.sub(r'[^a-z0-9]', '_', video_name.lower())[:40]
+    clean_name = re.sub(r'_+', '_', clean_name).strip('_')
+    filename = f"{channel_id}_{clean_name}_{int(time.time())}.mp4"
+    r2_key = f"video/{filename}"
+
+    # Check if already in R2
+    if check_exists(r2_key):
+        print(f"[Video] Already in R2: {filename}")
+        return {
+            "url": get_public_url(r2_key),
+            "name": video_name,
+            "filename": filename,
+            "source": source,
+            "source_url": source_url,
+            "identifier": identifier,
+        }
+
+    try:
+        # Download video
+        print(f"[Video] Downloading: {video_name[:40]}...")
+        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+            response = await client.get(source_url)
+
+            if response.status_code != 200:
+                print(f"[Video] Download failed: HTTP {response.status_code}")
+                return None
+
+            content = response.content
+            content_type = response.headers.get("content-type", "video/mp4")
+
+            # Validate it's actually a video
+            if len(content) < 100_000:  # Less than 100KB is suspicious
+                print(f"[Video] File too small: {len(content)} bytes")
+                return None
+
+            if "video" not in content_type and "octet-stream" not in content_type:
+                # Check magic bytes for MP4
+                if not content[:8].startswith(b'\x00\x00\x00') and b'ftyp' not in content[:12]:
+                    print(f"[Video] Not a valid video file")
+                    return None
+
+        # Upload to R2 with attribution metadata
+        metadata = {
+            "source": source,
+            "source_url": source_url[:256],  # R2 metadata has size limits
+            "identifier": identifier[:128],
+            "original_name": video_name[:128],
+            "channel": channel_id,
+            "uploaded_at": str(int(time.time())),
+        }
+
+        r2_url = upload_to_r2(
+            data=content,
+            key=r2_key,
+            content_type="video/mp4",
+            metadata=metadata
+        )
+
+        if r2_url:
+            print(f"[Video] Uploaded to R2: {filename} ({len(content) // 1024} KB)")
+            return {
+                "url": r2_url,
+                "name": video_name,
+                "filename": filename,
+                "source": source,
+                "source_url": source_url,
+                "identifier": identifier,
+                "size_kb": len(content) // 1024,
+            }
+        else:
+            print(f"[Video] R2 upload failed")
+            return None
+
+    except Exception as e:
+        print(f"[Video] Error downloading/uploading: {e}")
         return None
 
 
@@ -180,16 +253,19 @@ async def proactive_video_discover(channel_id: str, taste: List[str], current_vi
     # Try each result until we find one that works
     random.shuffle(available)
     for video in available:
-        valid_url = await download_video_to_r2(video, channel_id)
-        if valid_url:
-            # Create clean name for the video
-            clean_name = re.sub(r'[^a-zA-Z0-9\s]', '', video["name"])[:40].strip()
+        # Download and upload to R2
+        result = await download_and_upload_to_r2(video, channel_id)
+        if result and result.get("url"):
+            # Return video object ready for CHANNEL_VIDEOS
+            clean_name = re.sub(r'[^a-zA-Z0-9\s]', '', result.get("name", "Discovered"))[:40].strip()
             return {
                 "id": f"{channel_id}_discovered_{int(time.time())}",
                 "name": clean_name or "Discovered Video",
-                "url": valid_url,
+                "url": result["url"],  # R2 URL
                 "tags": query.split(),
-                "source": "archive.org",
+                "source": result.get("source", "archive.org"),
+                "source_url": result.get("source_url", ""),
+                "identifier": result.get("identifier", ""),
                 "_verified": True,
             }
 
