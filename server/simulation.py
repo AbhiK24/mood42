@@ -208,10 +208,10 @@ class SimulationEngine:
                     timeout=8.0
                 )
 
-                # Process agent behaviors (with 3s timeout)
+                # Process agent behaviors (with 12s timeout - reflection + actions take time)
                 await asyncio.wait_for(
                     self._process_agent_behaviors(ch_id, agent),
-                    timeout=3.0
+                    timeout=12.0
                 )
             except asyncio.TimeoutError:
                 print(f"[{ch_id}] TIMEOUT - skipping")
@@ -427,18 +427,14 @@ class SimulationEngine:
                 cross_region_summary = gen_agent.get_cross_region_summary()
                 context = gen_agent.get_context({"tick": tick})
 
-                # Fetch regional news to inform reflection (every 3rd reflection)
+                # Get regional context (time-based, no network calls)
                 regional_news = None
-                if gen_agent.reflections_made % 3 == 0:
-                    try:
-                        regional_news = await asyncio.wait_for(
-                            fetch_regional_news(["americas", "europe", "asia"]),
-                            timeout=5.0
-                        )
-                        if any(regional_news.values()):
-                            print(f"[{channel_id}] Got regional news context")
-                    except asyncio.TimeoutError:
-                        regional_news = None
+                try:
+                    regional_news = await fetch_regional_news(["americas", "europe", "asia"])
+                    if any(regional_news.values()):
+                        print(f"[{channel_id}] Got regional context")
+                except Exception as e:
+                    print(f"[{channel_id}] Regional context failed: {e}")
 
                 # Generate deep reflection with actions
                 reflection_result = await generate_reflection(
