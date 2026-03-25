@@ -1,6 +1,8 @@
 # mood42 build configuration for Railway
 # Python-only: FastAPI serves everything
 
+providers = ["python"]
+
 [phases.setup]
 nixPkgs = ["python311"]
 
