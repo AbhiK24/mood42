@@ -989,9 +989,9 @@ CHANNEL_VIDEOS = {
     "ch02": [
         {"id": "ch02_v1", "name": "Rain Cafe", "url": f"{R2_BASE}/video/ch02_rain_cafe.mp4", "tags": ["rain", "cozy", "cafe"]},
     ],
-    # CH03: Vincent - jazz club noir (exclusive)
+    # CH03: Vincent - jazz noir city (exclusive)
     "ch03": [
-        {"id": "ch03_v1", "name": "Jazz Club", "url": f"{R2_BASE}/video/ch03_jazz_club.mp4", "tags": ["jazz", "noir", "city"]},
+        {"id": "ch03_v1", "name": "Jazz Noir", "url": f"{R2_BASE}/video/ch03_jazz_noir.mp4", "tags": ["jazz", "noir", "night"]},
     ],
     # CH04: NEON-7 - galaxy travel synthwave (exclusive)
     "ch04": [
@@ -1002,13 +1002,13 @@ CHANNEL_VIDEOS = {
         {"id": "ch05_v1", "name": "Eclipse Cosmic", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "eclipse"]},
         {"id": "ch05_v2", "name": "Aurora Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "aurora", "infinite"]},
     ],
-    # CH06: Kenji - neon city night drive (exclusive)
+    # CH06: Kenji - tokyo night drive (exclusive)
     "ch06": [
-        {"id": "ch06_v1", "name": "Neon City", "url": f"{R2_BASE}/video/ch06_neon_city.mp4", "tags": ["neon", "city", "night"]},
+        {"id": "ch06_v1", "name": "Tokyo Night", "url": f"{R2_BASE}/video/ch06_tokyo_night.mp4", "tags": ["tokyo", "neon", "night"]},
     ],
-    # CH07: Claire - flowers bloom (exclusive)
+    # CH07: Claire - sunday morning nature (exclusive)
     "ch07": [
-        {"id": "ch07_v1", "name": "Flowers Bloom", "url": f"{R2_BASE}/video/ch07_flowers.mp4", "tags": ["flowers", "nature", "peaceful"]},
+        {"id": "ch07_v1", "name": "Sunday Nature", "url": f"{R2_BASE}/video/ch07_sunday_nature.mp4", "tags": ["nature", "morning", "peaceful"]},
     ],
     # CH08: Alan - abstract focus + minimal (exclusive, 2 videos)
     "ch08": [

@@ -349,8 +349,8 @@ class SimulationEngine:
         current_video_id = current_video.get("id") if current_video else None
         video = await get_validated_video(videos, exclude_id=current_video_id) if videos else None
 
-        # Occasionally discover NEW videos (5% chance per track change)
-        if random.random() < 0.05:
+        # Discover NEW videos (20% chance per track change)
+        if random.random() < 0.20:
             try:
                 taste = CHANNELS.get(channel_id, {}).get("agent", {}).get("taste", [])
                 current_urls = [v.get("url") for v in videos] if videos else []
