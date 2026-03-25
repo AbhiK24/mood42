@@ -181,8 +181,8 @@ class SimulationEngine:
             "regions": region_times,
         })
 
-        # Process each channel with timeout protection
-        for ch_id, agent in self.channel_agents.items():
+        # Process all channels IN PARALLEL with timeout protection
+        async def process_channel(ch_id: str, agent):
             try:
                 # Update agent context for each region
                 for region in REGIONS:
@@ -190,25 +190,31 @@ class SimulationEngine:
                     agent.update_region_context(
                         region=region,
                         local_time=region_info["time"],
-                        weather=None,  # Could fetch real weather
+                        weather=None,
                         occasion=get_occasion(region).get("name") if get_occasion(region) else None,
                     )
 
-                # Check if any region needs a track change (with 10s timeout per channel)
+                # Process regions (with 8s timeout per channel)
                 await asyncio.wait_for(
                     self._process_channel_regions(ch_id, agent),
-                    timeout=10.0
+                    timeout=8.0
                 )
 
-                # Process generative agent behaviors (reflection, planning)
+                # Process agent behaviors (with 3s timeout)
                 await asyncio.wait_for(
                     self._process_agent_behaviors(ch_id, agent),
-                    timeout=5.0
+                    timeout=3.0
                 )
             except asyncio.TimeoutError:
-                print(f"[{ch_id}] TIMEOUT - skipping this tick")
+                print(f"[{ch_id}] TIMEOUT - skipping")
             except Exception as e:
-                print(f"[{ch_id}] ERROR in tick: {e}")
+                print(f"[{ch_id}] ERROR: {e}")
+
+        # Run all channels in parallel
+        await asyncio.gather(*[
+            process_channel(ch_id, agent)
+            for ch_id, agent in self.channel_agents.items()
+        ])
 
         # Occasional inter-agent interactions (every ~10 ticks)
         if self.world["tick"] % 10 == 0 and self.use_llm:
