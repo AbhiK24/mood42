@@ -266,7 +266,8 @@ class SimulationEngine:
                     tools=ALL_TOOLS,
                 )
 
-                thought = decision.get("thought", "")
+                # Use LLM reasoning internally, but generate unique per-agent thought for display
+                # (User doesn't want generic regional messages like "in Asia")
                 mood = decision.get("mood", mood)
 
                 # Check if agent wants to search for new music
