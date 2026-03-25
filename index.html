@@ -1567,7 +1567,8 @@
       document.getElementById('ch-avatar').style.setProperty('--agent-color', ch.color);
 
       document.getElementById('ch-desc').textContent = ch.desc;
-      document.getElementById('channel-video').src = ch.video;
+      // Don't set video from static data - wait for live state from server
+      // document.getElementById('channel-video').src = ch.video;
       // Show "loading" until we get live data from server
       document.getElementById('track-name').textContent = 'Connecting...';
 
@@ -1581,11 +1582,12 @@
       // NOTE: Don't start static music here - wait for live state from server
       // The patched openChannel() will fetch live track and start playback
 
-      // Fallback: if server doesn't respond in 3s, use static track
+      // Fallback: if server doesn't respond in 3s, use static track/video
       setTimeout(() => {
         if (document.getElementById('track-name').textContent === 'Connecting...') {
-          console.log('[Fallback] Server slow, using static track');
+          console.log('[Fallback] Server slow, using static track/video');
           document.getElementById('track-name').textContent = ch.trackName;
+          document.getElementById('channel-video').src = ch.video;
           audio.src = ch.music;
           audio.play().then(() => {
             musicPlaying = true;
@@ -1796,59 +1798,60 @@
     console.log(`[Geo] Timezone: ${viewerIANA} (UTC${viewerTimezone >= 0 ? '+' : ''}${viewerTimezone})`);
 
     // IANA timezone to city mapping (precise!)
-    const IANA_TO_CITY = {
+    // Map IANA timezone to country (privacy-focused, no city names)
+    const IANA_TO_COUNTRY = {
       // India
-      'Asia/Kolkata': 'India', 'Asia/Calcutta': 'Kolkata', 'Asia/Mumbai': 'Mumbai',
+      'Asia/Kolkata': 'India', 'Asia/Calcutta': 'India', 'Asia/Mumbai': 'India',
       // Japan
-      'Asia/Tokyo': 'Tokyo', 'Japan': 'Japan',
+      'Asia/Tokyo': 'Japan', 'Japan': 'Japan',
       // China
-      'Asia/Shanghai': 'Shanghai', 'Asia/Hong_Kong': 'Hong Kong', 'Asia/Chongqing': 'China',
+      'Asia/Shanghai': 'China', 'Asia/Hong_Kong': 'Hong Kong', 'Asia/Chongqing': 'China',
       // Southeast Asia
-      'Asia/Singapore': 'Singapore', 'Asia/Bangkok': 'Bangkok', 'Asia/Jakarta': 'Jakarta',
-      'Asia/Kuala_Lumpur': 'Kuala Lumpur', 'Asia/Manila': 'Manila', 'Asia/Ho_Chi_Minh': 'Saigon',
+      'Asia/Singapore': 'Singapore', 'Asia/Bangkok': 'Thailand', 'Asia/Jakarta': 'Indonesia',
+      'Asia/Kuala_Lumpur': 'Malaysia', 'Asia/Manila': 'Philippines', 'Asia/Ho_Chi_Minh': 'Vietnam',
       // Korea
-      'Asia/Seoul': 'Seoul',
+      'Asia/Seoul': 'Korea',
       // Middle East
-      'Asia/Dubai': 'Dubai', 'Asia/Riyadh': 'Riyadh', 'Asia/Tehran': 'Tehran',
-      'Asia/Jerusalem': 'Jerusalem', 'Asia/Beirut': 'Beirut',
+      'Asia/Dubai': 'UAE', 'Asia/Riyadh': 'Saudi Arabia', 'Asia/Tehran': 'Iran',
+      'Asia/Jerusalem': 'Israel', 'Asia/Beirut': 'Lebanon',
       // South Asia
-      'Asia/Karachi': 'Karachi', 'Asia/Dhaka': 'Dhaka', 'Asia/Kathmandu': 'Kathmandu',
-      'Asia/Colombo': 'Colombo',
+      'Asia/Karachi': 'Pakistan', 'Asia/Dhaka': 'Bangladesh', 'Asia/Kathmandu': 'Nepal',
+      'Asia/Colombo': 'Sri Lanka',
       // Europe
-      'Europe/London': 'London', 'Europe/Paris': 'Paris', 'Europe/Berlin': 'Berlin',
-      'Europe/Madrid': 'Madrid', 'Europe/Rome': 'Rome', 'Europe/Amsterdam': 'Amsterdam',
-      'Europe/Moscow': 'Moscow', 'Europe/Istanbul': 'Istanbul', 'Europe/Athens': 'Athens',
-      'Europe/Warsaw': 'Warsaw', 'Europe/Prague': 'Prague', 'Europe/Vienna': 'Vienna',
-      'Europe/Zurich': 'Zurich', 'Europe/Stockholm': 'Stockholm', 'Europe/Oslo': 'Oslo',
-      'Europe/Copenhagen': 'Copenhagen', 'Europe/Helsinki': 'Helsinki', 'Europe/Dublin': 'Dublin',
-      'Europe/Lisbon': 'Lisbon', 'Europe/Brussels': 'Brussels',
+      'Europe/London': 'UK', 'Europe/Paris': 'France', 'Europe/Berlin': 'Germany',
+      'Europe/Madrid': 'Spain', 'Europe/Rome': 'Italy', 'Europe/Amsterdam': 'Netherlands',
+      'Europe/Moscow': 'Russia', 'Europe/Istanbul': 'Turkey', 'Europe/Athens': 'Greece',
+      'Europe/Warsaw': 'Poland', 'Europe/Prague': 'Czechia', 'Europe/Vienna': 'Austria',
+      'Europe/Zurich': 'Switzerland', 'Europe/Stockholm': 'Sweden', 'Europe/Oslo': 'Norway',
+      'Europe/Copenhagen': 'Denmark', 'Europe/Helsinki': 'Finland', 'Europe/Dublin': 'Ireland',
+      'Europe/Lisbon': 'Portugal', 'Europe/Brussels': 'Belgium',
       // Americas
-      'America/New_York': 'New York', 'America/Los_Angeles': 'Los Angeles',
-      'America/Chicago': 'Chicago', 'America/Denver': 'Denver', 'America/Phoenix': 'Phoenix',
-      'America/Toronto': 'Toronto', 'America/Vancouver': 'Vancouver', 'America/Montreal': 'Montreal',
-      'America/Mexico_City': 'Mexico City', 'America/Sao_Paulo': 'São Paulo',
-      'America/Buenos_Aires': 'Buenos Aires', 'America/Lima': 'Lima', 'America/Bogota': 'Bogotá',
-      'America/Santiago': 'Santiago', 'America/Caracas': 'Caracas',
+      'America/New_York': 'USA', 'America/Los_Angeles': 'USA',
+      'America/Chicago': 'USA', 'America/Denver': 'USA', 'America/Phoenix': 'USA',
+      'America/Toronto': 'Canada', 'America/Vancouver': 'Canada', 'America/Montreal': 'Canada',
+      'America/Mexico_City': 'Mexico', 'America/Sao_Paulo': 'Brazil',
+      'America/Buenos_Aires': 'Argentina', 'America/Lima': 'Peru', 'America/Bogota': 'Colombia',
+      'America/Santiago': 'Chile', 'America/Caracas': 'Venezuela',
       // Oceania
-      'Australia/Sydney': 'Sydney', 'Australia/Melbourne': 'Melbourne',
-      'Australia/Brisbane': 'Brisbane', 'Australia/Perth': 'Perth',
-      'Pacific/Auckland': 'Auckland', 'Pacific/Honolulu': 'Honolulu',
+      'Australia/Sydney': 'Australia', 'Australia/Melbourne': 'Australia',
+      'Australia/Brisbane': 'Australia', 'Australia/Perth': 'Australia',
+      'Pacific/Auckland': 'New Zealand', 'Pacific/Honolulu': 'Hawaii',
       // Africa
-      'Africa/Cairo': 'Cairo', 'Africa/Lagos': 'Lagos', 'Africa/Johannesburg': 'Johannesburg',
-      'Africa/Nairobi': 'Nairobi', 'Africa/Casablanca': 'Casablanca',
+      'Africa/Cairo': 'Egypt', 'Africa/Lagos': 'Nigeria', 'Africa/Johannesburg': 'South Africa',
+      'Africa/Nairobi': 'Kenya', 'Africa/Casablanca': 'Morocco',
     };
 
-    function getViewerCity() {
+    function getViewerCountry() {
       // Try exact IANA match first
-      if (IANA_TO_CITY[viewerIANA]) {
-        return IANA_TO_CITY[viewerIANA];
+      if (IANA_TO_COUNTRY[viewerIANA]) {
+        return IANA_TO_COUNTRY[viewerIANA];
       }
-      // Extract city from IANA (e.g., "Asia/Kolkata" -> "Kolkata")
+      // Extract region from IANA (e.g., "Asia/Kolkata" -> "Asia")
       const parts = viewerIANA.split('/');
-      if (parts.length > 1) {
-        return parts[parts.length - 1].replace(/_/g, ' ');
+      if (parts.length > 0) {
+        return parts[0].replace(/_/g, ' ');
       }
-      return 'your city';
+      return 'your region';
     }
 
     function formatThought(thought) {
@@ -1859,8 +1862,8 @@
       const ampm = hours >= 12 ? 'PM' : 'AM';
       const hour12 = hours % 12 || 12;
       const timeStr = `${hour12}:${mins} ${ampm}`;
-      const city = getViewerCity();
-      return `${timeStr} in ${city} — ${thought}`;
+      const country = getViewerCountry();
+      return `${timeStr} in ${country} — ${thought}`;
     }
 
     // Helper to add timezone to API URLs
