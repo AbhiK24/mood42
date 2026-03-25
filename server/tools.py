@@ -553,63 +553,63 @@ R2_BASE = "https://pub-c60e3a4de388402ba5e40acbc497a6d6.r2.dev"
 CHANNEL_TRACKS = {
     # CH01: Late Night with Maya - lo-fi, introspective night coding vibes
     "ch01": [
-        {"id": "ch01_1", "name": "Hanging Lanterns - Kalaido", "url": f"{R2_BASE}/audio/ch01_hanging_lanterns.mp3", "duration": 180},
-        {"id": "ch01_2", "name": "First Snow - Kerusu", "url": f"{R2_BASE}/audio/ch01_first_snow.mp3", "duration": 195},
-        {"id": "ch01_3", "name": "Lofi Experimentin - Kronicle", "url": f"{R2_BASE}/audio/ch01_lofi_experimentin.mp3", "duration": 185},
+        {"id": "ch01_1", "name": "Hanging Lanterns - Kalaido", "url": f"{R2_BASE}/audio/ch01_hanging_lanterns.mp3", "duration": 180, "attribution": "Hanging Lanterns by Kalaido (CC)", "source": "archive.org"},
+        {"id": "ch01_2", "name": "First Snow - Kerusu", "url": f"{R2_BASE}/audio/ch01_first_snow.mp3", "duration": 195, "attribution": "First Snow by Kerusu (CC)", "source": "archive.org"},
+        {"id": "ch01_3", "name": "Lofi Experimentin - Kronicle", "url": f"{R2_BASE}/audio/ch01_lofi_experimentin.mp3", "duration": 185, "attribution": "Lofi Experimentin by Kronicle (CC)", "source": "archive.org"},
     ],
     # CH02: Rain Café with Yuki - jazz café, cozy rain vibes
     "ch02": [
-        {"id": "ch02_1", "name": "Lo-fi Rain Beat", "url": f"{R2_BASE}/audio/ch02_lofi_rain_beat.mp3", "duration": 170},
-        {"id": "ch02_2", "name": "Chill Jazzy Lofi", "url": f"{R2_BASE}/audio/ch02_chill_jazzy_lofi.mp3", "duration": 180},
-        {"id": "ch02_3", "name": "Herbal Tea Jazz", "url": f"{R2_BASE}/audio/ch02_herbal_tea_jazz.mp3", "duration": 195},
+        {"id": "ch02_1", "name": "Lo-fi Rain Beat", "url": f"{R2_BASE}/audio/ch02_lofi_rain_beat.mp3", "duration": 170, "attribution": "Lo-fi Rain Beat (Free License)", "source": "archive.org"},
+        {"id": "ch02_2", "name": "Chill Jazzy Lofi", "url": f"{R2_BASE}/audio/ch02_chill_jazzy_lofi.mp3", "duration": 180, "attribution": "Chill Jazzy Lofi (CC)", "source": "chosic"},
+        {"id": "ch02_3", "name": "Herbal Tea Jazz", "url": f"{R2_BASE}/audio/ch02_herbal_tea_jazz.mp3", "duration": 195, "attribution": "Herbal Tea Jazz (CC)", "source": "chosic"},
     ],
     # CH03: Jazz Noir with Vincent - smoky detective jazz
     "ch03": [
-        {"id": "ch03_1", "name": "Swing Jazz Grooves", "url": f"{R2_BASE}/audio/ch03_swing_jazz_grooves.mp3", "duration": 220},
-        {"id": "ch03_2", "name": "Jazz Type Beat - Lukrembo", "url": f"{R2_BASE}/audio/ch03_jazz_type_beat.mp3", "duration": 165},
-        {"id": "ch03_3", "name": "Deep Space Jazz", "url": f"{R2_BASE}/audio/ch03_deep_space_jazz.mp3", "duration": 200},
+        {"id": "ch03_1", "name": "Swing Jazz Grooves", "url": f"{R2_BASE}/audio/ch03_swing_jazz_grooves.mp3", "duration": 220, "attribution": "Swing Jazz Grooves (CC)", "source": "archive.org"},
+        {"id": "ch03_2", "name": "Jazz Type Beat - Lukrembo", "url": f"{R2_BASE}/audio/ch03_jazz_type_beat.mp3", "duration": 165, "attribution": "Jazz Type Beat by Lukrembo (Free)", "source": "archive.org"},
+        {"id": "ch03_3", "name": "Deep Space Jazz", "url": f"{R2_BASE}/audio/ch03_deep_space_jazz.mp3", "duration": 200, "attribution": "Deep Space Jazz (CC)", "source": "chosic"},
     ],
     # CH04: Synthwave with NEON - retro-futuristic neon dreams
     "ch04": [
-        {"id": "ch04_1", "name": "Synthwave Dreams", "url": f"{R2_BASE}/audio/ch04_synthwave_dreams.mp3", "duration": 210},
-        {"id": "ch04_2", "name": "Cyberpunk Night", "url": f"{R2_BASE}/audio/ch04_cyberpunk_night.mp3", "duration": 225},
-        {"id": "ch04_3", "name": "Defective Beats", "url": f"{R2_BASE}/audio/ch04_defective_beats.mp3", "duration": 180},
+        {"id": "ch04_1", "name": "Synthwave Dreams", "url": f"{R2_BASE}/audio/ch04_synthwave_dreams.mp3", "duration": 210, "attribution": "Synthwave Dreams (CC)", "source": "archive.org"},
+        {"id": "ch04_2", "name": "Cyberpunk Night", "url": f"{R2_BASE}/audio/ch04_cyberpunk_night.mp3", "duration": 225, "attribution": "Cyberpunk Night (CC)", "source": "archive.org"},
+        {"id": "ch04_3", "name": "Defective Beats", "url": f"{R2_BASE}/audio/ch04_defective_beats.mp3", "duration": 180, "attribution": "Defective Beats (CC)", "source": "chosic"},
     ],
     # CH05: Deep Space with Cosmos - vast cosmic ambience
     "ch05": [
-        {"id": "ch05_1", "name": "Cosmic Drift", "url": f"{R2_BASE}/audio/ch05_cosmic_drift.mp3", "duration": 310},
-        {"id": "ch05_2", "name": "Deep Ambient", "url": f"{R2_BASE}/audio/ch05_deep_ambient.mp3", "duration": 320},
-        {"id": "ch05_3", "name": "Night Meditation", "url": f"{R2_BASE}/audio/ch05_night_meditation.mp3", "duration": 285},
+        {"id": "ch05_1", "name": "Cosmic Drift", "url": f"{R2_BASE}/audio/ch05_cosmic_drift.mp3", "duration": 310, "attribution": "Cosmic Drift (CC)", "source": "chosic"},
+        {"id": "ch05_2", "name": "Deep Ambient", "url": f"{R2_BASE}/audio/ch05_deep_ambient.mp3", "duration": 320, "attribution": "Deep Ambient by Dimaension X (CC)", "source": "archive.org"},
+        {"id": "ch05_3", "name": "Night Meditation", "url": f"{R2_BASE}/audio/ch05_night_meditation.mp3", "duration": 285, "attribution": "Night Meditation (CC)", "source": "chosic"},
     ],
     # CH06: Tokyo Drift with Kenji - neon city nights, city pop
     "ch06": [
-        {"id": "ch06_1", "name": "Finite Dreams", "url": f"{R2_BASE}/audio/ch06_finite_dreams.mp3", "duration": 195},
-        {"id": "ch06_2", "name": "Onion - Lukrembo", "url": f"{R2_BASE}/audio/ch06_onion_lukrembo.mp3", "duration": 175},
-        {"id": "ch06_3", "name": "Tranquillity", "url": f"{R2_BASE}/audio/ch06_tranquillity.mp3", "duration": 190},
+        {"id": "ch06_1", "name": "Finite Dreams", "url": f"{R2_BASE}/audio/ch06_finite_dreams.mp3", "duration": 195, "attribution": "Finite Dreams (CC)", "source": "chosic"},
+        {"id": "ch06_2", "name": "Onion - Lukrembo", "url": f"{R2_BASE}/audio/ch06_onion_lukrembo.mp3", "duration": 175, "attribution": "Onion by Lukrembo (Free)", "source": "archive.org"},
+        {"id": "ch06_3", "name": "Tranquillity", "url": f"{R2_BASE}/audio/ch06_tranquillity.mp3", "duration": 190, "attribution": "Tranquillity (CC)", "source": "chosic"},
     ],
     # CH07: Sunday Morning with Claire - peaceful acoustic warmth
     "ch07": [
-        {"id": "ch07_1", "name": "Dancing On My Own", "url": f"{R2_BASE}/audio/ch07_dancing_on_my_own.mp3", "duration": 195},
-        {"id": "ch07_2", "name": "Take Care - SURF", "url": f"{R2_BASE}/audio/ch07_take_care_surf.mp3", "duration": 185},
-        {"id": "ch07_3", "name": "Waves - Matt Quentin", "url": f"{R2_BASE}/audio/ch07_waves.mp3", "duration": 200},
+        {"id": "ch07_1", "name": "Dancing On My Own", "url": f"{R2_BASE}/audio/ch07_dancing_on_my_own.mp3", "duration": 195, "attribution": "Dancing On My Own (CC)", "source": "chosic"},
+        {"id": "ch07_2", "name": "Take Care - SURF", "url": f"{R2_BASE}/audio/ch07_take_care_surf.mp3", "duration": 185, "attribution": "Take Care by SURF (CC)", "source": "archive.org"},
+        {"id": "ch07_3", "name": "Waves - Matt Quentin", "url": f"{R2_BASE}/audio/ch07_waves.mp3", "duration": 200, "attribution": "Waves by Matt Quentin (CC)", "source": "archive.org"},
     ],
     # CH08: Focus with Alan - minimal, distraction-free ambient
     "ch08": [
-        {"id": "ch08_1", "name": "Focus Ambient", "url": f"{R2_BASE}/audio/ch08_focus_ambient.mp3", "duration": 280},
-        {"id": "ch08_2", "name": "Floating Ambient", "url": f"{R2_BASE}/audio/ch08_floating_ambient.mp3", "duration": 290},
-        {"id": "ch08_3", "name": "Ambient Space", "url": f"{R2_BASE}/audio/ch08_ambient_space.mp3", "duration": 300},
+        {"id": "ch08_1", "name": "Focus Ambient", "url": f"{R2_BASE}/audio/ch08_focus_ambient.mp3", "duration": 280, "attribution": "Focus Ambient by Dimaension X (CC)", "source": "archive.org"},
+        {"id": "ch08_2", "name": "Floating Ambient", "url": f"{R2_BASE}/audio/ch08_floating_ambient.mp3", "duration": 290, "attribution": "Floating Ambient (CC)", "source": "chosic"},
+        {"id": "ch08_3", "name": "Ambient Space", "url": f"{R2_BASE}/audio/ch08_ambient_space.mp3", "duration": 300, "attribution": "Ambient Space by Dimaension X (CC)", "source": "archive.org"},
     ],
     # CH09: Melancholy with Daniel - sad, reflective, rainy nights
     "ch09": [
-        {"id": "ch09_1", "name": "Sunset Drive", "url": f"{R2_BASE}/audio/ch09_sunset_drive.mp3", "duration": 185},
-        {"id": "ch09_2", "name": "Deep Electronic", "url": f"{R2_BASE}/audio/ch09_deep_electronic.mp3", "duration": 275},
-        {"id": "ch09_3", "name": "Electronic Dreams", "url": f"{R2_BASE}/audio/ch09_electronic_dreams.mp3", "duration": 290},
+        {"id": "ch09_1", "name": "Sunset Drive", "url": f"{R2_BASE}/audio/ch09_sunset_drive.mp3", "duration": 185, "attribution": "Sunset Drive (CC)", "source": "chosic"},
+        {"id": "ch09_2", "name": "Deep Electronic", "url": f"{R2_BASE}/audio/ch09_deep_electronic.mp3", "duration": 275, "attribution": "Deep Electronic (CC)", "source": "chosic"},
+        {"id": "ch09_3", "name": "Electronic Dreams", "url": f"{R2_BASE}/audio/ch09_electronic_dreams.mp3", "duration": 290, "attribution": "Electronic Dreams (CC)", "source": "chosic"},
     ],
     # CH10: Golden Hour with Iris - warm sunset, golden light
     "ch10": [
-        {"id": "ch10_1", "name": "Soft Piano Dreams", "url": f"{R2_BASE}/audio/ch10_soft_piano_dreams.mp3", "duration": 300},
-        {"id": "ch10_2", "name": "Rainy Window Piano", "url": f"{R2_BASE}/audio/ch10_rainy_window_piano.mp3", "duration": 320},
-        {"id": "ch10_3", "name": "Evening Reflection", "url": f"{R2_BASE}/audio/ch10_evening_reflection.mp3", "duration": 290},
+        {"id": "ch10_1", "name": "Soft Piano Dreams", "url": f"{R2_BASE}/audio/ch10_soft_piano_dreams.mp3", "duration": 300, "attribution": "Soft Piano Dreams (CC)", "source": "chosic"},
+        {"id": "ch10_2", "name": "Rainy Window Piano", "url": f"{R2_BASE}/audio/ch10_rainy_window_piano.mp3", "duration": 320, "attribution": "Rainy Window Piano (CC)", "source": "chosic"},
+        {"id": "ch10_3", "name": "Evening Reflection", "url": f"{R2_BASE}/audio/ch10_evening_reflection.mp3", "duration": 290, "attribution": "Evening Reflection (CC)", "source": "chosic"},
     ],
 }
 
