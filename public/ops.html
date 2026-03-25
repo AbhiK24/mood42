@@ -38,7 +38,7 @@
 
         .summary {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 16px;
             margin-bottom: 32px;
         }
@@ -98,6 +98,7 @@
         .region-cell {
             background: #111;
             padding: 12px;
+            min-height: 90px;
         }
         .region-cell.stale { background: #1a1a08; }
         .region-cell.broken { background: #1a0808; }
@@ -125,6 +126,17 @@
             overflow: hidden;
             text-overflow: ellipsis;
             margin-bottom: 4px;
+            max-width: 100%;
+            display: block;
+            cursor: default;
+        }
+        .track-name:hover {
+            overflow: visible;
+            white-space: normal;
+            word-break: break-word;
+            position: relative;
+            z-index: 10;
+            background: #111;
         }
         .track-name.none { color: #f87171; font-style: italic; }
         .track-links {
@@ -180,9 +192,14 @@
         }
         .last-update { color: #666; }
 
-        @media (max-width: 800px) {
-            .summary { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 900px) {
+            .summary { grid-template-columns: repeat(5, 1fr); }
             .regions-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .summary { grid-template-columns: repeat(3, 1fr); }
+            .regions-grid { grid-template-columns: 1fr; }
+            .stat-card .value { font-size: 22px; }
         }
     </style>
 </head>
@@ -194,11 +211,11 @@
 
     <div class="summary" id="summary">
         <div class="stat-card">
-            <div class="label">Total Streams</div>
+            <div class="label">Streams</div>
             <div class="value" id="total-streams">--</div>
         </div>
         <div class="stat-card">
-            <div class="label">OK</div>
+            <div class="label">Playing</div>
             <div class="value ok" id="ok-streams">--</div>
         </div>
         <div class="stat-card">
@@ -206,20 +223,12 @@
             <div class="value stale" id="stale-streams">--</div>
         </div>
         <div class="stat-card">
-            <div class="label">Broken</div>
-            <div class="value broken" id="broken-streams">--</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Server Tick</div>
+            <div class="label">Tick</div>
             <div class="value" id="tick">--</div>
         </div>
         <div class="stat-card">
-            <div class="label">URLs Verified</div>
-            <div class="value ok" id="urls-verified">--</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">URLs Broken</div>
-            <div class="value broken" id="urls-broken">--</div>
+            <div class="label">LLM</div>
+            <div class="value" id="llm-status">--</div>
         </div>
     </div>
 
@@ -264,14 +273,17 @@
             // Summary stats
             document.getElementById('total-streams').textContent = data.summary.total_streams;
             document.getElementById('ok-streams').textContent = data.summary.ok;
-            document.getElementById('stale-streams').textContent = data.summary.stale;
-            document.getElementById('broken-streams').textContent = data.summary.broken;
+            document.getElementById('stale-streams').textContent = data.summary.stale + data.summary.broken;
             document.getElementById('tick').textContent = data.tick;
 
-            // URL health stats
-            if (data.url_health) {
-                document.getElementById('urls-verified').textContent = data.url_health.verified_count;
-                document.getElementById('urls-broken').textContent = data.url_health.broken_count;
+            // LLM status
+            const llmEl = document.getElementById('llm-status');
+            if (data.llm_enabled) {
+                llmEl.textContent = 'ON';
+                llmEl.className = 'value ok';
+            } else {
+                llmEl.textContent = 'OFF';
+                llmEl.className = 'value stale';
             }
 
             // Channels grid
