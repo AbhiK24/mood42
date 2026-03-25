@@ -43,17 +43,18 @@ ARCHIVE_VIDEO_COLLECTIONS = [
 ]
 
 # Taste to search query mapping for video discovery
+# Biased towards humans, cities, cinematic shots - more interesting visuals
 TASTE_TO_VIDEO_QUERY = {
-    "lo-fi": ["city night", "rain window", "neon lights", "urban night"],
-    "ambient": ["clouds timelapse", "nature peaceful", "abstract motion", "slow motion"],
-    "jazz": ["city noir", "night club", "smoky bar", "vintage city"],
-    "synthwave": ["neon grid", "retro futurism", "80s aesthetic", "laser lights"],
-    "space": ["stars galaxy", "nebula cosmic", "space travel", "universe"],
-    "nature": ["forest sunlight", "flowers garden", "sunrise morning", "ocean waves"],
-    "minimal": ["geometric abstract", "minimal motion", "clean lines", "simple shapes"],
-    "melancholic": ["rain city", "fog morning", "lonely street", "grey sky"],
-    "warm": ["golden hour", "sunset beach", "warm light", "autumn colors"],
-    "cozy": ["fireplace", "coffee steam", "rain window", "bookshelf"],
+    "lo-fi": ["people city night", "pedestrians urban street", "woman walking city", "man coffee shop window"],
+    "ambient": ["people watching sunset", "silhouette person mountain", "human meditation nature", "person slow motion"],
+    "jazz": ["people city noir", "couple night club", "man smoking bar", "woman vintage cafe"],
+    "synthwave": ["people neon city", "cyberpunk street crowd", "urban night pedestrians", "city lights people"],
+    "space": ["astronaut cinematic", "person stars night", "human silhouette cosmos", "observatory night"],
+    "nature": ["person forest walk", "woman flowers garden", "human sunrise beach", "people ocean contemplation"],
+    "minimal": ["person minimal space", "human geometric architecture", "silhouette clean lines", "person zen garden"],
+    "melancholic": ["person rain city", "lonely figure fog", "human empty street", "woman window rain"],
+    "warm": ["people golden hour", "couple sunset beach", "family warm light", "person autumn park"],
+    "cozy": ["person coffee cafe", "woman reading fireplace", "man rain window", "couple bookstore"],
 }
 
 

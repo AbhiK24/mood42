@@ -166,7 +166,11 @@ class SimulationEngine:
             "Let this one play out.",
         ])
 
-        return random.choice(thoughts)
+        # Use a hash of channel_id + tick to ensure different channels get different thoughts
+        # even when generating at the same time
+        seed = hash(f"{channel_id}_{region}_{self.world['tick']}_{time.time()}")
+        rng = random.Random(seed)
+        return rng.choice(thoughts)
 
     async def tick(self):
         """Advance simulation by one tick."""
@@ -555,6 +559,7 @@ class SimulationEngine:
                     "name": channel["agent"]["name"],
                     "mood": region_state.current_mood,
                     "energy": agent.energy,
+                    "thought": region_state.current_thought,
                 },
                 "currentTrack": region_state.current_track,
                 "currentVideo": region_state.current_video,
