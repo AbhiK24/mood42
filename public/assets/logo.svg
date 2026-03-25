@@ -1,10 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60">
   <defs>
-    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#e8c89a"/>
-      <stop offset="50%" style="stop-color:#ff6b6b"/>
-      <stop offset="100%" style="stop-color:#c084fc"/>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b"/>
+      <stop offset="50%" style="stop-color:#c084fc"/>
+      <stop offset="100%" style="stop-color:#60a5fa"/>
     </linearGradient>
   </defs>
-  <text x="0" y="38" font-family="monospace" font-size="36" font-weight="bold" fill="url(#logoGrad)" letter-spacing="2">mood42</text>
+
+  <!-- TV/Signal Symbol -->
+  <g transform="translate(8, 10)">
+    <!-- Outer rounded rectangle (TV frame) -->
+    <rect x="0" y="8" width="36" height="28" rx="4" ry="4" fill="none" stroke="url(#grad)" stroke-width="2.5"/>
+
+    <!-- Signal waves inside -->
+    <path d="M10 22 Q14 16, 18 22 Q22 28, 26 22" fill="none" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Antenna lines -->
+    <line x1="12" y1="8" x2="8" y2="0" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="24" y1="8" x2="28" y2="0" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="56" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="#ffffff" letter-spacing="-0.5">mood</text>
+  <text x="138" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="url(#grad)" letter-spacing="-0.5">42</text>
 </svg>
