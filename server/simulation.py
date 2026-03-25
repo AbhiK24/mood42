@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
 
 from server.channels import CHANNELS, TRACKS, get_channel_tracks
-from server.tools import get_tracks_for_channel, search_music, execute_tool, proactive_discover
+from server.tools import get_tracks_for_channel, search_music, execute_tool, proactive_discover, get_videos_for_channel
 from server.llm import (
     generate_programming_decision,
     generate_reflection,
@@ -240,11 +240,21 @@ class SimulationEngine:
         if not thought:
             thought = self._generate_thought(channel_id, region, "track_change")
 
+        # Select matching video for this track
+        videos = get_videos_for_channel(channel_id)
+        video = random.choice(videos) if videos else None
+
         # Record in agent's memory (region-tagged)
         agent.record_track_played(new_track, self.world["tick"], thought, region)
         agent.record_mood_shift(mood, f"track change to {new_track['name']}", self.world["tick"], region)
 
+        # Store video in region state
+        region_state = agent.get_region_state(region)
+        region_state.current_video = video
+
         print(f"[{channel_id}:{region}] Now playing: {new_track['name']}")
+        if video:
+            print(f"[{channel_id}:{region}] Video: {video['name']}")
         if thought:
             print(f"[{channel_id}:{region}] Thought: {thought}")
 
@@ -259,6 +269,11 @@ class SimulationEngine:
                 "duration": new_track.get("duration", 180),
                 "startedAt": now,
             },
+            "video": {
+                "id": video["id"],
+                "name": video["name"],
+                "url": video["url"],
+            } if video else None,
             "thought": thought,
             "mood": mood,
         })

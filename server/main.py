@@ -161,9 +161,13 @@ async def ops_dashboard():
                 elapsed_min = 0
                 is_stale = track is None
 
+            video = region_state.current_video
             channel_data["regions"][region] = {
                 "track": track["name"] if track else None,
                 "track_id": track["id"] if track else None,
+                "track_url": track["url"] if track else None,
+                "video": video["name"] if video else None,
+                "video_url": video["url"] if video else None,
                 "mood": region_state.current_mood,
                 "viewers": region_state.viewer_count,
                 "local_time": region_state.local_time,

@@ -1521,6 +1521,15 @@
           }
         }
       }
+
+      // Update video if changed
+      if (data.video && data.video.url) {
+        const videoEl = document.getElementById('channel-video');
+        if (videoEl && videoEl.src !== data.video.url) {
+          console.log('[Simulation] Changing video to:', data.video.name);
+          videoEl.src = data.video.url;
+        }
+      }
     }
 
     // Patch openChannel to connect to simulation
