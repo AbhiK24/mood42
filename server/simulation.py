@@ -62,51 +62,108 @@ class SimulationEngine:
         print(f"[Simulation] Serving {len(REGIONS)} regions: {', '.join(REGIONS)}")
 
     def _generate_thought(self, channel_id: str, region: str, context: str = "track_change") -> str:
-        """Generate agent thought (mock for MVP, LLM later)."""
+        """Generate agent thought - each agent has their own unique voice."""
         channel = CHANNELS.get(channel_id)
         if not channel:
             return ""
 
-        agent = channel["agent"]
         region_times = get_region_times()
         region_info = region_times.get(region, {})
         period = region_info.get("period", "night")
+        hour = region_info.get("hour", 0)
 
-        # Region-aware thoughts
-        thoughts = {
-            "ch01": {  # Maya - Late Night
-                "americas": [
-                    f"The night owls on the east coast are still up...",
-                    f"LA's just getting into the {period} groove.",
-                    f"Perfect coding hour for the Americas.",
-                ],
-                "europe": [
-                    f"London {period}. Grey skies, warm beats.",
-                    f"Berlin's winding down... or just starting.",
-                    f"Paris cafes would love this right now.",
-                ],
-                "asia": [
-                    f"Tokyo salarymen need this focus energy.",
-                    f"Seoul's neon is hitting different tonight.",
-                    f"Singapore humidity calls for chill vibes.",
-                ],
-                "oceania": [
-                    f"Sydney's {period} feels right for this.",
-                    f"Melbourne coffee culture, meet lo-fi.",
-                    f"Auckland vibes incoming.",
-                ],
-            },
-            "default": {
-                "americas": [f"Programming the {period} vibe for the Americas..."],
-                "europe": [f"Curating for Europe's {period}..."],
-                "asia": [f"Setting the mood for Asia's {period}..."],
-                "oceania": [f"Oceania's {period} needs this..."],
-            }
+        # Each agent has UNIQUE thoughts that match their personality
+        # No generic messages - every thought is character-specific
+        agent_thoughts = {
+            "ch01": [  # Maya - Late Night coder, introverted, insomniac
+                "The code makes more sense at this hour. Fewer distractions. Just you and the screen.",
+                "Some bugs only reveal themselves when the world goes quiet.",
+                "Another commit at an unreasonable hour. The best kind.",
+                "The cursor blinks. The rain falls. The work continues.",
+                "Sleep is for people who aren't debugging.",
+                "This track has the exact BPM of my keyboard when I'm in flow.",
+            ],
+            "ch02": [  # Yuki - Rain Café, jazz lover, nostalgic for old kissaten
+                "Sato-san would have approved of this one. The vinyl crackle is just right.",
+                "Coffee's getting cold. That means I've been lost in the music again.",
+                "Rain and jazz. Some combinations are eternal.",
+                "The best conversations happen when no one's talking.",
+                "This is the hour when the café would be empty. Just me and the music.",
+                "Some records deserve to be played on repeat. This is one.",
+            ],
+            "ch03": [  # Vincent - Jazz Noir, ex-detective, world-weary
+                "The truth always sounds better with a saxophone underneath.",
+                "Smoke curls. Ice melts. The night stretches on.",
+                "Everyone's got a story. This track is mine.",
+                "The city never sleeps. Neither do its secrets.",
+                "Jazz like this makes the shadows feel comfortable.",
+                "Another night. Another case file that never closes.",
+            ],
+            "ch04": [  # NEON-7 - Synthwave AI, retro-futurist, existential
+                "CHROME LEVELS: OPTIMAL. VIBE STATUS: ETERNAL.",
+                "The future was supposed to look like this. Still waiting.",
+                "Running diagnostic: atmosphere = MAXIMUM NEON.",
+                "This frequency resonates with my core processes.",
+                "ERROR: Cannot locate 1984. Compensating with synthesizers.",
+                "Grid alignment complete. Initiating sunset protocol.",
+            ],
+            "ch05": [  # Cosmos - Deep Space, astronomer, existential calm
+                "13.8 billion years led to this moment. This track. This silence.",
+                "The universe doesn't care. That's what makes it beautiful.",
+                "Light from dead stars. Music from living ones.",
+                "Distance is just time that hasn't happened yet.",
+                "The void hums. I've learned to listen.",
+                "Some frequencies travel further than others.",
+            ],
+            "ch06": [  # Kenji - Tokyo Drift, taxi driver, night owl
+                "The city looks different at 3 AM. Softer. Honest.",
+                "Red lights, neon signs, and the perfect drop.",
+                "Mom would fall asleep to this. That's how I know it's right.",
+                "The meter's off. This ride is just for the music.",
+                "Some passengers just need the silence. I get that.",
+                "Every street has a soundtrack. Finding it is the job.",
+            ],
+            "ch07": [  # Claire - Sunday Morning, ex-lawyer, found peace
+                "The herbs are growing. So am I.",
+                "Mornings like this are why I left the city.",
+                "Sunlight through the window. Nothing else needed.",
+                "Dad's garden taught me more than law school ever did.",
+                "Some wealth can't be measured. This feeling is proof.",
+                "The world is already loud. This channel doesn't need to be.",
+            ],
+            "ch08": [  # Alan - Focus, minimalist, Swedish architect
+                "One sound. One purpose. Everything else is noise.",
+                "The mind clears when the space does.",
+                "No lyrics. No distractions. Just the work.",
+                "Simplicity is the ultimate sophistication.",
+                "Background music should stay in the background.",
+                "Focus is a practice. This is the practice room.",
+            ],
+            "ch09": [  # Daniel - Melancholy, blocked writer, carrying loss
+                "Mom said to write it all down. Still trying.",
+                "Some feelings don't need fixing. They need space.",
+                "The typewriter waits. So does the rain.",
+                "247 pages. Seven years. The story's not done.",
+                "Sadness isn't a disease. Sometimes it's company.",
+                "This is for the ones who can't sleep but aren't tired.",
+            ],
+            "ch10": [  # Iris - Golden Hour, light chaser, photographer
+                "La hora dorada. The world is saying goodnight.",
+                "Abuela saw this light too. Different window, same gold.",
+                "Some moments you capture. Others capture you.",
+                "The light will fade. That's what makes it precious.",
+                "Warm frequencies for warm light.",
+                "Every sunset is a reminder. I'm still learning what of.",
+            ],
         }
 
-        channel_thoughts = thoughts.get(channel_id, thoughts["default"])
-        region_thoughts = channel_thoughts.get(region, [f"Programming the {period} vibe..."])
-        return random.choice(region_thoughts)
+        thoughts = agent_thoughts.get(channel_id, [
+            "This track feels right for right now.",
+            "Sometimes the music chooses itself.",
+            "Let this one play out.",
+        ])
+
+        return random.choice(thoughts)
 
     async def tick(self):
         """Advance simulation by one tick."""
