@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mood42 ops</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #222;
+        }
+        h1 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #888;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.healthy { background: #0d3320; color: #4ade80; }
+        .status-badge.degraded { background: #3d2a08; color: #fbbf24; }
+        .status-badge.broken { background: #3d0a0a; color: #f87171; }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .stat-card .label { font-size: 11px; color: #666; text-transform: uppercase; }
+        .stat-card .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+        .stat-card .value.ok { color: #4ade80; }
+        .stat-card .value.stale { color: #fbbf24; }
+        .stat-card .value.broken { color: #f87171; }
+
+        .channels-grid {
+            display: grid;
+            gap: 16px;
+        }
+        .channel-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .channel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #0d0d0d;
+            border-bottom: 1px solid #222;
+        }
+        .channel-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .agent-name {
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
+        .channel-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .channel-status.ok { background: #0d3320; color: #4ade80; }
+        .channel-status.issues { background: #3d2a08; color: #fbbf24; }
+
+        .regions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: #222;
+        }
+        .region-cell {
+            background: #111;
+            padding: 12px;
+        }
+        .region-cell.stale { background: #1a1a08; }
+        .region-cell.broken { background: #1a0808; }
+
+        .region-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .region-name {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            font-weight: 600;
+        }
+        .region-time {
+            font-size: 10px;
+            color: #555;
+        }
+        .track-name {
+            font-size: 12px;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .track-name.none { color: #f87171; font-style: italic; }
+        .track-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #555;
+        }
+        .mood { color: #888; }
+        .elapsed { color: #666; }
+        .elapsed.stale { color: #fbbf24; }
+        .elapsed.broken { color: #f87171; }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        .status-dot.ok { background: #4ade80; }
+        .status-dot.stale { background: #fbbf24; }
+        .status-dot.broken { background: #f87171; }
+
+        .refresh-info {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 11px;
+            color: #444;
+        }
+        .last-update { color: #666; }
+
+        @media (max-width: 800px) {
+            .summary { grid-template-columns: repeat(3, 1fr); }
+            .regions-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>mood42 ops dashboard</h1>
+        <div id="health-badge" class="status-badge">loading...</div>
+    </div>
+
+    <div class="summary" id="summary">
+        <div class="stat-card">
+            <div class="label">Total Streams</div>
+            <div class="value" id="total-streams">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">OK</div>
+            <div class="value ok" id="ok-streams">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Stale</div>
+            <div class="value stale" id="stale-streams">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Broken</div>
+            <div class="value broken" id="broken-streams">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Server Tick</div>
+            <div class="value" id="tick">--</div>
+        </div>
+    </div>
+
+    <div class="channels-grid" id="channels-grid">
+        <!-- Populated by JS -->
+    </div>
+
+    <div class="refresh-info">
+        Auto-refresh every 5s | <span class="last-update" id="last-update">--</span>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function fetchOps() {
+            try {
+                const res = await fetch(`${API_BASE}/api/ops`);
+                const data = await res.json();
+                renderDashboard(data);
+            } catch (err) {
+                console.error('Failed to fetch ops data:', err);
+                document.getElementById('health-badge').textContent = 'ERROR';
+                document.getElementById('health-badge').className = 'status-badge broken';
+            }
+        }
+
+        function renderDashboard(data) {
+            // Health badge
+            const healthBadge = document.getElementById('health-badge');
+            const healthPct = data.summary.health_pct;
+            if (healthPct >= 90) {
+                healthBadge.textContent = `${healthPct}% healthy`;
+                healthBadge.className = 'status-badge healthy';
+            } else if (healthPct >= 50) {
+                healthBadge.textContent = `${healthPct}% degraded`;
+                healthBadge.className = 'status-badge degraded';
+            } else {
+                healthBadge.textContent = `${healthPct}% broken`;
+                healthBadge.className = 'status-badge broken';
+            }
+
+            // Summary stats
+            document.getElementById('total-streams').textContent = data.summary.total_streams;
+            document.getElementById('ok-streams').textContent = data.summary.ok;
+            document.getElementById('stale-streams').textContent = data.summary.stale;
+            document.getElementById('broken-streams').textContent = data.summary.broken;
+            document.getElementById('tick').textContent = data.tick;
+
+            // Channels grid
+            const grid = document.getElementById('channels-grid');
+            grid.innerHTML = data.channels.map(ch => `
+                <div class="channel-card">
+                    <div class="channel-header">
+                        <div>
+                            <span class="channel-name">${ch.id}</span>
+                            <span class="agent-name">${ch.agent_name}</span>
+                        </div>
+                        <span class="channel-status ${ch.all_ok ? 'ok' : 'issues'}">
+                            ${ch.all_ok ? 'ALL OK' : 'ISSUES'}
+                        </span>
+                    </div>
+                    <div class="regions-grid">
+                        ${Object.entries(ch.regions).map(([region, r]) => `
+                            <div class="region-cell ${r.status}">
+                                <div class="region-header">
+                                    <span class="region-name">
+                                        <span class="status-dot ${r.status}"></span>
+                                        ${region}
+                                    </span>
+                                    <span class="region-time">${r.local_time || '--'}</span>
+                                </div>
+                                <div class="track-name ${r.track ? '' : 'none'}">
+                                    ${r.track || 'NO TRACK'}
+                                </div>
+                                <div class="track-meta">
+                                    <span class="mood">${r.mood || '--'}</span>
+                                    <span class="elapsed ${r.status}">
+                                        ${r.elapsed_min}m${r.status === 'stale' ? ' STALE' : ''}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // Last update
+            document.getElementById('last-update').textContent =
+                `Last update: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Initial fetch
+        fetchOps();
+
+        // Auto-refresh every 5 seconds
+        setInterval(fetchOps, 5000);
+    </script>
+</body>
+</html>

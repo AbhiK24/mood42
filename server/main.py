@@ -120,6 +120,87 @@ async def health():
     return {"status": "ok", "time": datetime.now().isoformat(), "regions": REGIONS}
 
 
+@app.get("/api/ops")
+async def ops_dashboard():
+    """Internal ops dashboard - monitor all agents across all regions."""
+    import time
+    now = int(time.time() * 1000)
+
+    ops_data = {
+        "server_time": datetime.now().isoformat(),
+        "tick": sim.world["tick"],
+        "uptime_ticks": sim.world["tick"],
+        "regions": REGIONS,
+        "channels": [],
+    }
+
+    for ch_id, channel in CHANNELS.items():
+        agent = sim.channel_agents.get(ch_id)
+        if not agent:
+            continue
+
+        channel_data = {
+            "id": ch_id,
+            "name": channel["name"],
+            "agent_name": channel["agent"]["name"],
+            "energy": agent.energy,
+            "regions": {},
+        }
+
+        for region in REGIONS:
+            region_state = agent.get_region_state(region)
+            track = region_state.current_track
+
+            # Calculate staleness
+            if track and region_state.last_track_change:
+                elapsed_ms = now - region_state.last_track_change
+                elapsed_min = elapsed_ms / 60000
+                duration_min = track.get("duration", 180) / 60
+                is_stale = elapsed_min > (duration_min + 1)  # Stale if over duration + 1 min
+            else:
+                elapsed_min = 0
+                is_stale = track is None
+
+            channel_data["regions"][region] = {
+                "track": track["name"] if track else None,
+                "track_id": track["id"] if track else None,
+                "mood": region_state.current_mood,
+                "viewers": region_state.viewer_count,
+                "local_time": region_state.local_time,
+                "elapsed_min": round(elapsed_min, 1),
+                "is_stale": is_stale,
+                "status": "broken" if track is None else ("stale" if is_stale else "ok"),
+            }
+
+        channel_data["all_ok"] = all(
+            r["status"] == "ok" for r in channel_data["regions"].values()
+        )
+        ops_data["channels"].append(channel_data)
+
+    # Summary stats
+    total_streams = len(ops_data["channels"]) * len(REGIONS)
+    ok_streams = sum(
+        1 for ch in ops_data["channels"]
+        for r in ch["regions"].values()
+        if r["status"] == "ok"
+    )
+    broken_streams = sum(
+        1 for ch in ops_data["channels"]
+        for r in ch["regions"].values()
+        if r["status"] == "broken"
+    )
+
+    ops_data["summary"] = {
+        "total_streams": total_streams,
+        "ok": ok_streams,
+        "stale": total_streams - ok_streams - broken_streams,
+        "broken": broken_streams,
+        "health_pct": round(ok_streams / total_streams * 100, 1) if total_streams > 0 else 0,
+    }
+
+    return ops_data
+
+
 @app.get("/api/channels")
 async def get_channels(tz: Optional[int] = Query(None, description="UTC offset in hours")):
     """Get all channel states for viewer's region."""
@@ -316,6 +397,12 @@ async def root():
 @app.get("/favicon.svg")
 async def favicon():
     return FileResponse(str(PROJECT_ROOT / "public" / "favicon.svg"))
+
+
+@app.get("/ops")
+async def ops_page():
+    """Internal ops dashboard page."""
+    return FileResponse(str(PROJECT_ROOT / "public" / "ops.html"))
 
 
 if __name__ == "__main__":
