@@ -1403,6 +1403,18 @@
     let eventSource = null;
     let simulationEnabled = true; // Set to false to use static mode
 
+    // Detect viewer's timezone offset (hours from UTC)
+    const viewerTimezone = -(new Date().getTimezoneOffset() / 60);
+    let viewerRegion = 'americas'; // Will be set by server
+
+    console.log(`[Geo] Viewer timezone: UTC${viewerTimezone >= 0 ? '+' : ''}${viewerTimezone}`);
+
+    // Helper to add timezone to API URLs
+    function apiUrl(path) {
+      const separator = path.includes('?') ? '&' : '?';
+      return `${path}${separator}tz=${viewerTimezone}`;
+    }
+
     // Connect to simulation server
     async function connectToSimulation(channelId) {
       if (!simulationEnabled) return;
@@ -1411,28 +1423,41 @@
       disconnectSimulation();
 
       try {
-        // Connect to channel-specific SSE stream
-        eventSource = new EventSource(`/api/stream/${channelId}`);
+        // Connect to channel-specific SSE stream with timezone
+        eventSource = new EventSource(apiUrl(`/api/stream/${channelId}`));
 
         eventSource.addEventListener('init', (e) => {
           const data = JSON.parse(e.data);
           console.log('[Simulation] Connected:', data);
+          if (data.region) {
+            viewerRegion = data.region;
+            console.log(`[Geo] Server assigned region: ${viewerRegion}`);
+          }
           updateFromSimulation(data);
         });
 
         eventSource.addEventListener('channel:update', (e) => {
           const data = JSON.parse(e.data);
-          console.log('[Simulation] Update:', data);
-          updateFromSimulation(data);
+          // Only update if this is for our region
+          if (!data.region || data.region === viewerRegion) {
+            console.log('[Simulation] Update:', data);
+            updateFromSimulation(data);
+          }
         });
 
         eventSource.addEventListener('world:time', (e) => {
           const data = JSON.parse(e.data);
-          // Update clock with simulated time
+          // Update clock with local time for our region
           const timeEl = document.getElementById('ch-time');
-          if (timeEl && data.timeString) {
-            timeEl.textContent = data.timeString;
+          if (timeEl && data.regions && data.regions[viewerRegion]) {
+            timeEl.textContent = data.regions[viewerRegion].time;
           }
+        });
+
+        eventSource.addEventListener('agent:reflection', (e) => {
+          const data = JSON.parse(e.data);
+          console.log('[Simulation] Agent reflection:', data.reflection);
+          // Could display reflection in UI
         });
 
         eventSource.onerror = (e) => {
@@ -1441,8 +1466,8 @@
           disconnectSimulation();
         };
 
-        // Notify server we joined
-        fetch(`/api/channels/${channelId}/join`, { method: 'POST' }).catch(() => {});
+        // Notify server we joined (with timezone)
+        fetch(apiUrl(`/api/channels/${channelId}/join`), { method: 'POST' }).catch(() => {});
 
       } catch (err) {
         console.warn('[Simulation] Connection failed:', err);
@@ -1452,9 +1477,9 @@
 
     function disconnectSimulation() {
       if (eventSource) {
-        // Notify server we left
+        // Notify server we left (with timezone)
         if (currentChannel) {
-          fetch(`/api/channels/${currentChannel.id}/leave`, { method: 'POST' }).catch(() => {});
+          fetch(apiUrl(`/api/channels/${currentChannel.id}/leave`), { method: 'POST' }).catch(() => {});
         }
         eventSource.close();
         eventSource = null;
@@ -1516,7 +1541,7 @@
     };
 
     // Try to check if simulation server is available
-    fetch('/api/health').then(r => r.json()).then(data => {
+    fetch(apiUrl('/api/health')).then(r => r.json()).then(data => {
       console.log('[Simulation] Server available:', data);
       simulationEnabled = true;
     }).catch(() => {

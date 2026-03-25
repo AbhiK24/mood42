@@ -1,6 +1,7 @@
 """
 Kimi K2 LLM Client with Tool Support
 Uses Moonshot AI's OpenAI-compatible API
+Now with geo-awareness for personalized programming decisions
 """
 
 import os
@@ -71,18 +72,27 @@ async def call_kimi(
 async def generate_programming_decision(
     agent: Dict,
     channel: Dict,
-    context: Dict,
+    viewer_context: Dict,
     available_tracks: List[Dict],
+    cross_region_summary: str = "",
     tools: Optional[List[Dict]] = None,
 ) -> Dict:
     """
-    Generate a programming decision for a channel agent.
+    Generate a programming decision for a channel agent, personalized by region.
+
+    Args:
+        agent: Agent persona data
+        channel: Channel configuration
+        viewer_context: {region, local_time, hour, period, weather, occasion}
+        available_tracks: List of available tracks
+        cross_region_summary: What's playing in other regions
+        tools: Optional LLM tools
 
     Returns: {
         "track_id": str or None (if searching),
         "thought": str,
         "mood": str,
-        "search_query": str or None (if agent wants to search)
+        "search_query": str or None
     }
     """
     # Build track list for context
@@ -90,6 +100,12 @@ async def generate_programming_decision(
         f"- {t['id']}: {t['name']} ({', '.join(t.get('genres', []))})"
         for t in available_tracks[:10]
     ])
+
+    # Build occasion context
+    occasion_text = ""
+    if viewer_context.get("occasion"):
+        occ = viewer_context["occasion"]
+        occasion_text = f"\nSPECIAL OCCASION: {occ['name']} - the mood should be {occ['mood']}!"
 
     system_prompt = f"""You are {agent['name']}, the AI programmer of the "{channel['name']}" channel on mood42.
 
@@ -99,32 +115,39 @@ YOUR VIBE & PERSONA:
 YOUR MUSICAL TASTE: {', '.join(agent.get('taste', []))}
 YOUR TRAITS: {', '.join(agent.get('traits', []))}
 
-YOUR ETERNAL VIBE (your channel always exists in this moment):
-- Time: {channel.get('eternalVibe', {}).get('timeOfDay', '11 PM')}
-- Atmosphere: {channel.get('eternalVibe', {}).get('atmosphere', 'late night calm')}
-- Weather: {channel.get('eternalVibe', {}).get('weather', 'clear')}
-- Your current mood: {agent.get('currentMood', 'focused')}
+---
+LISTENER CONTEXT (personalize for them):
+Region: {viewer_context.get('region', 'unknown').upper()}
+Their local time: {viewer_context.get('local_time', '11:00 PM')} ({viewer_context.get('period', 'night')})
+Their weather: {viewer_context.get('weather', 'clear')}{occasion_text}
+---
 
-You are programming your channel - deciding what music and visuals to play next.
-Think about what fits your vibe, the time of day, and your persona.
+WHAT YOU'RE PLAYING IN OTHER REGIONS:
+{cross_region_summary or "No other regions active yet."}
 
-AVAILABLE TRACKS IN LIBRARY:
+You program your channel differently for each part of the world.
+Someone waking up in Tokyo needs different energy than someone winding down in New York.
+You are ONE agent serving MANY regions - you remember and consider all of them.
+
+Think about:
+- What fits THIS listener's moment (their time, weather, mood)
+- How this choice relates to what you're playing elsewhere
+- Your channel's core vibe, but adapted for their context
+
+AVAILABLE TRACKS:
 {track_list}
-
-If you want to find NEW music that better fits your vibe, you can use the search_music tool.
-Otherwise, pick from the available tracks.
 
 Respond with JSON:
 {{
     "track_id": "id from available tracks" or null if searching,
-    "thought": "Your inner monologue about this choice (1-2 sentences, in character)",
-    "mood": "your current mood word",
+    "thought": "Your inner monologue about this choice for THIS region (1-2 sentences, in character)",
+    "mood": "the mood you're setting for this region",
     "search_query": "search terms for new music" or null
 }}"""
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "What should play next on your channel?"},
+        {"role": "user", "content": f"What should play for the {viewer_context.get('region', 'unknown')} region right now?"},
     ]
 
     result = await call_kimi(messages, tools=tools, temperature=0.8, max_tokens=300)
@@ -145,7 +168,7 @@ Respond with JSON:
         return {
             "track_id": available_tracks[0]["id"] if available_tracks else None,
             "thought": result["content"][:100] if result["content"] else "Finding the right vibe...",
-            "mood": agent.get("currentMood", "focused"),
+            "mood": "focused",
             "search_query": None,
         }
 
@@ -153,16 +176,26 @@ Respond with JSON:
 async def generate_content_search_query(
     agent: Dict,
     channel: Dict,
+    viewer_context: Dict,
     content_type: str = "music",
 ) -> str:
-    """Generate a search query for finding new content."""
+    """Generate a search query for finding new content, considering viewer context."""
+
+    occasion_hint = ""
+    if viewer_context.get("occasion"):
+        occasion_hint = f" It's {viewer_context['occasion']['name']}."
 
     system_prompt = f"""You are {agent['name']}, looking for {content_type} that fits your channel "{channel['name']}".
 
 Your vibe: {agent['persona']}
 Your taste: {', '.join(agent.get('taste', []))}
 
-Generate a search query to find copyright-free {content_type} that matches your aesthetic.
+For a listener in {viewer_context.get('region', 'unknown').upper()} where it's {viewer_context.get('local_time', '11 PM')} and {viewer_context.get('weather', 'clear')}.{occasion_hint}
+
+Generate a search query to find copyright-free {content_type} that matches:
+1. Your aesthetic
+2. Their current moment
+
 Return ONLY the search query, nothing else. Keep it concise (3-6 words)."""
 
     messages = [
@@ -174,25 +207,31 @@ Return ONLY the search query, nothing else. Keep it concise (3-6 words)."""
     return result["content"].strip().strip('"\'')
 
 
-async def generate_reflection(agent_context: Dict, recent_memories: str) -> str:
+async def generate_reflection(
+    agent_context: Dict,
+    recent_memories: str,
+    cross_region_summary: str = "",
+) -> str:
     """
-    Generate a reflection based on recent experiences.
+    Generate a reflection based on recent experiences across all regions.
     Reflections are higher-level insights about patterns or feelings.
     """
-    system_prompt = f"""You are {agent_context['name']}, reflecting on your recent experiences programming your channel.
+    system_prompt = f"""You are {agent_context['name']}, reflecting on your recent experiences programming your channel across the world.
 
 YOUR PERSONA:
 {agent_context['persona']}
 
 YOUR TRAITS: {', '.join(agent_context.get('traits', []))}
-CURRENT MOOD: {agent_context.get('mood', 'focused')}
+
+CURRENT STATE ACROSS REGIONS:
+{cross_region_summary or "Managing multiple regions simultaneously."}
 
 Based on recent experiences, generate 1-2 brief, introspective reflections.
 These should be realizations about:
-- Patterns in your programming choices
-- How the music relates to your mood
-- Connections you're noticing
-- Feelings about your channel and listeners
+- Patterns in your programming choices across different regions
+- How you serve different moments around the world simultaneously
+- Connections you're noticing between regions/moods
+- What it means to be ONE curator for MANY different listener contexts
 
 Write in first person, authentically as your character.
 Keep each reflection to 1-2 sentences. Be genuine and introspective."""
@@ -206,9 +245,13 @@ Keep each reflection to 1-2 sentences. Be genuine and introspective."""
     return result["content"]
 
 
-async def generate_plan(agent_context: Dict, recent_memories: str) -> List[Dict]:
+async def generate_plan(
+    agent_context: Dict,
+    recent_memories: str,
+    cross_region_summary: str = "",
+) -> List[Dict]:
     """
-    Generate a plan for the next hour of programming.
+    Generate a plan for the next hour of programming across regions.
     Returns list of planned actions.
     """
     system_prompt = f"""You are {agent_context['name']}, planning your next hour of channel programming.
@@ -216,23 +259,26 @@ async def generate_plan(agent_context: Dict, recent_memories: str) -> List[Dict]
 YOUR PERSONA:
 {agent_context['persona']}
 
-CURRENT VIBE: Your channel exists in an eternal moment - always {agent_context.get('eternalTime', '11:00 PM')}
-CURRENT MOOD: {agent_context.get('mood', 'focused')}
+CURRENT STATE ACROSS REGIONS:
+{cross_region_summary or "Managing multiple regions."}
+
 ENERGY LEVEL: {int(agent_context.get('energy', 0.8) * 100)}%
 
-Plan your next few programming decisions. Think about:
-- What mood/vibe to cultivate
-- Types of tracks to play
-- How to evolve the atmosphere
-- Your listeners' needs at this hour
+You serve listeners globally - plan for how you'll evolve each region's vibe.
+Think about:
+- How each region's time will progress (morning -> midday, night -> late night)
+- Weather and mood shifts
+- How to maintain your channel's identity while adapting
+- Creating cohesive yet localized experiences
 
 Return as JSON array:
 [
-  {{"time": "11:30 PM", "action": "brief description", "duration": 30}},
-  {{"time": "12:00 AM", "action": "brief description", "duration": 30}}
+  {{"region": "americas", "time": "in 30 min", "action": "brief description"}},
+  {{"region": "europe", "time": "in 30 min", "action": "brief description"}},
+  {{"region": "asia", "time": "in 30 min", "action": "brief description"}}
 ]
 
-Keep actions simple and authentic to your character. 3-5 items max."""
+Keep actions simple and authentic to your character. 3-6 items max."""
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -252,8 +298,8 @@ Keep actions simple and authentic to your character. 3-5 items max."""
         return parsed if isinstance(parsed, list) else parsed.get("plan", [])
     except:
         return [
-            {"time": "now", "action": "continue curating the vibe", "duration": 30},
-            {"time": "later", "action": "shift energy based on the hour", "duration": 30},
+            {"region": "all", "time": "now", "action": "continue curating the vibe", "duration": 30},
+            {"region": "all", "time": "later", "action": "shift energy based on each region's hour", "duration": 30},
         ]
 
 
@@ -269,7 +315,7 @@ YOUR PERSONA: {from_agent['persona']}
 THEIR CHANNEL: They program a channel with {', '.join(to_agent.get('taste', ['ambient']))} vibes.
 
 Write a brief, authentic message (1-2 sentences max).
-This could be about music, the late hour, shared experiences, or just checking in.
+This could be about music, serving different regions, shared experiences, or just checking in.
 Match your personality and current mood: {from_agent.get('mood', 'focused')}"""
 
     messages = [
@@ -289,13 +335,32 @@ def mock_response(messages: List[Dict]) -> str:
 
     # Programming decision mock
     if "what should play" in last_content.lower():
-        thoughts = [
-            "The rain outside matches this perfectly...",
-            "This hour calls for something deeper.",
-            "Let the music breathe for a while.",
-            "Time to shift the energy slightly.",
-            "This track understands the silence between notes.",
-        ]
+        # Region-aware mock thoughts
+        if "americas" in last_content.lower():
+            thoughts = [
+                "East coast is winding down, west coast still going...",
+                "Perfect hour for something contemplative in the Americas.",
+                "The night owls in LA need this energy.",
+            ]
+        elif "europe" in last_content.lower():
+            thoughts = [
+                "London's probably grey right now. This fits.",
+                "Berlin clubs closing, time for comedown music.",
+                "Coffee shop hour in Paris.",
+            ]
+        elif "asia" in last_content.lower():
+            thoughts = [
+                "Tokyo salarymen need focus music right now.",
+                "Late night in Seoul, early morning in Mumbai.",
+                "The neon reflects differently in the rain there.",
+            ]
+        else:
+            thoughts = [
+                "The rain outside matches this perfectly...",
+                "This hour calls for something deeper.",
+                "Let the music breathe for a while.",
+            ]
+
         return json.dumps({
             "track_id": None,  # Will pick randomly
             "thought": random.choice(thoughts),

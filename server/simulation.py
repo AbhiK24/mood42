@@ -1,6 +1,7 @@
 """
 mood42 Simulation Engine
 Manages world state, channel agents, and real-time decisions
+Now with geo-awareness: each region gets personalized content
 """
 
 import random
@@ -19,23 +20,20 @@ from llm import (
     ALL_TOOLS,
     API_KEY,
 )
-from agent import ChannelAgent, create_channel_agents, MemoryType
+from agent import ChannelAgent, create_channel_agents, MemoryType, REGIONS
+from geo import get_region_times, get_viewer_context, get_occasion
 
 
 class SimulationEngine:
-    """Core simulation engine for mood42."""
+    """Core simulation engine for mood42 with geo-awareness."""
 
     def __init__(self, broadcast_fn: Callable = None):
         self.broadcast = broadcast_fn or (lambda *args: None)
 
-        # World state
+        # World state (server time, not per-viewer)
         self.world = {
             "tick": 0,
-            "timeOfDay": 23 * 60,  # Start at 11 PM (minutes since midnight)
-            "weather": {
-                "raining": True,
-                "intensity": 0.7,
-            }
+            "server_time": int(time.time() * 1000),
         }
 
         # LLM mode
@@ -45,211 +43,160 @@ class SimulationEngine:
         else:
             print("[Simulation] LLM mode disabled (no API key) - using mock decisions")
 
-        # Channel agents (generative agent architecture)
+        # Channel agents (generative agent architecture with geo-awareness)
         self.channel_agents: Dict[str, ChannelAgent] = create_channel_agents(CHANNELS)
 
-        # Legacy agents dict for compatibility
-        self.agents: Dict[str, Dict] = {}
-        self._init_agents()
+        # Per-region state cache for quick lookups
+        self.region_states: Dict[str, Dict] = {region: {} for region in REGIONS}
 
-        print(f"[Simulation] Initialized {len(self.agents)} channel agents with memory + reflection")
+        print(f"[Simulation] Initialized {len(self.channel_agents)} channel agents with geo-awareness")
+        print(f"[Simulation] Serving {len(REGIONS)} regions: {', '.join(REGIONS)}")
 
-    def _init_agents(self):
-        """Initialize all channel agents."""
-        for ch_id, channel in CHANNELS.items():
-            # Get tracks for this channel's vibe
-            tracks = get_tracks_for_channel(ch_id)
-            initial_track = random.choice(tracks) if tracks else None
-
-            self.agents[ch_id] = {
-                "channelId": ch_id,
-                "currentTrack": {
-                    "id": initial_track["id"] if initial_track else None,
-                    "name": initial_track["name"] if initial_track else "Unknown",
-                    "url": initial_track["url"] if initial_track else None,
-                    "duration": initial_track.get("duration", 180),
-                    "startedAt": int(time.time() * 1000),
-                } if initial_track else None,
-                "currentMood": channel["currentMood"],
-                "lastThought": self._generate_thought(ch_id, "starting"),
-                "viewerCount": 0,
-                "trackHistory": [],
-                "availableTracks": tracks,  # Cache available tracks
-                "pendingSearch": None,  # For async search results
-            }
-
-    def _generate_thought(self, channel_id: str, context: str = "track_change") -> str:
+    def _generate_thought(self, channel_id: str, region: str, context: str = "track_change") -> str:
         """Generate agent thought (mock for MVP, LLM later)."""
         channel = CHANNELS.get(channel_id)
         if not channel:
             return ""
 
         agent = channel["agent"]
-        hour = (self.world["timeOfDay"] // 60) % 24
-        time_period = self._get_time_period(hour)
+        region_times = get_region_times()
+        region_info = region_times.get(region, {})
+        period = region_info.get("period", "night")
 
+        # Region-aware thoughts
         thoughts = {
-            "ch01": [  # Maya - Late Night
-                f"The code flows better at this hour...",
-                f"Rain on the window. Perfect for {time_period} coding.",
-                f"Semicolon is sleeping on my keyboard again.",
-                f"This beat has the right tempo for debugging.",
-            ],
-            "ch02": [  # Yuki - Rain Cafe
-                f"The rain reminds me of Kyoto.",
-                f"Sato-san would approve of this {time_period} selection.",
-                f"Steam rising from the cup. The perfect moment.",
-                f"Jazz and rain. Some combinations never fail.",
-            ],
-            "ch03": [  # Vincent - Jazz Noir
-                f"This city never sleeps. Neither do I.",
-                f"Dad would've loved this track.",
-                f"The shadows tell better stories than the light.",
-                f"Page 247. Still stuck. The music helps.",
-            ],
-            "ch04": [  # NEON - Synthwave
-                f"CHROME LEVELS: OPTIMAL",
-                f"The grid extends forever tonight.",
-                f"Another sunset. Another chance at perfection.",
-                f"1985 was the future. Still is.",
-            ],
-            "ch05": [  # Cosmos - Deep Space
-                f"13.8 billion years of silence. Still listening.",
-                f"The void is not empty. It's waiting.",
-                f"Scale is the only comfort.",
-                f"Somewhere, a signal travels toward us.",
-            ],
-            "ch06": [  # Kenji - Tokyo Drift
-                f"The neon reflects differently when it rains.",
-                f"This song was meant for Shibuya at 2 AM.",
-                f"Mother called. We'll drive later.",
-                f"The city speaks. I translate.",
-            ],
-            "ch07": [  # Claire - Sunday Morning
-                f"The tomatoes are coming along nicely.",
-                f"Morning light through the kitchen window.",
-                f"Dad planted roses here. I water them still.",
-                f"There's peace in routine.",
-            ],
-            "ch08": [  # Alan - Focus
-                f"No distractions. Pure function.",
-                f"Every note justified. Nothing excess.",
-                f"The space between sounds matters.",
-                f"Clarity requires emptiness.",
-            ],
-            "ch09": [  # Daniel - Melancholy
-                f"Page 247. The cursor blinks.",
-                f"Dad and I have dinner tomorrow. The usual place.",
-                f"Some sadness doesn't want to be cured.",
-                f"Company in the dark. That's what this is.",
-            ],
-            "ch10": [  # Iris - Golden Hour
-                f"La hora dorada approaches.",
-                f"Abuela knew. The light apologizes.",
-                f"Lisbon's tiles hold the sunset.",
-                f"Golden hour doesn't last. That's the point.",
-            ],
+            "ch01": {  # Maya - Late Night
+                "americas": [
+                    f"The night owls on the east coast are still up...",
+                    f"LA's just getting into the {period} groove.",
+                    f"Perfect coding hour for the Americas.",
+                ],
+                "europe": [
+                    f"London {period}. Grey skies, warm beats.",
+                    f"Berlin's winding down... or just starting.",
+                    f"Paris cafes would love this right now.",
+                ],
+                "asia": [
+                    f"Tokyo salarymen need this focus energy.",
+                    f"Seoul's neon is hitting different tonight.",
+                    f"Singapore humidity calls for chill vibes.",
+                ],
+                "oceania": [
+                    f"Sydney's {period} feels right for this.",
+                    f"Melbourne coffee culture, meet lo-fi.",
+                    f"Auckland vibes incoming.",
+                ],
+            },
+            "default": {
+                "americas": [f"Programming the {period} vibe for the Americas..."],
+                "europe": [f"Curating for Europe's {period}..."],
+                "asia": [f"Setting the mood for Asia's {period}..."],
+                "oceania": [f"Oceania's {period} needs this..."],
+            }
         }
 
-        channel_thoughts = thoughts.get(channel_id, [f"Programming the {time_period} vibe..."])
-        return random.choice(channel_thoughts)
-
-    def _get_time_period(self, hour: int) -> str:
-        """Get time period name from hour."""
-        if 5 <= hour < 9:
-            return "early morning"
-        elif 9 <= hour < 12:
-            return "morning"
-        elif 12 <= hour < 17:
-            return "afternoon"
-        elif 17 <= hour < 21:
-            return "evening"
-        elif 21 <= hour < 24:
-            return "night"
-        else:
-            return "late night"
-
-    def _format_time(self, minutes: int) -> str:
-        """Format minutes since midnight as time string."""
-        hours = (minutes // 60) % 24
-        mins = minutes % 60
-        period = "AM" if hours < 12 else "PM"
-        display_hour = hours % 12 or 12
-        return f"{display_hour}:{mins:02d} {period}"
+        channel_thoughts = thoughts.get(channel_id, thoughts["default"])
+        region_thoughts = channel_thoughts.get(region, [f"Programming the {period} vibe..."])
+        return random.choice(region_thoughts)
 
     async def tick(self):
-        """Advance simulation by one tick (5 simulated minutes)."""
+        """Advance simulation by one tick."""
         self.world["tick"] += 1
-        self.world["timeOfDay"] = (self.world["timeOfDay"] + 5) % (24 * 60)
+        self.world["server_time"] = int(time.time() * 1000)
 
-        # Weather drift
-        if random.random() < 0.1:
-            self.world["weather"]["intensity"] = max(0.1, min(1.0,
-                self.world["weather"]["intensity"] + random.uniform(-0.2, 0.2)
-            ))
+        # Get current times for all regions
+        region_times = get_region_times()
 
-        # Broadcast time update
+        # Broadcast time update (server time + region info)
         await self.broadcast("all", "world:time", {
             "tick": self.world["tick"],
-            "time": self.world["timeOfDay"],
-            "timeString": self._format_time(self.world["timeOfDay"]),
-            "weather": self.world["weather"],
+            "server_time": self.world["server_time"],
+            "regions": region_times,
         })
 
         # Process each channel
-        for ch_id, agent in self.agents.items():
-            await self._process_channel(ch_id, agent)
+        for ch_id, agent in self.channel_agents.items():
+            # Update agent context for each region
+            for region in REGIONS:
+                region_info = region_times[region]
+                agent.update_region_context(
+                    region=region,
+                    local_time=region_info["time"],
+                    weather=None,  # Could fetch real weather
+                    occasion=get_occasion(region).get("name") if get_occasion(region) else None,
+                )
 
-            # Process generative agent behaviors
-            gen_agent = self.channel_agents.get(ch_id)
-            if gen_agent:
-                await self._process_agent_behaviors(ch_id, gen_agent)
+            # Check if any region needs a track change
+            await self._process_channel_regions(ch_id, agent)
+
+            # Process generative agent behaviors (reflection, planning)
+            await self._process_agent_behaviors(ch_id, agent)
 
         # Occasional inter-agent interactions (every ~10 ticks)
         if self.world["tick"] % 10 == 0 and self.use_llm:
             await self._process_agent_interactions()
 
-    async def _process_channel(self, channel_id: str, agent: Dict):
-        """Process a single channel - check if track should change."""
-        if not agent["currentTrack"]:
+    async def _process_channel_regions(self, channel_id: str, agent: ChannelAgent):
+        """Process track changes for each region of a channel."""
+        channel = CHANNELS.get(channel_id)
+        if not channel:
             return
 
-        # Check if track has ended
-        elapsed_ms = int(time.time() * 1000) - agent["currentTrack"]["startedAt"]
-        duration_ms = agent["currentTrack"]["duration"] * 1000
+        now = int(time.time() * 1000)
 
-        # Add some variance - tracks can be 3-6 minutes
-        if elapsed_ms >= duration_ms:
-            await self._change_track(channel_id, agent)
+        for region in REGIONS:
+            region_state = agent.get_region_state(region)
 
-    async def _change_track(self, channel_id: str, agent: Dict):
-        """Change to next track for a channel using LLM decision."""
+            # Check if track has ended for this region
+            if region_state.current_track:
+                elapsed_ms = now - region_state.last_track_change
+                duration_ms = region_state.current_track.get("duration", 180) * 1000
+
+                if elapsed_ms >= duration_ms:
+                    await self._change_track_for_region(channel_id, agent, region)
+            else:
+                # No track playing, start one
+                await self._change_track_for_region(channel_id, agent, region)
+
+    async def _change_track_for_region(self, channel_id: str, agent: ChannelAgent, region: str):
+        """Change to next track for a specific region using LLM decision."""
         channel = CHANNELS.get(channel_id)
         if not channel:
             return
 
         # Get available tracks
-        tracks = agent.get("availableTracks", [])
-        if not tracks:
-            tracks = get_tracks_for_channel(channel_id)
-            agent["availableTracks"] = tracks
-
+        tracks = get_tracks_for_channel(channel_id)
         if not tracks:
             return
 
         now = int(time.time() * 1000)
         new_track = None
         thought = None
-        mood = agent.get("currentMood", "focused")
+        mood = agent.get_region_state(region).current_mood
+
+        # Build viewer context for this region
+        region_times = get_region_times()
+        region_info = region_times.get(region, {})
+        viewer_context = {
+            "region": region,
+            "local_time": region_info.get("time", "11:00 PM"),
+            "hour": region_info.get("hour", 23),
+            "period": region_info.get("period", "night"),
+            "weather": agent.get_region_state(region).weather or "clear",
+            "occasion": get_occasion(region),
+        }
 
         # Use LLM if available
         if self.use_llm:
             try:
+                cross_region_summary = agent.get_cross_region_summary()
+
                 decision = await generate_programming_decision(
                     agent=channel["agent"],
                     channel=channel,
-                    context=self.get_world_state(),
+                    viewer_context=viewer_context,
                     available_tracks=tracks,
+                    cross_region_summary=cross_region_summary,
                     tools=ALL_TOOLS,
                 )
 
@@ -259,12 +206,9 @@ class SimulationEngine:
                 # Check if agent wants to search for new music
                 search_query = decision.get("search_query")
                 if search_query:
-                    print(f"[{channel_id}] Agent searching: {search_query}")
+                    print(f"[{channel_id}:{region}] Agent searching: {search_query}")
                     search_results = await search_music(search_query, mood)
                     if search_results:
-                        # Add new tracks to available
-                        agent["availableTracks"].extend(search_results)
-                        # Pick from search results
                         new_track = random.choice(search_results)
 
                 # Otherwise use selected track_id
@@ -273,52 +217,39 @@ class SimulationEngine:
                     new_track = next((t for t in tracks if t["id"] == track_id), None)
 
             except Exception as e:
-                print(f"[{channel_id}] LLM decision failed: {e}")
+                print(f"[{channel_id}:{region}] LLM decision failed: {e}")
 
         # Fallback: random selection
         if not new_track:
-            current_id = agent["currentTrack"]["id"] if agent["currentTrack"] else None
-            available = [t for t in tracks if t["id"] != current_id]
+            current_id = agent.get_region_state(region).current_track
+            current_track_id = current_id["id"] if current_id else None
+            available = [t for t in tracks if t["id"] != current_track_id]
             if not available:
                 available = tracks
             new_track = random.choice(available)
 
         if not thought:
-            thought = self._generate_thought(channel_id, "track_change")
+            thought = self._generate_thought(channel_id, region, "track_change")
 
-        # Update agent state
-        agent["currentTrack"] = {
-            "id": new_track["id"],
-            "name": new_track["name"],
-            "url": new_track["url"],
-            "duration": new_track.get("duration", 180),
-            "startedAt": now,
-        }
-        agent["lastThought"] = thought
-        agent["currentMood"] = mood
+        # Record in agent's memory (region-tagged)
+        agent.record_track_played(new_track, self.world["tick"], thought, region)
+        agent.record_mood_shift(mood, f"track change to {new_track['name']}", self.world["tick"], region)
 
-        # Add to history
-        agent["trackHistory"].append({
-            "trackId": new_track["id"],
-            "playedAt": now,
-        })
-        # Keep only last 20
-        agent["trackHistory"] = agent["trackHistory"][-20:]
-
-        print(f"[{channel_id}] Now playing: {new_track['name']}")
+        print(f"[{channel_id}:{region}] Now playing: {new_track['name']}")
         if thought:
-            print(f"[{channel_id}] Thought: {thought}")
+            print(f"[{channel_id}:{region}] Thought: {thought}")
 
-        # Record in generative agent's memory
-        gen_agent = self.channel_agents.get(channel_id)
-        if gen_agent:
-            gen_agent.record_track_played(new_track, self.world["tick"], thought)
-            gen_agent.mood = mood
-
-        # Broadcast update
-        await self.broadcast(channel_id, "channel:update", {
+        # Broadcast update for this region
+        await self.broadcast(f"{channel_id}:{region}", "channel:update", {
             "channelId": channel_id,
-            "track": agent["currentTrack"],
+            "region": region,
+            "track": {
+                "id": new_track["id"],
+                "name": new_track["name"],
+                "url": new_track["url"],
+                "duration": new_track.get("duration", 180),
+                "startedAt": now,
+            },
             "thought": thought,
             "mood": mood,
         })
@@ -326,25 +257,21 @@ class SimulationEngine:
     async def _process_agent_behaviors(self, channel_id: str, gen_agent: ChannelAgent):
         """Process reflection, planning, and energy updates for a generative agent."""
         tick = self.world["tick"]
-
-        # Update energy based on time
-        gen_agent.update_energy(self.world["timeOfDay"])
         gen_agent.total_ticks = tick
 
-        # Check for reflection
+        # Check for reflection (cross-region awareness)
         if gen_agent.needs_reflection() and self.use_llm:
             try:
-                channel = CHANNELS.get(channel_id, {})
-                eternal_vibe = channel.get("eternalVibe", {})
                 memory_summary = gen_agent.get_memory_summary(15)
-                context = gen_agent.get_context(self.get_world_state(), eternal_vibe)
+                cross_region_summary = gen_agent.get_cross_region_summary()
+                context = gen_agent.get_context({"tick": tick})
 
-                reflection = await generate_reflection(context, memory_summary)
+                reflection = await generate_reflection(context, memory_summary, cross_region_summary)
                 gen_agent.record_reflection(reflection, tick)
 
                 print(f"[{channel_id}] Reflection: {reflection[:80]}...")
 
-                # Broadcast reflection as thought
+                # Broadcast reflection
                 await self.broadcast(channel_id, "agent:reflection", {
                     "channelId": channel_id,
                     "reflection": reflection,
@@ -356,12 +283,11 @@ class SimulationEngine:
         # Check for replanning
         if gen_agent.needs_replanning(tick) and self.use_llm:
             try:
-                channel = CHANNELS.get(channel_id, {})
-                eternal_vibe = channel.get("eternalVibe", {})
                 memory_summary = gen_agent.get_memory_summary(10)
-                context = gen_agent.get_context(self.get_world_state(), eternal_vibe)
+                cross_region_summary = gen_agent.get_cross_region_summary()
+                context = gen_agent.get_context({"tick": tick})
 
-                plans = await generate_plan(context, memory_summary)
+                plans = await generate_plan(context, memory_summary, cross_region_summary)
                 gen_agent.record_plan(plans, tick)
 
                 print(f"[{channel_id}] New plan: {plans[0]['action'] if plans else 'none'}")
@@ -388,12 +314,10 @@ class SimulationEngine:
 
         try:
             # Generate a message
-            from_channel = CHANNELS.get(initiator_id, {})
-            to_channel = CHANNELS.get(target_id, {})
-            from_context = initiator.get_context(self.get_world_state(), from_channel.get("eternalVibe", {}))
-            to_context = target.get_context(self.get_world_state(), to_channel.get("eternalVibe", {}))
+            from_context = initiator.get_context({"tick": self.world["tick"]})
+            to_context = target.get_context({"tick": self.world["tick"]})
 
-            context = f"It's {from_context['eternalTime']} in your eternal vibe. You're both programming your channels."
+            context = f"You're both programming channels for listeners around the world."
             message = await generate_inter_agent_message(from_context, to_context, context)
 
             # Record in both agents' memories
@@ -426,65 +350,75 @@ class SimulationEngine:
         """Get current world state."""
         return {
             "tick": self.world["tick"],
-            "time": self.world["timeOfDay"],
-            "timeString": self._format_time(self.world["timeOfDay"]),
-            "weather": self.world["weather"],
+            "server_time": self.world["server_time"],
+            "regions": get_region_times(),
         }
 
-    def get_all_channel_states(self) -> List[Dict]:
-        """Get simplified state for all channels."""
+    def get_channel_state_for_region(self, channel_id: str, region: str) -> Optional[Dict]:
+        """Get channel state for a specific region."""
+        channel = CHANNELS.get(channel_id)
+        agent = self.channel_agents.get(channel_id)
+        if not channel or not agent:
+            return None
+
+        region_state = agent.get_region_state(region)
+
+        return {
+            "id": channel_id,
+            "name": channel["name"],
+            "region": region,
+            "agent": {
+                "name": channel["agent"]["name"],
+                "persona": channel["agent"]["persona"],
+                "thought": None,  # Get from recent memories
+                "traits": channel["agent"].get("traits", []),
+            },
+            "currentTrack": region_state.current_track,
+            "currentMood": region_state.current_mood,
+            "viewerCount": region_state.viewer_count,
+            "color": channel["color"],
+            "localTime": region_state.local_time,
+            "weather": region_state.weather,
+            "occasion": region_state.occasion,
+        }
+
+    def get_all_channel_states(self, region: str = "americas") -> List[Dict]:
+        """Get simplified state for all channels for a specific region."""
         states = []
         for ch_id, channel in CHANNELS.items():
-            agent = self.agents.get(ch_id, {})
-            gen_agent = self.channel_agents.get(ch_id)
+            agent = self.channel_agents.get(ch_id)
+            if not agent:
+                continue
+
+            region_state = agent.get_region_state(region)
 
             states.append({
                 "id": ch_id,
                 "name": channel["name"],
                 "agent": {
                     "name": channel["agent"]["name"],
-                    "thought": agent.get("lastThought", ""),
-                    "mood": gen_agent.mood if gen_agent else agent.get("currentMood"),
-                    "energy": gen_agent.energy if gen_agent else 0.8,
+                    "mood": region_state.current_mood,
+                    "energy": agent.energy,
                 },
-                "currentTrack": agent.get("currentTrack"),
-                "currentMood": gen_agent.mood if gen_agent else agent.get("currentMood", channel["currentMood"]),
-                "viewerCount": agent.get("viewerCount", 0),
+                "currentTrack": region_state.current_track,
+                "currentMood": region_state.current_mood,
+                "viewerCount": region_state.viewer_count,
                 "color": channel["color"],
             })
         return states
 
-    def get_channel_state(self, channel_id: str) -> Optional[Dict]:
-        """Get full state for a single channel."""
-        channel = CHANNELS.get(channel_id)
-        agent = self.agents.get(channel_id)
-        if not channel or not agent:
-            return None
+    def get_channel_state(self, channel_id: str, region: str = "americas") -> Optional[Dict]:
+        """Get full state for a single channel in a specific region."""
+        return self.get_channel_state_for_region(channel_id, region)
 
-        return {
-            "id": channel_id,
-            "name": channel["name"],
-            "agent": {
-                "name": channel["agent"]["name"],
-                "persona": channel["agent"]["persona"],
-                "thought": agent.get("lastThought", ""),
-                "traits": channel["agent"].get("traits", []),
-            },
-            "currentTrack": agent.get("currentTrack"),
-            "currentMood": agent.get("currentMood"),
-            "viewerCount": agent.get("viewerCount", 0),
-            "trackHistory": agent.get("trackHistory", [])[-10:],
-            "color": channel["color"],
-        }
+    def increment_viewers(self, channel_id: str, region: str):
+        """Increment viewer count for a channel in a region."""
+        agent = self.channel_agents.get(channel_id)
+        if agent:
+            agent.increment_viewers(region)
 
-    def increment_viewers(self, channel_id: str):
-        """Increment viewer count."""
-        if channel_id in self.agents:
-            self.agents[channel_id]["viewerCount"] += 1
-
-    def decrement_viewers(self, channel_id: str):
-        """Decrement viewer count."""
-        if channel_id in self.agents:
-            self.agents[channel_id]["viewerCount"] = max(0,
-                self.agents[channel_id]["viewerCount"] - 1
-            )
+    def decrement_viewers(self, channel_id: str, region: str):
+        """Decrement viewer count for a channel in a region."""
+        agent = self.channel_agents.get(channel_id)
+        if agent:
+            agent.decrement_viewers(region)
