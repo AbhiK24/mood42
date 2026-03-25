@@ -62,3 +62,19 @@ export {
   generateScenePrompt,
   createLLMInterface,
 } from './llm.js'
+
+// Music library
+export {
+  TRACKS,
+  PLAYLISTS,
+  initMusic,
+  playTrack,
+  playPlaylist,
+  toggle as toggleMusic,
+  nextTrack,
+  prevTrack,
+  setVolume,
+  getState as getMusicState,
+  getAllTracks,
+  addTrack,
+} from './music.js'

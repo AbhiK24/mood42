@@ -12,6 +12,12 @@ import {
   getActiveCharacter,
   world,
   initLLM,
+  // Music
+  initMusic as initMusicLib,
+  toggleMusic as toggleMusicLib,
+  nextTrack as nextTrackLib,
+  getMusicState,
+  playTrack,
 } from './sim/index.js'
 
 // HUD
@@ -39,13 +45,8 @@ const MOONSHOT_API_KEY = 'sk-lbkA0bF4jCQfMP41ddC9Uax6Mry5ehtRmO0dTWyFr4ASTlJL'
 let useLiveLLM = false // Start with mock mode to save tokens
 let autoSimulation = false // Don't auto-start simulation
 
-// Audio - background music
-let bgMusic = null
+// Music state (managed by sim/music.js)
 let musicPlaying = false
-const MUSIC_TRACKS = [
-  '/assets/ambient.mp3', // local hosted track
-]
-let currentTrack = 0
 
 async function init() {
   await app.init({
@@ -84,8 +85,8 @@ async function init() {
   window.addEventListener('resize', handleResize)
   handleResize()
 
-  // Initialize music
-  initMusic()
+  // Initialize music library
+  initMusicLib()
 
   // Initial toast
   setTimeout(() => {
@@ -98,50 +99,27 @@ async function init() {
   // This saves API tokens during development
 }
 
-function initMusic() {
-  bgMusic = new Audio(MUSIC_TRACKS[currentTrack])
-  bgMusic.loop = true
-  bgMusic.volume = 0.3
-
-  // When track ends or errors, try next
-  bgMusic.addEventListener('ended', () => {
-    if (musicPlaying) nextTrack()
-  })
-  bgMusic.addEventListener('error', () => {
-    console.log('Track failed, trying next...')
-    nextTrack()
-  })
-}
-
 function toggleMusic() {
-  if (!bgMusic) initMusic()
-
-  if (musicPlaying) {
-    bgMusic.pause()
-    musicPlaying = false
-    addEvent('Music paused')
-  } else {
-    bgMusic.play().then(() => {
-      musicPlaying = true
-      addEvent(`Playing: lo-fi track ${currentTrack + 1}`)
-    }).catch(err => {
-      addEvent('Click anywhere first to enable audio')
-    })
-  }
+  toggleMusicLib().then(playing => {
+    musicPlaying = playing
+    const state = getMusicState()
+    if (playing && state.currentTrack) {
+      addEvent(`Playing: ${state.currentTrack.name}`)
+    } else {
+      addEvent('Music paused')
+    }
+  }).catch(() => {
+    addEvent('Click anywhere first to enable audio')
+  })
 }
 
 function nextTrack() {
-  currentTrack = (currentTrack + 1) % MUSIC_TRACKS.length
-  const wasPlaying = musicPlaying
-
-  if (bgMusic) {
-    bgMusic.pause()
-    bgMusic.src = MUSIC_TRACKS[currentTrack]
-    if (wasPlaying) {
-      bgMusic.play()
-      addEvent(`Now playing: track ${currentTrack + 1}`)
+  nextTrackLib().then(() => {
+    const state = getMusicState()
+    if (state.currentTrack) {
+      addEvent(`Now playing: ${state.currentTrack.name}`)
     }
-  }
+  })
 }
 
 function createBuildingView() {
@@ -718,8 +696,8 @@ function setupKeyboard() {
 
   // Enable audio on first click (browser autoplay policy)
   document.addEventListener('click', () => {
-    if (bgMusic && musicPlaying) {
-      bgMusic.play().catch(() => {})
+    if (musicPlaying) {
+      toggleMusicLib().catch(() => {})
     }
   }, { once: true })
 }
