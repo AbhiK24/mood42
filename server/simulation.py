@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
 
 from server.channels import CHANNELS, TRACKS, get_channel_tracks
-from server.tools import get_tracks_for_channel, search_music, execute_tool
+from server.tools import get_tracks_for_channel, search_music, execute_tool, proactive_discover
 from server.llm import (
     generate_programming_decision,
     generate_reflection,
@@ -219,7 +219,16 @@ class SimulationEngine:
             except Exception as e:
                 print(f"[{channel_id}:{region}] LLM decision failed: {e}")
 
-        # Fallback: random selection
+        # Try proactive discovery if no track selected yet
+        if not new_track:
+            period = viewer_context.get("period", "night")
+            discovered = await proactive_discover(channel_id, mood, period)
+            if discovered:
+                new_track = discovered
+                thought = f"Found something fresh: {discovered['name']}"
+                print(f"[{channel_id}:{region}] Proactive discovery: {discovered['name']}")
+
+        # Fallback: random selection from expanded library
         if not new_track:
             current_id = agent.get_region_state(region).current_track
             current_track_id = current_id["id"] if current_id else None

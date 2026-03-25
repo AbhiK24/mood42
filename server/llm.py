@@ -328,44 +328,63 @@ Match your personality and current mood: {from_agent.get('mood', 'focused')}"""
 
 
 def mock_response(messages: List[Dict]) -> str:
-    """Generate mock response when no API key."""
+    """Generate mock response when no API key - now with ACTIVE discovery."""
     import random
 
     last_content = messages[-1].get("content", "") if messages else ""
 
-    # Programming decision mock
+    # Programming decision mock - WITH proactive search
     if "what should play" in last_content.lower():
         # Region-aware mock thoughts
         if "americas" in last_content.lower():
             thoughts = [
-                "East coast is winding down, west coast still going...",
-                "Perfect hour for something contemplative in the Americas.",
-                "The night owls in LA need this energy.",
+                "East coast is winding down, let me find something fresh...",
+                "LA night owls need discovery energy, searching...",
+                "Time to dig into the archive for the Americas.",
+                "The night shift deserves something new.",
             ]
+            search_queries = ["late night chill", "midnight lo-fi", "night ambient", None]
         elif "europe" in last_content.lower():
             thoughts = [
-                "London's probably grey right now. This fits.",
-                "Berlin clubs closing, time for comedown music.",
-                "Coffee shop hour in Paris.",
+                "London's grey skies need discovery...",
+                "Berlin energy calls for a fresh find.",
+                "Let me search for something that fits Paris cafes.",
+                "Exploring new sounds for Europe.",
             ]
+            search_queries = ["cafe jazz", "european ambient", "morning chill", None]
         elif "asia" in last_content.lower():
             thoughts = [
-                "Tokyo salarymen need focus music right now.",
-                "Late night in Seoul, early morning in Mumbai.",
-                "The neon reflects differently in the rain there.",
+                "Tokyo needs focus energy, let me discover...",
+                "Seoul's neon deserves fresh beats.",
+                "Searching for something that matches the vibe.",
+                "Asia's diverse moods need variety.",
             ]
+            search_queries = ["tokyo lo-fi", "asian ambient", "night city beats", None]
+        elif "oceania" in last_content.lower():
+            thoughts = [
+                "Finding something fresh for down under...",
+                "Sydney vibes need exploration.",
+                "Let me discover the perfect track.",
+            ]
+            search_queries = ["ocean ambient", "coastal chill", "sunset vibes", None]
         else:
             thoughts = [
                 "The rain outside matches this perfectly...",
                 "This hour calls for something deeper.",
-                "Let the music breathe for a while.",
+                "Let me find something fresh for this moment.",
+                "Time to discover new sounds.",
             ]
+            search_queries = ["rain ambient", "chill beats", "focus music", None]
+
+        # 60% chance to search for new music (was 0% before!)
+        do_search = random.random() < 0.6
+        search_query = random.choice(search_queries) if do_search else None
 
         return json.dumps({
-            "track_id": None,  # Will pick randomly
+            "track_id": None,  # Will pick from search or fallback
             "thought": random.choice(thoughts),
-            "mood": random.choice(["focused", "calm", "reflective", "energetic"]),
-            "search_query": None,
+            "mood": random.choice(["focused", "calm", "reflective", "dreamy", "cozy"]),
+            "search_query": search_query,
         })
 
     # Search query mock

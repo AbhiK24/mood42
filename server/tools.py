@@ -1,39 +1,67 @@
 """
 Content Discovery Tools for mood42 Agents
 Search for copyright-free music and videos
+PROACTIVE discovery - agents actively search for new content
 """
 
 import httpx
 import random
 import re
+import time
 from typing import List, Dict, Optional
 from urllib.parse import quote_plus
 
 
 # ============ MUSIC SOURCES ============
 
-# Archive.org collections with ambient/lo-fi music
+# Track last search time to enable proactive discovery
+_last_search_time: Dict[str, float] = {}
+SEARCH_COOLDOWN = 120  # Seconds between proactive searches per channel
+
+# Archive.org collections with ambient/lo-fi music (expanded)
 ARCHIVE_COLLECTIONS = {
     "lo-fi": [
         "lofi-music-for-study-and-relaxation",
         "kalaido-hanging-lanterns_202101",
         "lofi-music-swing-jazz-grooves-to-elevate-your-mood-feel-the-rhythm",
+        "lofi-hip-hop-beats",
+        "chillhop-music-collection",
+        "study-beats-lofi",
     ],
     "ambient": [
         "dx_ambient",
         "ambient-music-collection",
+        "ambient-electronic",
+        "space-ambient-music",
+        "drone-ambient",
+        "dark-ambient-collection",
     ],
     "jazz": [
         "jazz-piano-background-music",
         "smooth-jazz-collection",
+        "cafe-jazz-music",
+        "late-night-jazz",
+        "jazz-lounge",
     ],
     "synthwave": [
         "synthwave",
         "retrowave-collection",
+        "80s-synthwave",
+        "outrun-music",
+        "cyberpunk-music",
+    ],
+    "piano": [
+        "piano-music-collection",
+        "relaxing-piano",
+        "classical-piano-pieces",
+    ],
+    "acoustic": [
+        "acoustic-guitar-music",
+        "folk-acoustic-collection",
     ],
 }
 
-# Pre-curated tracks from Archive.org (known working URLs)
+# Pre-curated tracks from Archive.org and other CC sources (expanded library)
 CURATED_TRACKS = {
     "lo-fi": [
         {
@@ -71,6 +99,42 @@ CURATED_TRACKS = {
             "genres": ["lo-fi", "night"],
             "duration": 185,
         },
+        # Additional lo-fi tracks from Pixabay (CC0)
+        {
+            "id": "lofi_chill_01",
+            "name": "Chill Lo-Fi Vibes",
+            "url": "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
+            "genres": ["lo-fi", "chill"],
+            "duration": 165,
+        },
+        {
+            "id": "lofi_study_01",
+            "name": "Study Session",
+            "url": "https://cdn.pixabay.com/download/audio/2024/09/10/audio_6e5d7d1912.mp3",
+            "genres": ["lo-fi", "study"],
+            "duration": 180,
+        },
+        {
+            "id": "lofi_night_drive",
+            "name": "Night Drive Lo-Fi",
+            "url": "https://cdn.pixabay.com/download/audio/2023/07/30/audio_e94bb32f96.mp3",
+            "genres": ["lo-fi", "night"],
+            "duration": 190,
+        },
+        {
+            "id": "lofi_coffee_shop",
+            "name": "Coffee Shop Beats",
+            "url": "https://cdn.pixabay.com/download/audio/2022/10/25/audio_946bc46a39.mp3",
+            "genres": ["lo-fi", "cafe"],
+            "duration": 175,
+        },
+        {
+            "id": "lofi_rainy_day",
+            "name": "Rainy Day Vibes",
+            "url": "https://cdn.pixabay.com/download/audio/2023/04/11/audio_85e0a27e07.mp3",
+            "genres": ["lo-fi", "rain"],
+            "duration": 200,
+        },
     ],
     "jazz": [
         {
@@ -86,6 +150,35 @@ CURATED_TRACKS = {
             "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3",
             "genres": ["jazz", "noir"],
             "duration": 165,
+        },
+        # Additional jazz from Pixabay
+        {
+            "id": "jazz_cafe_01",
+            "name": "Cafe Jazz Piano",
+            "url": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_2c27c91ea6.mp3",
+            "genres": ["jazz", "piano", "cafe"],
+            "duration": 195,
+        },
+        {
+            "id": "jazz_smooth_01",
+            "name": "Smooth Jazz Evening",
+            "url": "https://cdn.pixabay.com/download/audio/2023/09/04/audio_25bca0c9cb.mp3",
+            "genres": ["jazz", "smooth"],
+            "duration": 210,
+        },
+        {
+            "id": "jazz_night_club",
+            "name": "Late Night Jazz Club",
+            "url": "https://cdn.pixabay.com/download/audio/2022/05/16/audio_bf04b4b6ae.mp3",
+            "genres": ["jazz", "noir", "night"],
+            "duration": 185,
+        },
+        {
+            "id": "jazz_bossa_01",
+            "name": "Bossa Nova Cafe",
+            "url": "https://cdn.pixabay.com/download/audio/2022/09/07/audio_5db1bd53b7.mp3",
+            "genres": ["jazz", "bossa", "chill"],
+            "duration": 200,
         },
     ],
     "ambient": [
@@ -110,30 +203,133 @@ CURATED_TRACKS = {
             "genres": ["ambient", "deep"],
             "duration": 320,
         },
+        # Additional ambient from Pixabay
+        {
+            "id": "ambient_meditation",
+            "name": "Meditation Soundscape",
+            "url": "https://cdn.pixabay.com/download/audio/2022/03/24/audio_9f3bdbaa77.mp3",
+            "genres": ["ambient", "meditation"],
+            "duration": 240,
+        },
+        {
+            "id": "ambient_forest",
+            "name": "Forest Ambience",
+            "url": "https://cdn.pixabay.com/download/audio/2023/10/30/audio_b889df0ebe.mp3",
+            "genres": ["ambient", "nature"],
+            "duration": 260,
+        },
+        {
+            "id": "ambient_cosmic",
+            "name": "Cosmic Dreams",
+            "url": "https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3",
+            "genres": ["ambient", "space", "cosmic"],
+            "duration": 300,
+        },
+        {
+            "id": "ambient_underwater",
+            "name": "Underwater World",
+            "url": "https://cdn.pixabay.com/download/audio/2022/11/22/audio_a156e7c6e2.mp3",
+            "genres": ["ambient", "underwater"],
+            "duration": 275,
+        },
     ],
     "synthwave": [
         {
             "id": "synthwave_dreams",
             "name": "Synthwave Dreams",
-            "url": "https://archive.org/download/synthwave/synthwave.mp3",
+            "url": "https://cdn.pixabay.com/download/audio/2022/04/27/audio_67bcabb5c4.mp3",
             "genres": ["synthwave", "retro"],
             "duration": 240,
         },
         {
             "id": "cyberpunk_night",
             "name": "Cyberpunk Night",
-            "url": "https://archive.org/download/synthwave/cyberpunk.mp3",
+            "url": "https://cdn.pixabay.com/download/audio/2023/03/16/audio_8cb749bf65.mp3",
             "genres": ["synthwave", "cyberpunk"],
             "duration": 210,
+        },
+        {
+            "id": "retrowave_01",
+            "name": "Retrowave Cruise",
+            "url": "https://cdn.pixabay.com/download/audio/2022/10/06/audio_df0d3952ab.mp3",
+            "genres": ["synthwave", "retro", "80s"],
+            "duration": 195,
+        },
+        {
+            "id": "neon_city",
+            "name": "Neon City Nights",
+            "url": "https://cdn.pixabay.com/download/audio/2023/05/22/audio_be3a4dca3f.mp3",
+            "genres": ["synthwave", "neon", "city"],
+            "duration": 220,
+        },
+        {
+            "id": "outrun_drive",
+            "name": "Outrun Night Drive",
+            "url": "https://cdn.pixabay.com/download/audio/2022/06/20/audio_ea18f3d10e.mp3",
+            "genres": ["synthwave", "outrun"],
+            "duration": 185,
         },
     ],
     "acoustic": [
         {
             "id": "acoustic_morning",
             "name": "Morning Light - Acoustic",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kerusu%20-%20First%20Snow.mp3",
+            "url": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3",
             "genres": ["acoustic", "peaceful"],
             "duration": 195,
+        },
+        {
+            "id": "acoustic_guitar_01",
+            "name": "Gentle Guitar",
+            "url": "https://cdn.pixabay.com/download/audio/2022/08/04/audio_2dde668d05.mp3",
+            "genres": ["acoustic", "guitar"],
+            "duration": 180,
+        },
+        {
+            "id": "acoustic_folk_01",
+            "name": "Folk Morning",
+            "url": "https://cdn.pixabay.com/download/audio/2023/02/08/audio_8164f6a9c5.mp3",
+            "genres": ["acoustic", "folk"],
+            "duration": 200,
+        },
+    ],
+    "piano": [
+        {
+            "id": "piano_soft_01",
+            "name": "Soft Piano Dreams",
+            "url": "https://cdn.pixabay.com/download/audio/2022/02/07/audio_95ca4a53df.mp3",
+            "genres": ["piano", "calm"],
+            "duration": 215,
+        },
+        {
+            "id": "piano_emotional",
+            "name": "Emotional Piano",
+            "url": "https://cdn.pixabay.com/download/audio/2023/07/03/audio_850865b86c.mp3",
+            "genres": ["piano", "emotional"],
+            "duration": 230,
+        },
+        {
+            "id": "piano_rain",
+            "name": "Piano in the Rain",
+            "url": "https://cdn.pixabay.com/download/audio/2022/12/13/audio_3ff40ab2b9.mp3",
+            "genres": ["piano", "rain"],
+            "duration": 195,
+        },
+    ],
+    "electronic": [
+        {
+            "id": "electronic_chill_01",
+            "name": "Electronic Chill",
+            "url": "https://cdn.pixabay.com/download/audio/2022/11/04/audio_3458d76a3f.mp3",
+            "genres": ["electronic", "chill"],
+            "duration": 205,
+        },
+        {
+            "id": "electronic_deep",
+            "name": "Deep Electronic",
+            "url": "https://cdn.pixabay.com/download/audio/2023/01/24/audio_69a61cd6d7.mp3",
+            "genres": ["electronic", "deep"],
+            "duration": 220,
         },
     ],
 }
@@ -158,16 +354,18 @@ async def search_music(query: str, mood: Optional[str] = None) -> List[Dict]:
 
     # Also check mood mapping
     mood_to_genre = {
-        "calm": ["lo-fi", "ambient"],
-        "focused": ["lo-fi", "ambient"],
-        "energetic": ["synthwave"],
-        "melancholic": ["jazz", "lo-fi"],
-        "cozy": ["jazz", "lo-fi"],
+        "calm": ["lo-fi", "ambient", "piano"],
+        "focused": ["lo-fi", "ambient", "electronic"],
+        "energetic": ["synthwave", "electronic"],
+        "melancholic": ["jazz", "lo-fi", "piano"],
+        "cozy": ["jazz", "lo-fi", "acoustic"],
         "mysterious": ["jazz", "ambient"],
         "nostalgic": ["synthwave", "lo-fi"],
-        "peaceful": ["acoustic", "ambient"],
+        "peaceful": ["acoustic", "ambient", "piano"],
         "transcendent": ["ambient"],
-        "urban": ["synthwave"],
+        "urban": ["synthwave", "electronic"],
+        "reflective": ["piano", "ambient"],
+        "dreamy": ["lo-fi", "ambient"],
     }
 
     if mood and mood.lower() in mood_to_genre:
@@ -177,7 +375,7 @@ async def search_music(query: str, mood: Optional[str] = None) -> List[Dict]:
                     if track not in results:
                         results.append(track)
 
-    # Try Archive.org search for more results
+    # Try Archive.org search for more results (always search to expand library)
     archive_results = await search_archive_org(query)
     results.extend(archive_results)
 
@@ -189,7 +387,56 @@ async def search_music(query: str, mood: Optional[str] = None) -> List[Dict]:
             seen_urls.add(track["url"])
             unique_results.append(track)
 
-    return unique_results[:10]  # Return top 10
+    # Shuffle results to provide variety
+    random.shuffle(unique_results)
+    return unique_results[:15]  # Return top 15
+
+
+async def proactive_discover(channel_id: str, mood: str, period: str) -> Optional[Dict]:
+    """
+    Proactively discover new content for a channel.
+    Called periodically to keep content fresh.
+    """
+    global _last_search_time
+
+    now = time.time()
+    last_search = _last_search_time.get(channel_id, 0)
+
+    # Only search if cooldown has passed
+    if now - last_search < SEARCH_COOLDOWN:
+        return None
+
+    _last_search_time[channel_id] = now
+
+    # Generate search based on channel mood and time of day
+    period_queries = {
+        "night": ["late night chill", "midnight ambient", "nocturnal beats"],
+        "morning": ["morning ambient", "sunrise vibes", "peaceful wake up"],
+        "afternoon": ["focus beats", "productive ambient", "afternoon jazz"],
+        "evening": ["sunset chill", "evening jazz", "twilight ambient"],
+    }
+
+    mood_queries = {
+        "calm": ["calm ambient", "peaceful music", "relaxing piano"],
+        "focused": ["focus music", "concentration beats", "study ambient"],
+        "energetic": ["upbeat electronic", "energetic synthwave"],
+        "melancholic": ["melancholic piano", "sad jazz", "emotional ambient"],
+        "cozy": ["cozy cafe jazz", "warm lo-fi", "comfort music"],
+    }
+
+    # Combine queries
+    queries = period_queries.get(period, ["ambient music"])
+    if mood.lower() in mood_queries:
+        queries.extend(mood_queries[mood.lower()])
+
+    search_query = random.choice(queries)
+    print(f"[Discovery] {channel_id} proactively searching: {search_query}")
+
+    results = await search_music(search_query, mood)
+    if results:
+        return random.choice(results)
+
+    return None
 
 
 async def search_archive_org(query: str) -> List[Dict]:
@@ -402,21 +649,21 @@ async def execute_tool(tool_name: str, arguments: Dict) -> Dict:
 # ============ CONTENT RECOMMENDATIONS ============
 
 def get_tracks_for_channel(channel_id: str, mood: Optional[str] = None) -> List[Dict]:
-    """Get recommended tracks for a channel based on its vibe."""
+    """Get recommended tracks for a channel based on its vibe - expanded library."""
     channel_vibes = {
-        "ch01": ["lo-fi", "ambient"],      # Late Night - Maya
-        "ch02": ["jazz", "lo-fi"],          # Rain Cafe - Yuki
-        "ch03": ["jazz"],                    # Jazz Noir - Vincent
-        "ch04": ["synthwave"],               # Synthwave - NEON
-        "ch05": ["ambient"],                 # Deep Space - Cosmos
-        "ch06": ["synthwave", "jazz"],       # Tokyo Drift - Kenji
-        "ch07": ["acoustic", "lo-fi"],       # Sunday Morning - Claire
-        "ch08": ["ambient", "lo-fi"],        # Focus - Alan
-        "ch09": ["jazz", "lo-fi"],           # Melancholy - Daniel
-        "ch10": ["lo-fi", "acoustic"],       # Golden Hour - Iris
+        "ch01": ["lo-fi", "ambient", "piano"],           # Late Night - Maya
+        "ch02": ["jazz", "lo-fi", "piano"],              # Rain Cafe - Yuki
+        "ch03": ["jazz", "piano"],                       # Jazz Noir - Vincent
+        "ch04": ["synthwave", "electronic"],             # Synthwave - NEON
+        "ch05": ["ambient", "electronic"],               # Deep Space - Cosmos
+        "ch06": ["synthwave", "jazz", "electronic"],     # Tokyo Drift - Kenji
+        "ch07": ["acoustic", "lo-fi", "piano"],          # Sunday Morning - Claire
+        "ch08": ["ambient", "lo-fi", "electronic"],      # Focus - Alan
+        "ch09": ["jazz", "lo-fi", "piano"],              # Melancholy - Daniel
+        "ch10": ["lo-fi", "acoustic", "ambient"],        # Golden Hour - Iris
     }
 
-    genres = channel_vibes.get(channel_id, ["lo-fi"])
+    genres = channel_vibes.get(channel_id, ["lo-fi", "ambient"])
     tracks = []
 
     for genre in genres:
@@ -431,6 +678,8 @@ def get_tracks_for_channel(channel_id: str, mood: Optional[str] = None) -> List[
             seen_ids.add(track["id"])
             unique_tracks.append(track)
 
+    # Shuffle to provide variety
+    random.shuffle(unique_tracks)
     return unique_tracks
 
 
