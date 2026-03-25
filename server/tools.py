@@ -55,12 +55,12 @@ async def check_url_health(url: str) -> bool:
         if now - checked_at < URL_CACHE_TTL:
             return is_valid
 
-    # Actually check the URL
+    # Actually check the URL (follow redirects to verify final destination)
     try:
-        async with httpx.AsyncClient(timeout=URL_CHECK_TIMEOUT, follow_redirects=False) as client:
+        async with httpx.AsyncClient(timeout=URL_CHECK_TIMEOUT, follow_redirects=True) as client:
             response = await client.head(url)
-            # 200 = OK, 302/301 = redirect (Archive.org uses this)
-            is_valid = response.status_code in [200, 301, 302]
+            # Only 200 is valid (we followed redirects, so no 301/302)
+            is_valid = response.status_code == 200
 
             _url_cache[url] = (is_valid, now)
 
@@ -173,28 +173,28 @@ ARCHIVE_COLLECTIONS = {
 # Known working Archive.org identifiers with their actual audio files
 # These are VERIFIED to work and serve as reliable fallbacks
 VERIFIED_ARCHIVE_ITEMS = [
-    # From kalaido-hanging-lanterns_202101
+    # From kalaido-hanging-lanterns_202101 (verified working)
     ("kalaido-hanging-lanterns_202101", "Kalaido%20-%20Hanging%20Lanterns.mp3"),
     ("kalaido-hanging-lanterns_202101", "Kerusu%20-%20First%20Snow.mp3"),
     ("kalaido-hanging-lanterns_202101", "Matt%20Quentin%20-%20Waves.mp3"),
-    ("kalaido-hanging-lanterns_202101", "Sleepy%20Fish%20-%20Beneath%20the%20Moonlight.mp3"),
-    ("kalaido-hanging-lanterns_202101", "Aso%20-%20Seasons.mp3"),
-    ("kalaido-hanging-lanterns_202101", "idealism%20-%20Contrails.mp3"),
-    ("kalaido-hanging-lanterns_202101", "j%27san%20-%20Serenade.mp3"),
-    ("kalaido-hanging-lanterns_202101", "SwuM%20-%20Coffee.mp3"),
-    ("kalaido-hanging-lanterns_202101", "In%20Love%20With%20a%20Ghost%20-%20Flowers.mp3"),
-    ("kalaido-hanging-lanterns_202101", "tomppabeats%20-%20Lonely%20Dance.mp3"),
-    # From dx_ambient
+    ("kalaido-hanging-lanterns_202101", "%28FREE%29%20Lo-fi%20Type%20Beat%20-%20Rain.mp3"),
+    ("kalaido-hanging-lanterns_202101", "Kronicle%20-%20Lofi%20Experimentin%20%28No%20Copyright%20Hip%20Hop%20Music%29.mp3"),
+    ("kalaido-hanging-lanterns_202101", "Onion%20%28Prod.%20by%20Lukrembo%29.mp3"),
+    ("kalaido-hanging-lanterns_202101", "flovry%20-%20car%20radio.mp3"),
+    ("kalaido-hanging-lanterns_202101", "Tranquillity%20-%20Chill%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3"),
+    ("kalaido-hanging-lanterns_202101", "%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3"),
+    # From dx_ambient (verified working)
     ("dx_ambient", "01_ambient.mp3"),
     ("dx_ambient", "02_ambient.mp3"),
     ("dx_ambient", "03_ambient.mp3"),
     ("dx_ambient", "04_ambient.mp3"),
     ("dx_ambient", "05_ambient.mp3"),
     ("dx_ambient", "06_ambient.mp3"),
-    # From Free_20s_Jazz_Collection
-    ("Free_20s_Jazz_Collection", "Annette%20Hanshaw%20-%20Mean%20To%20Me.mp3"),
-    ("Free_20s_Jazz_Collection", "Benny%20Goodman%20-%20Moonglow.mp3"),
-    ("Free_20s_Jazz_Collection", "Duke%20Ellington%20-%20Mood%20Indigo.mp3"),
+    ("dx_ambient", "07_ambient.mp3"),
+    ("dx_ambient", "08_ambient.mp3"),
+    # From synthwave (verified working)
+    ("synthwave", "synthwave.mp3"),
+    ("synthwave", "cyberpunk.mp3"),
 ]
 
 # Pre-curated tracks from Archive.org (verified working URLs only)
@@ -229,30 +229,30 @@ CURATED_TRACKS = {
             "duration": 200,
         },
         {
-            "id": "sleepy_fish",
-            "name": "Sleepy Fish - Beneath the Moonlight",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Sleepy%20Fish%20-%20Beneath%20the%20Moonlight.mp3",
+            "id": "lofi_experiment",
+            "name": "Lofi Experimentin - Kronicle",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Kronicle%20-%20Lofi%20Experimentin%20%28No%20Copyright%20Hip%20Hop%20Music%29.mp3",
             "genres": ["lo-fi", "night"],
             "duration": 185,
         },
         {
-            "id": "lofi_chillhop",
-            "name": "Chillhop Essentials",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Aso%20-%20Seasons.mp3",
+            "id": "lofi_onion",
+            "name": "Onion - Lukrembo",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Onion%20%28Prod.%20by%20Lukrembo%29.mp3",
             "genres": ["lo-fi", "chill"],
             "duration": 175,
         },
         {
-            "id": "lofi_morning",
-            "name": "Morning Coffee Lo-fi",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/idealism%20-%20Contrails.mp3",
+            "id": "lofi_tranquillity",
+            "name": "Tranquillity - Chill Beat",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Tranquillity%20-%20Chill%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
             "genres": ["lo-fi", "morning", "cafe"],
             "duration": 190,
         },
         {
             "id": "lofi_sunset",
             "name": "Sunset Drive",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/j%27san%20-%20Serenade.mp3",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/flovry%20-%20car%20radio.mp3",
             "genres": ["lo-fi", "evening"],
             "duration": 185,
         },
@@ -273,24 +273,24 @@ CURATED_TRACKS = {
             "duration": 165,
         },
         {
-            "id": "jazz_cafe",
-            "name": "Late Night Cafe Jazz",
-            "url": "https://archive.org/download/Free_20s_Jazz_Collection/Annette%20Hanshaw%20-%20Mean%20To%20Me.mp3",
-            "genres": ["jazz", "cafe", "vintage"],
+            "id": "jazz_chill",
+            "name": "Chill Jazzy Lofi",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNo%20Copyright%20Music%5D%20Chill%20Jazzy%20Lofi%20Hip-Hop%20Beat%20%28Copyright%20Free%29%20Music%20By%20KaizanBlu.mp3",
+            "genres": ["jazz", "cafe", "lofi"],
             "duration": 180,
         },
         {
-            "id": "jazz_smooth",
-            "name": "Smooth Jazz Vibes",
-            "url": "https://archive.org/download/Free_20s_Jazz_Collection/Benny%20Goodman%20-%20Moonglow.mp3",
-            "genres": ["jazz", "smooth"],
+            "id": "jazz_herbal",
+            "name": "Herbal Tea Jazz",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNon%20Copyrighted%20Music%5D%20Artificial.Music%20-%20Herbal%20Tea%20%5BLo-fi%5D.mp3",
+            "genres": ["jazz", "smooth", "lofi"],
             "duration": 195,
         },
         {
-            "id": "jazz_piano",
-            "name": "Jazz Piano Evening",
-            "url": "https://archive.org/download/Free_20s_Jazz_Collection/Duke%20Ellington%20-%20Mood%20Indigo.mp3",
-            "genres": ["jazz", "piano", "night"],
+            "id": "jazz_deep_space",
+            "name": "Deep Space Jazz",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/deep%20space%20-%20Ambient%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
+            "genres": ["jazz", "ambient", "night"],
             "duration": 200,
         },
     ],
@@ -340,72 +340,71 @@ CURATED_TRACKS = {
     ],
     "synthwave": [
         {
-            "id": "synthwave_01",
-            "name": "Neon Nights",
-            "url": "https://archive.org/download/synthwave-music-collection/01%20-%20Neon%20Dreams.mp3",
+            "id": "synthwave_main",
+            "name": "Synthwave Dreams",
+            "url": "https://archive.org/download/synthwave/synthwave.mp3",
             "genres": ["synthwave", "neon"],
             "duration": 210,
         },
         {
-            "id": "synthwave_02",
-            "name": "Retro Future",
-            "url": "https://archive.org/download/synthwave-music-collection/02%20-%20Retro%20Future.mp3",
-            "genres": ["synthwave", "retro"],
+            "id": "cyberpunk_main",
+            "name": "Cyberpunk Night",
+            "url": "https://archive.org/download/synthwave/cyberpunk.mp3",
+            "genres": ["synthwave", "cyberpunk"],
             "duration": 225,
         },
         {
-            "id": "synthwave_03",
-            "name": "Digital Sunset",
-            "url": "https://archive.org/download/synthwave-music-collection/03%20-%20Digital%20Sunset.mp3",
-            "genres": ["synthwave", "sunset"],
+            "id": "electronic_finite",
+            "name": "Finite Dreams",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/finite%20-%20Lofi%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
+            "genres": ["electronic", "lofi"],
             "duration": 195,
         },
-        # Fallback to lo-fi for variety
         {
-            "id": "electronic_chill",
-            "name": "Electronic Chill",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/SwuM%20-%20Coffee.mp3",
-            "genres": ["electronic", "chill"],
+            "id": "electronic_defect",
+            "name": "Defective Beats",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/defective%20-%20LofiTrap%20Style%20Hip%20Hop%20Beat%20%28FREE%20FOR%20PROFIT%20USE%29.mp3",
+            "genres": ["electronic", "trap"],
             "duration": 180,
         },
     ],
     "acoustic": [
         {
-            "id": "acoustic_01",
-            "name": "Peaceful Morning",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Louk%20-%20Time.mp3",
+            "id": "acoustic_dance",
+            "name": "Dancing On My Own",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Outgoing%20Hikikomori%20-%20Dancing%20On%20My%20Own%20%28No%20copyright%20lo%20fi%20beat%29.mp3",
             "genres": ["acoustic", "peaceful"],
             "duration": 195,
         },
         {
-            "id": "acoustic_02",
-            "name": "Gentle Breeze",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/Philanthrope%20-%20Maple%20Leaf%20Rag.mp3",
+            "id": "acoustic_surf",
+            "name": "Take Care - SURF",
+            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/%E3%81%91%EF%BD%8D%20SURF%20-%20Take%20Care.mp3",
             "genres": ["acoustic", "gentle"],
             "duration": 185,
         },
     ],
     "piano": [
         {
-            "id": "piano_01",
+            "id": "piano_ambient_01",
             "name": "Soft Piano Dreams",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/In%20Love%20With%20a%20Ghost%20-%20Flowers.mp3",
-            "genres": ["piano", "soft"],
-            "duration": 200,
+            "url": "https://archive.org/download/dx_ambient/01_ambient.mp3",
+            "genres": ["piano", "soft", "ambient"],
+            "duration": 300,
         },
         {
-            "id": "piano_02",
+            "id": "piano_ambient_02",
             "name": "Rainy Window Piano",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/SwuM%20x%20Psalm%20Trees%20-%20Affection.mp3",
-            "genres": ["piano", "rain"],
-            "duration": 190,
+            "url": "https://archive.org/download/dx_ambient/02_ambient.mp3",
+            "genres": ["piano", "rain", "ambient"],
+            "duration": 320,
         },
         {
-            "id": "piano_03",
+            "id": "piano_ambient_03",
             "name": "Evening Reflection",
-            "url": "https://archive.org/download/kalaido-hanging-lanterns_202101/tomppabeats%20-%20Lonely%20Dance.mp3",
-            "genres": ["piano", "reflection"],
-            "duration": 175,
+            "url": "https://archive.org/download/dx_ambient/04_ambient.mp3",
+            "genres": ["piano", "reflection", "ambient"],
+            "duration": 290,
         },
     ],
     "electronic": [
