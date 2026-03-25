@@ -1476,7 +1476,42 @@
             viewerRegion = data.region;
             console.log(`[Geo] Server assigned region: ${viewerRegion}`);
           }
-          updateFromSimulation(data);
+
+          // On init, update and START playback (not just sync)
+          const track = data.track || data.currentTrack;
+          if (track && track.url) {
+            document.getElementById('track-name').textContent = track.name || 'Unknown Track';
+            audio.src = track.url;
+
+            // Sync position if track has startedAt
+            if (track.startedAt) {
+              const elapsed = (Date.now() - track.startedAt) / 1000;
+              const duration = track.duration || 180;
+              audio.currentTime = elapsed % duration;
+            }
+
+            // Start playback
+            audio.play().then(() => {
+              musicPlaying = true;
+              document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+            }).catch(() => {
+              musicPlaying = false;
+              document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+            });
+          }
+
+          // Update video
+          const videoData = data.video || data.currentVideo;
+          if (videoData && videoData.url) {
+            const videoEl = document.getElementById('channel-video');
+            if (videoEl) videoEl.src = videoData.url;
+          }
+
+          // Update thought
+          if (data.agent?.thought) {
+            const thoughtEl = document.getElementById('agent-thought');
+            if (thoughtEl) thoughtEl.textContent = `"${data.agent.thought}"`;
+          }
         });
 
         eventSource.addEventListener('channel:update', (e) => {
@@ -1565,12 +1600,13 @@
         }
       }
 
-      // Update video if changed
-      if (data.video && data.video.url) {
+      // Update video if changed (handle both 'video' and 'currentVideo' from API)
+      const videoData = data.video || data.currentVideo;
+      if (videoData && videoData.url) {
         const videoEl = document.getElementById('channel-video');
-        if (videoEl && videoEl.src !== data.video.url) {
-          console.log('[Simulation] Changing video to:', data.video.name);
-          videoEl.src = data.video.url;
+        if (videoEl && videoEl.src !== videoData.url) {
+          console.log('[Simulation] Changing video to:', videoData.name);
+          videoEl.src = videoData.url;
         }
       }
     }
