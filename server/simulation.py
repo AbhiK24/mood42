@@ -361,7 +361,7 @@ class SimulationEngine:
                 taste = CHANNELS.get(channel_id, {}).get("agent", {}).get("taste", [])
                 current_urls = [v.get("url") for v in videos] if videos else []
                 discovered = await asyncio.wait_for(
-                    proactive_video_discover(channel_id, taste, current_urls),
+                    proactive_video_discover(channel_id, taste, current_videos=current_urls),
                     timeout=30.0
                 )
                 if discovered:
@@ -524,11 +524,11 @@ class SimulationEngine:
             try:
                 if action_type == "search_video":
                     print(f"[{channel_id}] Reflection action: searching videos for '{query}'")
-                    # Trigger video discovery with the agent's query
+                    # Trigger video discovery with the agent's reflection-generated query
                     video = await proactive_video_discover(
                         channel_id,
                         channel["agent"].get("taste", []),
-                        query  # Use reflection-generated query
+                        custom_query=query  # Explicit keyword arg for reflection query
                     )
                     if video:
                         gen_agent.add_memory(
