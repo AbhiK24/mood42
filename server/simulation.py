@@ -228,6 +228,72 @@ class SimulationEngine:
         if self.world["tick"] % 10 == 0 and self.use_llm:
             await self._process_agent_interactions()
 
+        # Scheduled content discovery (every 360 ticks = 30 min real time)
+        # 5 seconds per tick * 360 ticks = 1800 seconds = 30 minutes
+        if self.world["tick"] % 360 == 0 and self.world["tick"] > 0:
+            await self._scheduled_content_discovery()
+
+    async def _scheduled_content_discovery(self):
+        """
+        Scheduled content discovery - runs every 30 minutes.
+        Each channel agent searches for new videos and audio.
+        """
+        print(f"[Scheduled] Starting 30-minute content discovery cycle...")
+        tick = self.world["tick"]
+
+        async def discover_for_channel(channel_id: str):
+            channel = CHANNELS.get(channel_id)
+            if not channel:
+                return
+
+            agent = self.channel_agents.get(channel_id)
+            taste = channel.get("agent", {}).get("taste", [])
+
+            try:
+                # Video discovery
+                print(f"[{channel_id}] Scheduled video discovery...")
+                video = await asyncio.wait_for(
+                    proactive_video_discover(channel_id, taste),
+                    timeout=30.0
+                )
+                if video:
+                    if channel_id not in CHANNEL_VIDEOS:
+                        CHANNEL_VIDEOS[channel_id] = []
+                    CHANNEL_VIDEOS[channel_id].append(video)
+                    print(f"[{channel_id}] Scheduled: found video '{video.get('name', 'unknown')}'")
+                    if agent:
+                        agent.add_memory(
+                            f"Scheduled discovery: found new video '{video.get('name', 'unknown')}'",
+                            MemoryType.ACTION,
+                            importance=5,
+                            tick=tick,
+                        )
+
+                # Audio discovery
+                print(f"[{channel_id}] Scheduled audio discovery...")
+                taste_query = " ".join(taste[:3]) if taste else "ambient chill"
+                tracks = await search_music(taste_query, mood="focused")
+                if tracks:
+                    print(f"[{channel_id}] Scheduled: found {len(tracks)} audio tracks")
+                    if agent:
+                        agent.add_memory(
+                            f"Scheduled discovery: found {len(tracks)} new audio tracks",
+                            MemoryType.ACTION,
+                            importance=5,
+                            tick=tick,
+                        )
+
+            except asyncio.TimeoutError:
+                print(f"[{channel_id}] Scheduled discovery timeout")
+            except Exception as e:
+                print(f"[{channel_id}] Scheduled discovery error: {e}")
+
+        # Run discovery for all channels in parallel (with limit)
+        tasks = [discover_for_channel(ch_id) for ch_id in list(CHANNELS.keys())[:5]]  # Limit to 5 at a time
+        await asyncio.gather(*tasks)
+
+        print(f"[Scheduled] Content discovery cycle complete")
+
     async def _process_channel_regions(self, channel_id: str, agent: ChannelAgent):
         """Process track changes for each region of a channel."""
         channel = CHANNELS.get(channel_id)

@@ -766,27 +766,33 @@
     .memory-toggle {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      width: 100%;
       margin-top: 24px;
-      padding: 12px 20px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 20px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
       border-radius: 8px;
-      color: rgba(255,255,255,0.7);
-      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s ease;
     }
     .memory-toggle:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
+      border-color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.9);
     }
     .memory-toggle.active {
-      background: rgba(255,255,255,0.15);
-      border-color: rgba(255,255,255,0.3);
+      border-color: rgba(255,255,255,0.4);
+      color: #fff;
     }
-    .memory-icon {
-      font-size: 16px;
+    .memory-toggle .memory-arrow {
+      transition: transform 0.3s ease;
+    }
+    .memory-toggle.active .memory-arrow {
+      transform: rotate(90deg);
     }
 
     .memory-panel {
@@ -838,29 +844,64 @@
       gap: 8px;
     }
     .memory-item {
-      padding: 10px 12px;
+      padding: 12px 14px;
       background: rgba(255,255,255,0.03);
       border-radius: 6px;
       font-size: 12px;
       line-height: 1.5;
       color: rgba(255,255,255,0.8);
     }
-    .memory-item .memory-type {
-      display: inline-block;
-      padding: 2px 6px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 4px;
-      font-size: 10px;
+    .memory-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .memory-type {
+      padding: 2px 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: rgba(255,255,255,0.5);
-      margin-right: 8px;
+    }
+    .memory-time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      font-variant-numeric: tabular-nums;
+    }
+    .memory-text {
+      color: rgba(255,255,255,0.75);
+      line-height: 1.6;
     }
     .memory-item.reflection {
-      border-left: 2px solid #e8c89a;
-      background: rgba(232,200,154,0.05);
+      border-left: 2px solid rgba(232,200,154,0.6);
+      background: rgba(232,200,154,0.03);
+    }
+    .memory-item.reflection .memory-text {
+      font-style: italic;
+      color: rgba(255,255,255,0.85);
     }
     .memory-item.plan {
-      border-left: 2px solid #7eb8da;
-      background: rgba(126,184,218,0.05);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 2px solid rgba(126,184,218,0.6);
+      background: rgba(126,184,218,0.03);
+    }
+    .plan-time {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      min-width: 60px;
+    }
+    .plan-action {
+      flex: 1;
+    }
+    .plan-done {
+      font-size: 9px;
+      text-transform: uppercase;
+      color: rgba(126,184,218,0.8);
     }
     .memory-summary {
       font-family: 'Kode Mono', monospace;
@@ -1350,8 +1391,8 @@
 
         <!-- Agent Memory Button -->
         <button class="memory-toggle" id="memory-toggle">
-          <span class="memory-icon">🧠</span>
-          <span>View Agent Memory</span>
+          <span class="memory-label">Memory Stream</span>
+          <span class="memory-arrow">→</span>
         </button>
 
         <!-- Agent Memory Panel -->
@@ -1894,6 +1935,20 @@
       }
     });
 
+    function formatMemoryTime(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+
+      if (isToday) {
+        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+               date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+    }
+
     function renderMemory(data) {
       // Update stats
       document.getElementById('memory-count').textContent = `${data.total_memories} memories`;
@@ -1904,8 +1959,11 @@
       if (data.memories && data.memories.length > 0) {
         memoryList.innerHTML = data.memories.slice().reverse().slice(0, 20).map(m => `
           <div class="memory-item">
-            <span class="memory-type">${m.type}</span>
-            ${m.text}
+            <div class="memory-meta">
+              <span class="memory-type">${m.type.replace('_', ' ')}</span>
+              <span class="memory-time">${formatMemoryTime(m.timestamp)}</span>
+            </div>
+            <div class="memory-text">${m.text}</div>
           </div>
         `).join('');
       } else {
@@ -1917,7 +1975,10 @@
       if (data.reflections && data.reflections.length > 0) {
         reflectionList.innerHTML = data.reflections.slice().reverse().map(r => `
           <div class="memory-item reflection">
-            ${r.text}
+            <div class="memory-meta">
+              <span class="memory-time">${formatMemoryTime(r.timestamp)}</span>
+            </div>
+            <div class="memory-text">${r.text}</div>
           </div>
         `).join('');
       } else {
@@ -1929,8 +1990,9 @@
       if (data.plans && data.plans.length > 0) {
         planList.innerHTML = data.plans.map(p => `
           <div class="memory-item plan">
-            <strong>${p.time}</strong>: ${p.action} (${p.duration} min)
-            ${p.completed ? '<span style="color:#7eb8da">✓</span>' : ''}
+            <span class="plan-time">${p.time}</span>
+            <span class="plan-action">${p.action}</span>
+            ${p.completed ? '<span class="plan-done">done</span>' : ''}
           </div>
         `).join('');
       } else {
