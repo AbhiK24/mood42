@@ -2384,8 +2384,9 @@
       if (!liveState) return;
 
       // Update with live track immediately
-      if (liveState.currentTrack) {
-        const track = liveState.currentTrack;
+      const track = liveState.currentTrack;
+      if (track) {
+        console.log('[Audio] Applying track:', track.name, track.url);
 
         // Update track name
         document.getElementById('track-name').textContent = track.name || 'Unknown Track';
@@ -2393,20 +2394,26 @@
 
         // Set audio source and start playing
         if (track.url) {
-          audio.src = track.url;
+          // Only change if URL is different (avoid restart)
+          if (audio.src !== track.url) {
+            console.log('[Audio] Changing source to:', track.url);
+            audio.src = track.url;
+            audio.load(); // Force load new source
 
-          // Sync to current position if track has startedAt
-          if (track.startedAt) {
-            const elapsed = (Date.now() - track.startedAt) / 1000;
-            const duration = track.duration || 180;
-            audio.currentTime = elapsed % duration;
+            // Sync to current position if track has startedAt
+            if (track.startedAt) {
+              const elapsed = (Date.now() - track.startedAt) / 1000;
+              const duration = track.duration || 180;
+              audio.currentTime = elapsed % duration;
+            }
           }
 
           // Start playback
           audio.play().then(() => {
             musicPlaying = true;
             document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
-          }).catch(() => {
+          }).catch((e) => {
+            console.warn('[Audio] Playback failed:', e);
             musicPlaying = false;
             document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
           });
@@ -2416,7 +2423,8 @@
       // Update video
       if (liveState.currentVideo?.url) {
         const videoEl = document.getElementById('channel-video');
-        if (videoEl) {
+        if (videoEl && videoEl.src !== liveState.currentVideo.url) {
+          console.log('[Video] Changing source to:', liveState.currentVideo.url);
           videoEl.src = liveState.currentVideo.url;
           updateAttribution('video', liveState.currentVideo);
         }
@@ -2435,31 +2443,32 @@
       // Call original to set up UI (channel name, colors, etc.)
       originalOpenChannel(channelId);
 
-      // Step 1: Use cached live data for INSTANT content (no lag)
-      const cached = liveChannelCache[channelId];
-      if (cached && (Date.now() - lastCacheUpdate < 15000)) {
-        console.log('[Simulation] Using cached live state (instant)');
-        applyLiveState(cached);
-      }
-
-      // Step 2: Fetch fresh state in background (updates if different)
+      // Step 1: ALWAYS fetch fresh state (cache was causing stale audio)
       try {
+        console.log('[Simulation] Fetching fresh state for', channelId);
         const response = await fetch(apiUrl(`/api/channels/${channelId}?t=${Date.now()}`));
         if (response.ok) {
           const liveState = await response.json();
-          console.log('[Simulation] Got fresh live state');
+          console.log('[Simulation] Got live state:', liveState.currentTrack?.name);
 
           // Update cache
           liveChannelCache[channelId] = liveState;
+          lastCacheUpdate = Date.now();
 
-          // Apply fresh state (will update if different from cache)
+          // Apply fresh state
           applyLiveState(liveState);
         }
       } catch (err) {
         console.warn('[Simulation] Failed to fetch live state:', err);
+        // Fallback to cache only if fetch fails
+        const cached = liveChannelCache[channelId];
+        if (cached) {
+          console.log('[Simulation] Using cached state as fallback');
+          applyLiveState(cached);
+        }
       }
 
-      // Step 3: Connect to SSE for ongoing updates
+      // Step 2: Connect to SSE for ongoing updates
       connectToSimulation(channelId);
 
       // Step 4: Preload adjacent channels for instant switching
