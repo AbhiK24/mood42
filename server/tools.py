@@ -388,6 +388,102 @@ async def search_videos_all_sources(query: str, max_results: int = 5) -> List[Di
     return results[:max_results]
 
 
+async def download_and_upload_audio_to_r2(track: Dict, channel_id: str) -> Optional[Dict]:
+    """
+    Download audio from source and upload to R2.
+    Returns dict with R2 URL and metadata if successful.
+    """
+    if not track or not track.get("url"):
+        return None
+
+    if not r2_is_configured():
+        print("[Audio] R2 not configured - skipping upload")
+        return None
+
+    source_url = track["url"]
+    track_name = track.get("name", "unknown")
+    source = track.get("source", "unknown")
+    duration = track.get("duration", 180)
+
+    # Skip if already an R2 URL
+    if "r2.dev" in source_url:
+        return track
+
+    # Create clean filename
+    clean_name = re.sub(r'[^a-z0-9]', '_', track_name.lower())[:40]
+    clean_name = re.sub(r'_+', '_', clean_name).strip('_')
+    filename = f"{channel_id}_{clean_name}_{int(time.time())}.mp3"
+    r2_key = f"audio/{filename}"
+
+    # Check if already in R2
+    if check_exists(r2_key):
+        print(f"[Audio] Already in R2: {filename}")
+        return {
+            "url": get_public_url(r2_key),
+            "name": track_name,
+            "duration": duration,
+            "source": source,
+            "source_url": source_url,
+            "_verified": True,
+        }
+
+    try:
+        # Download audio
+        print(f"[Audio] Downloading: {track_name[:40]}...")
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            response = await client.get(source_url)
+
+            if response.status_code != 200:
+                print(f"[Audio] Download failed: HTTP {response.status_code}")
+                return None
+
+            content = response.content
+            content_type = response.headers.get("content-type", "audio/mpeg")
+
+            # Validate it's actually audio (at least 50KB)
+            if len(content) < 50_000:
+                print(f"[Audio] File too small: {len(content)} bytes")
+                return None
+
+        # Upload to R2
+        metadata = {
+            "source": source,
+            "source_url": source_url[:256],
+            "original_name": track_name[:128],
+            "channel": channel_id,
+            "duration": str(duration),
+            "uploaded_at": str(int(time.time())),
+        }
+
+        r2_url = upload_to_r2(
+            data=content,
+            key=r2_key,
+            content_type="audio/mpeg",
+            metadata=metadata
+        )
+
+        if r2_url:
+            print(f"[Audio] Uploaded to R2: {filename} ({len(content) // 1024} KB)")
+            return {
+                "id": f"{channel_id}_discovered_{int(time.time())}",
+                "url": r2_url,
+                "name": track_name,
+                "duration": duration,
+                "source": source,
+                "source_url": source_url,
+                "attribution": track.get("attribution", f"Audio from {source}"),
+                "_verified": True,
+                "_discovered": True,
+            }
+        else:
+            print(f"[Audio] R2 upload failed")
+            return None
+
+    except Exception as e:
+        print(f"[Audio] Error downloading/uploading: {e}")
+        return None
+
+
 async def download_and_upload_to_r2(video: Dict, channel_id: str) -> Optional[Dict]:
     """
     Download video from source and upload to R2.
@@ -953,9 +1049,17 @@ async def proactive_discover(channel_id: str, mood: str, period: str) -> Optiona
     if online_results:
         track = random.choice(online_results)
         print(f"[Discovery] {channel_id} found online: {track['name']}")
-        return track
 
-    # Fallback to curated
+        # Upload to R2 for persistence
+        r2_track = await download_and_upload_audio_to_r2(track, channel_id)
+        if r2_track:
+            print(f"[Discovery] {channel_id} uploaded to R2: {r2_track['name']}")
+            return r2_track
+        else:
+            # Return original if R2 upload fails (still usable but may break later)
+            return track
+
+    # Fallback to curated (these are already in R2)
     results = await search_music(search_query, mood)
     if results:
         return random.choice(results)

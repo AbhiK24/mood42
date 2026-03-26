@@ -25,6 +25,7 @@ from server.tools import (
     CHANNEL_VIDEOS,
     CHANNEL_TRACKS,
     save_discovered_media,
+    download_and_upload_audio_to_r2,
 )
 from server.llm import (
     generate_programming_decision,
@@ -273,7 +274,7 @@ class SimulationEngine:
                             tick=tick,
                         )
 
-                # Audio discovery
+                # Audio discovery - upload to R2 for persistence
                 print(f"[{channel_id}] Scheduled audio discovery...")
                 taste_query = " ".join(taste[:3]) if taste else "ambient chill"
                 found_tracks = await search_music(taste_query, mood="focused")
@@ -283,16 +284,17 @@ class SimulationEngine:
                         CHANNEL_TRACKS[channel_id] = []
                     existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
                     added = 0
-                    for track in found_tracks:
+                    for track in found_tracks[:3]:  # Limit to 3 per discovery
                         if track.get("url") and track.get("url") not in existing_urls:
-                            track["_verified"] = True
-                            track["_discovered"] = True
-                            CHANNEL_TRACKS[channel_id].append(track)
-                            existing_urls.add(track.get("url"))
-                            added += 1
+                            # Upload to R2 for persistence
+                            r2_track = await download_and_upload_audio_to_r2(track, channel_id)
+                            if r2_track:
+                                CHANNEL_TRACKS[channel_id].append(r2_track)
+                                existing_urls.add(r2_track.get("url"))
+                                added += 1
                     if added > 0:
                         save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
-                        print(f"[{channel_id}] Scheduled: added {added} new tracks to library")
+                        print(f"[{channel_id}] Scheduled: added {added} new tracks to R2 library")
                         if agent:
                             agent.add_memory(
                                 f"Scheduled discovery: added {added} new tracks to library",
@@ -389,19 +391,19 @@ class SimulationEngine:
                         # Validate search results before using
                         for result in search_results:
                             if await validate_track(result):
-                                new_track = result
-                                # ADD to channel's permanent library
-                                if channel_id not in CHANNEL_TRACKS:
-                                    CHANNEL_TRACKS[channel_id] = []
-                                # Avoid duplicates by checking URL
-                                existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
-                                if result.get("url") not in existing_urls:
-                                    result["_verified"] = True
-                                    result["_discovered"] = True
-                                    CHANNEL_TRACKS[channel_id].append(result)
-                                    save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
-                                    print(f"[{channel_id}] Added new track to library: {result.get('name', 'unknown')}")
-                                break
+                                # Upload to R2 for persistence
+                                r2_track = await download_and_upload_audio_to_r2(result, channel_id)
+                                if r2_track:
+                                    new_track = r2_track
+                                    # ADD to channel's permanent library
+                                    if channel_id not in CHANNEL_TRACKS:
+                                        CHANNEL_TRACKS[channel_id] = []
+                                    existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
+                                    if r2_track.get("url") not in existing_urls:
+                                        CHANNEL_TRACKS[channel_id].append(r2_track)
+                                        save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
+                                        print(f"[{channel_id}] Added new track to R2: {r2_track.get('name', 'unknown')}")
+                                    break
 
                 # Otherwise use selected track_id (skip validation for pre-verified)
                 if not new_track and decision.get("track_id"):
@@ -430,6 +432,7 @@ class SimulationEngine:
                     timeout=3.0
                 )
                 if discovered and await validate_track(discovered):
+                    # proactive_discover already uploads to R2, so track has R2 URL
                     new_track = discovered
                     thought = f"Found something fresh: {discovered['name']}"
                     # ADD to channel's permanent library
@@ -437,11 +440,9 @@ class SimulationEngine:
                         CHANNEL_TRACKS[channel_id] = []
                     existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
                     if discovered.get("url") not in existing_urls:
-                        discovered["_verified"] = True
-                        discovered["_discovered"] = True
                         CHANNEL_TRACKS[channel_id].append(discovered)
                         save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
-                        print(f"[{channel_id}] Added discovered track to library: {discovered.get('name', 'unknown')}")
+                        print(f"[{channel_id}] Added discovered track (R2): {discovered.get('name', 'unknown')}")
             except asyncio.TimeoutError:
                 pass  # Skip discovery if too slow
 
