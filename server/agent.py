@@ -502,10 +502,14 @@ class ChannelAgent:
 
 
 def create_channel_agents(channels: Dict) -> Dict[str, ChannelAgent]:
-    """Create agents for all channels."""
+    """Create agents for active (non-archived) channels only."""
     agents = {}
 
     for ch_id, channel in channels.items():
+        # Skip archived channels
+        if channel.get("archived", False):
+            continue
+
         agent_data = channel.get("agent", {})
         agents[ch_id] = ChannelAgent(
             channel_id=ch_id,

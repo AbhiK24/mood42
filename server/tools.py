@@ -213,12 +213,11 @@ def scan_r2_rebuild_db(force: bool = False):
     added_videos = 0
     added_tracks = 0
 
-    # Channel list for round-robin assignment of orphaned files
-    channels = [f"ch{i:02d}" for i in range(1, 11)]
-    orphan_idx = 0
+    # All audio goes to ch06 (Tokyo Drift) - the only music channel now
+    default_channel = "ch06"
 
     # Scan audio files
-    print("[R2 Scan] Scanning audio files...")
+    print("[R2 Scan] Scanning audio files (all to ch06)...")
     audio_files = list_objects("audio/")
     for obj in audio_files:
         key = obj['key']
@@ -230,17 +229,8 @@ def scan_r2_rebuild_db(force: bool = False):
         if exists:
             continue
 
-        # Parse channel from filename (ch01_name_timestamp.mp3)
-        channel_id = None
-        if filename.startswith("ch") and "_" in filename:
-            parts = filename.split("_")
-            if len(parts[0]) == 4 and parts[0][:2] == "ch":
-                channel_id = parts[0]
-
-        # Assign orphaned files round-robin
-        if not channel_id or channel_id not in channels:
-            channel_id = channels[orphan_idx % len(channels)]
-            orphan_idx += 1
+        # All audio goes to ch06 now (only music channel)
+        channel_id = default_channel
 
         # Extract name from filename
         name_part = filename.replace(".mp3", "").replace(".ogg", "").replace(".flac", "")
@@ -267,8 +257,8 @@ def scan_r2_rebuild_db(force: bool = False):
         except:
             pass
 
-    # Scan video files
-    print("[R2 Scan] Scanning video files...")
+    # Scan video files - all go to ch06 (ambient videos for Tokyo Drift)
+    print("[R2 Scan] Scanning video files (all to ch06)...")
     video_files = list_objects("video/")
     for obj in video_files:
         key = obj['key']
@@ -280,22 +270,16 @@ def scan_r2_rebuild_db(force: bool = False):
         if exists:
             continue
 
-        # Parse channel from filename
-        channel_id = None
-        if filename.startswith("ch") and "_" in filename:
-            parts = filename.split("_")
-            if len(parts[0]) == 4 and parts[0][:2] == "ch":
-                channel_id = parts[0]
-
-        # Assign orphaned files round-robin
-        if not channel_id or channel_id not in channels:
-            channel_id = channels[orphan_idx % len(channels)]
-            orphan_idx += 1
+        # All videos go to ch06 now (ambient videos for music channel)
+        channel_id = default_channel
 
         # Extract name from filename
         name_part = filename.replace(".mp4", "").replace(".webm", "")
-        if name_part.startswith(channel_id + "_"):
-            name_part = name_part[len(channel_id) + 1:]
+        if name_part.startswith("ch") and "_" in name_part:
+            # Remove any channel prefix from the name
+            parts = name_part.split("_", 1)
+            if len(parts) > 1:
+                name_part = parts[1]
         # Remove timestamp suffix if present
         parts = name_part.rsplit("_", 1)
         if len(parts) == 2 and parts[1].isdigit() and len(parts[1]) > 8:
@@ -322,6 +306,44 @@ def scan_r2_rebuild_db(force: bool = False):
 
     print(f"[R2 Scan] Recovered {added_tracks} tracks, {added_videos} videos from R2")
     return {"videos": added_videos, "tracks": added_tracks}
+
+
+def migrate_all_media_to_ch06():
+    """
+    Migrate all audio and video from all channels to ch06 (Tokyo Drift).
+    This is called when restructuring to have only one music channel.
+    """
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+
+    # Count before migration
+    track_count = conn.execute("SELECT COUNT(*) FROM tracks WHERE channel_id != 'ch06'").fetchone()[0]
+    video_count = conn.execute("SELECT COUNT(*) FROM videos WHERE channel_id != 'ch06'").fetchone()[0]
+
+    if track_count == 0 and video_count == 0:
+        print("[Migration] No media to migrate - all already on ch06")
+        conn.close()
+        return {"tracks": 0, "videos": 0}
+
+    # Update all tracks to ch06
+    conn.execute("UPDATE tracks SET channel_id = 'ch06' WHERE channel_id != 'ch06'")
+
+    # Update all videos to ch06
+    conn.execute("UPDATE videos SET channel_id = 'ch06' WHERE channel_id != 'ch06'")
+
+    conn.commit()
+    conn.close()
+
+    print(f"[Migration] Migrated {track_count} tracks and {video_count} videos to ch06")
+
+    # Reload the in-memory caches
+    global CHANNEL_TRACKS, CHANNEL_VIDEOS
+    discovered = load_discovered_media()
+    for ch_id, tracks in discovered["tracks"].items():
+        CHANNEL_TRACKS[ch_id] = tracks
+    for ch_id, videos in discovered["videos"].items():
+        CHANNEL_VIDEOS[ch_id] = videos
+
+    return {"tracks": track_count, "videos": video_count}
 
 
 # ============ CHANNEL STATE PERSISTENCE ============
@@ -1748,6 +1770,9 @@ def _merge_discovered_media():
 
     # Scan R2 to recover any media not in DB (e.g., after deploy wipe)
     scan_r2_rebuild_db()
+
+    # Migrate all media to ch06 (the only music channel now)
+    migrate_all_media_to_ch06()
 
     # Then load discovered media from DB
     discovered = load_discovered_media()

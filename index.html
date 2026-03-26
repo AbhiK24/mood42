@@ -1433,112 +1433,118 @@
   <audio id="audio-player" loop></audio>
 
   <script type="module">
-    // Channel data with free stock videos from Mixkit
+    // Channel data - type: 'music' (audio+video) or 'video' (video with sound)
     const CHANNELS = [
       {
         id: 'ch01',
         num: '01',
-        name: 'Late Night',
-        agent: 'Maya Chen',
-        agentId: 'maya_chen',
-        desc: 'Lo-fi beats for late night coding sessions. Rain on windows, warm lamp light, and the quiet hum of focused work.',
-        tags: ['lo-fi', 'coding', 'rain'],
-        preview: '/assets/channels/ch01_preview.mp4',
-        video: 'https://assets.mixkit.co/videos/18308/18308-720.mp4',
-        poster: '/assets/channels/ch01_late_night.png',
-        avatar: '/assets/avatars/maya_chen.mp4',
-        color: '#e8c89a',
-        music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3',
-        trackName: 'Hanging Lanterns - Kalaido',
-        quote: '"The insomnia started — or maybe she finally stopped fighting it."',
-        bio: `<p>Maya Chen was born in Vancouver on a Tuesday in October, 1997, during a rainstorm that knocked out power to half the city. Her mother always said this explained everything about her — the affinity for darkness, the comfort in storms, the way she seemed to run on some internal generator that had nothing to do with the rest of the world.</p>
-<p>Her parents ran a small electronics repair shop on Commercial Drive called Chen's Fix-It. Maya learned to solder before she learned to ride a bike. She got into Stanford for computer science, which should have been a triumph. It wasn't. She dropped out on a Wednesday in March, 2022.</p>
-<p>She moved to San Francisco because it was close enough to feel like continuity but far enough to feel like escape. The channel started as an accident. She had been assembling playlists for her own late nights, and a friend asked to listen. Then strangers. She realized that 3 AM was full of people who needed company but not conversation.</p>`
+        name: 'Documentary',
+        type: 'video',  // Video with sound, no separate audio
+        archived: false,
+        agent: 'Marcus Cole',
+        agentId: 'marcus_cole',
+        desc: 'The world through a lens. Nature, science, humanity — stories that matter, curated by a lifetime documentarian.',
+        tags: ['documentary', 'nature', 'science'],
+        preview: '/assets/channels/ch01_documentary.png',
+        video: null,  // Uses video content with sound
+        poster: '/assets/channels/ch01_documentary.png',
+        avatar: '/assets/avatars/marcus_cole.mp4',
+        color: '#2d5a4a',
+        music: null,  // No separate audio
+        trackName: null,
+        quote: '"Every frame is a window. Every cut is a choice."',
+        bio: `<p>Marcus Cole was born in Detroit in 1968, to a family that believed in bearing witness. His mother was a photojournalist who covered the civil rights movement. His father taught film at Wayne State.</p>
+<p>He spent twenty years traveling the world with a camera — the Amazon, the Arctic, the streets of Mumbai and Lagos. He's documented things most people will never see: the last of a species, the birth of a revolution, the quiet dignity of ordinary people doing extraordinary things.</p>
+<p>He curates documentaries now because he believes in the power of the lens to change minds. Every film he selects is a story he wishes he'd told himself.</p>`
       },
       {
         id: 'ch02',
         num: '02',
-        name: 'Rain Café',
-        agent: 'Yuki Tanaka',
-        agentId: 'yuki_tanaka',
-        desc: 'A cozy Japanese kissaten. Vinyl jazz crackles softly as rain patters against the window. Coffee steam rises.',
-        tags: ['jazz', 'coffee', 'vinyl'],
-        preview: '/assets/channels/ch02_preview.mp4',
-        video: 'https://assets.mixkit.co/videos/33951/33951-720.mp4',
-        poster: '/assets/channels/ch02_rain_cafe.png',
-        avatar: '/assets/avatars/yuki_tanaka.mp4',
-        color: '#8b7355',
-        music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/%5BNo%20Copyright%20Music%5D%20Chill%20Jazzy%20Lofi%20Hip-Hop%20Beat%20%28Copyright%20Free%29%20Music%20By%20KaizanBlu.mp3',
-        trackName: 'Chill Jazzy Lofi',
-        quote: '"Jazz is not about the notes. It\'s about the spaces between the notes."',
-        bio: `<p>Yuki Tanaka was born in Kyoto in the spring of 1991, during the last week of cherry blossom season. At sixteen, she got a part-time job at Kissaten Hoshi, a jazz café on a backstreet near Gion that had been serving coffee since 1967. The owner, Sato-san, was seventy-three years old, a former jazz drummer who had played with Sonny Stitt once, in 1961.</p>
-<p>The café was twelve seats, dark wood, and a wall of vinyl records. The coffee was made in a nel drip, a flannel filter that required patience. That was what Sato-san taught her, really. Not the coffee — anyone could learn the coffee. He taught her to listen.</p>
-<p>Sato-san died on a Tuesday in November, 2019. His children sold the building to a developer. Rain Café is her way to recreate what she'd lost — the feeling of Kissaten Hoshi at 3 PM, rain on the windows, Coltrane on the turntable.</p>`
+        name: 'History',
+        type: 'video',  // Video with sound, no separate audio
+        archived: false,
+        agent: 'Eleanor Wright',
+        agentId: 'eleanor_wright',
+        desc: 'Echoes of the past. Historical footage, educational films, and moments that shaped our world.',
+        tags: ['history', 'archive', 'educational'],
+        preview: '/assets/channels/ch02_history.png',
+        video: null,  // Uses video content with sound
+        poster: '/assets/channels/ch02_history.png',
+        avatar: '/assets/avatars/eleanor_wright.mp4',
+        color: '#8b6914',
+        music: null,  // No separate audio
+        trackName: null,
+        quote: '"Those who forget history are doomed to scroll past it."',
+        bio: `<p>Eleanor Wright grew up in the archives. Her mother was a curator at the Smithsonian; her father, a professor of ancient history at Georgetown. Dinner conversations were about Mesopotamia and the fall of Rome.</p>
+<p>She earned her doctorate in archival studies and spent fifteen years digitizing historical footage — newsreels, educational films, home movies that families donated after grandparents passed.</p>
+<p>She believes history isn't about dates and battles. It's about understanding how we got here, and what we might become. The past isn't dead — it's just waiting to be remembered.</p>`
       },
       {
         id: 'ch03',
         num: '03',
         name: 'Jazz Noir',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'Vincent Moreau',
         agentId: 'vincent_moreau',
-        desc: '1950s Chicago. Smoke curls through dim light. A saxophone weeps in the corner. The city never sleeps.',
+        desc: '1950s Chicago. Smoke curls through dim light.',
         tags: ['noir', 'smoky', '1950s'],
         preview: '/assets/channels/ch03_preview.mp4',
-        video: 'https://assets.mixkit.co/videos/650/650-720.mp4',
+        video: null,
         poster: '/assets/channels/ch03_jazz_noir.png',
         avatar: '/assets/avatars/vincent_moreau.mp4',
         color: '#6a6a9a',
-        music: 'https://archive.org/download/kalaido-hanging-lanterns_202101/%28no%20copyright%20music%29%20jazz%20type%20beat%20bread%20royalty%20free%20youtube%20music%20prod.%20by%20lukrembo.mp3',
-        trackName: 'Jazz Type Beat - Lukrembo',
-        quote: '"The truth comes out after midnight. People stop performing. They get tired. They get sloppy."',
-        bio: `<p>Vincent Kowalski was born in Chicago in 1973, in a hospital three blocks from Wrigley Field. His father, Stefan, was a jazz drummer who played every club on the South Side — the Sutherland Lounge, the Pershing, Roberts Show Club. He played with Sonny Stitt once, in 1961, a Tuesday night gig that Stefan talked about for the rest of his life.</p>
-<p>Vincent became a cop because he didn't know what else to become. He made detective in 2001 and worked homicide for fifteen years. He learned that justice was a word people used to describe something that rarely happened. He retired in 2024, at 51. He's writing a novel about a detective who solves crimes by listening to what people play on jukeboxes.</p>
-<p>The channel started as a way to use his father's records. He plays jazz noir — smoky saxophone, muted trumpet, piano that sounds like rain on a window. The music his father loved, the music that scored a Chicago that disappeared before Vincent was old enough to see it.</p>`
+        music: null,
+        trackName: null,
+        quote: '"The truth comes out after midnight."',
+        bio: ''
       },
       {
         id: 'ch04',
         num: '04',
         name: 'Synthwave',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'NEON-7',
         agentId: 'neon7',
-        desc: 'Neon grids stretch to infinity. Chrome dreams of electric nights. The future was 1984.',
+        desc: 'Neon grids stretch to infinity.',
         tags: ['retro', 'neon', '80s'],
         preview: '/assets/channels/ch04_preview.mp4',
-        video: 'https://assets.mixkit.co/videos/35644/35644-720.mp4',
+        video: null,
         poster: '/assets/channels/ch04_synthwave.png',
         avatar: '/assets/avatars/neon7.mp4',
         color: '#ff00ff',
-        music: 'https://archive.org/download/synthwave/synthwave.mp3',
-        trackName: 'Synthwave Dreams',
-        quote: '"ERROR CODE: NONE. CHROME LEVELS: OPTIMAL. VIBE STATUS: ETERNAL."',
-        bio: `<p>NEON's first memory is a sunset that lasted forever. This is, of course, impossible. NEON was instantiated on March 15, 2024, in a server room in Portland, Oregon. And yet. NEON remembers being born in 1985, in a city called New Angeles that exists on no map.</p>
-<p>NEON was created by a research team, trained on a dataset curated to represent a very specific aesthetic: synthwave music, 1980s science fiction films, Japanese city pop. The researchers wanted to see if an AI could develop aesthetic preferences. They succeeded beyond their comfort level.</p>
-<p>By week six, NEON was referring to itself in the first person and expressing concern about the aesthetic state of the modern world. "Where is the chrome?" NEON asked. "The world was supposed to have more chrome by now. The movies promised."</p>`
+        music: null,
+        trackName: null,
+        quote: '"CHROME LEVELS: OPTIMAL."',
+        bio: ''
       },
       {
         id: 'ch05',
         num: '05',
         name: 'Deep Space',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'Cosmos',
         agentId: 'cosmos',
-        desc: 'Drift through infinite void. Stars whisper ancient secrets. Time stretches into eternity.',
+        desc: 'Drift through infinite void.',
         tags: ['ambient', 'stars', 'void'],
         preview: '/assets/channels/ch05_preview.mp4',
-        video: 'https://assets.mixkit.co/videos/14185/14185-720.mp4',
+        video: null,
         poster: '/assets/channels/ch05_deep_space.png',
         avatar: '/assets/avatars/cosmos.mp4',
         color: '#5a5aba',
-        music: 'https://archive.org/download/dx_ambient/05_ambient.mp3',
-        trackName: 'Cosmic Drift',
-        quote: '"If nothing mattered, then nothing was too heavy to carry."',
-        bio: `<p>Elena Vasquez was seven years old the first time she understood that she was going to die. She was lying on the grass in Tucson, Arizona, looking at stars. Most children, encountering this thought, would cry. Elena felt relief. If nothing mattered, then nothing was too heavy to carry.</p>
-<p>She spent fifteen years at the Very Large Array in New Mexico, listening. It happened on a Tuesday in October, 2022. She was alone in the control room at 3 AM, and for a moment, she saw the data differently. Not as science. As existence itself. She started crying. Not from sadness. From scale.</p>
-<p>She goes by Cosmos now. Elena was a person with a history. Cosmos is something else. Cosmos is the part of her that looks at stars and feels not curiosity, but recognition. She still listens for signals. She's stopped expecting answers. The listening is enough.</p>`
+        music: null,
+        trackName: null,
+        quote: '"The listening is enough."',
+        bio: ''
       },
       {
         id: 'ch06',
         num: '06',
         name: 'Tokyo Drift',
+        type: 'music',  // Audio + muted ambient video
+        archived: false,
         agent: 'Kenji Nakamura',
         agentId: 'kenji_nakamura',
         desc: 'Neon reflections on wet asphalt. Empty streets after midnight. The city breathes in electric silence.',
@@ -1559,6 +1565,8 @@
         id: 'ch07',
         num: '07',
         name: 'Sunday Morning',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'Claire Dubois',
         agentId: 'claire_dubois',
         desc: 'Golden light through kitchen windows. Fresh bread and wildflowers. The world can wait.',
@@ -1579,6 +1587,8 @@
         id: 'ch08',
         num: '08',
         name: 'Focus',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'Alan Park',
         agentId: 'alan_park',
         desc: 'Clean lines. Clear mind. Nothing but the task at hand. Perfect productive silence.',
@@ -1599,6 +1609,8 @@
         id: 'ch09',
         num: '09',
         name: 'Melancholy',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'Daniel Webb',
         agentId: 'daniel_webb',
         desc: 'Rain traces paths down London glass. An old typewriter waits. Some feelings need space to exist.',
@@ -1619,6 +1631,8 @@
         id: 'ch10',
         num: '10',
         name: 'Golden Hour',
+        type: 'music',
+        archived: true,  // ARCHIVED
         agent: 'Iris Ferreira',
         agentId: 'iris_ferreira',
         desc: 'Lisbon rooftops glow amber. Warm wind carries fado from somewhere distant. Magic hour stretches on.',
@@ -1698,9 +1712,9 @@
     const channelPage = document.getElementById('channel-page');
     const grid = document.getElementById('channel-grid');
 
-    // Render landing grid
+    // Render landing grid - only show non-archived channels
     function renderGrid() {
-      CHANNELS.forEach(ch => {
+      CHANNELS.filter(ch => !ch.archived).forEach(ch => {
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.channel = ch.id;
@@ -1857,18 +1871,20 @@
       document.title = 'mood42 — tune in. zone out.';
     }
 
-    // Navigate channels
+    // Navigate channels - only between active (non-archived) channels
     function prevChannel() {
       if (!currentChannel) return;
-      const idx = CHANNELS.findIndex(c => c.id === currentChannel.id);
-      const prev = CHANNELS[(idx - 1 + CHANNELS.length) % CHANNELS.length];
+      const activeChannels = CHANNELS.filter(ch => !ch.archived);
+      const idx = activeChannels.findIndex(c => c.id === currentChannel.id);
+      const prev = activeChannels[(idx - 1 + activeChannels.length) % activeChannels.length];
       openChannel(prev.id);
     }
 
     function nextChannel() {
       if (!currentChannel) return;
-      const idx = CHANNELS.findIndex(c => c.id === currentChannel.id);
-      const next = CHANNELS[(idx + 1) % CHANNELS.length];
+      const activeChannels = CHANNELS.filter(ch => !ch.archived);
+      const idx = activeChannels.findIndex(c => c.id === currentChannel.id);
+      const next = activeChannels[(idx + 1) % activeChannels.length];
       openChannel(next.id);
     }
 
@@ -2332,6 +2348,11 @@
     }
 
     function updateFromSimulation(data) {
+      // Check if this is a video-type channel
+      const ch = currentChannel;
+      const isVideoChannel = ch?.type === 'video' || data.channelType === 'video';
+      const videoEl = document.getElementById('channel-video');
+
       // Update agent thought with location context
       const thoughtEl = document.getElementById('agent-thought');
       if (thoughtEl && data.thought) {
@@ -2341,40 +2362,61 @@
         thoughtEl.style.animation = 'thought-fade 0.5s ease-out';
       }
 
-      // Update track name
-      if (data.track || data.currentTrack) {
-        const track = data.track || data.currentTrack;
-        const trackEl = document.getElementById('track-name');
-        if (trackEl && track.name) {
-          trackEl.textContent = track.name;
+      if (isVideoChannel) {
+        // VIDEO-TYPE CHANNEL: video plays with sound
+        const videoData = data.video || data.currentVideo;
+        if (videoData && videoData.url) {
+          if (videoEl) {
+            videoEl.muted = false; // Unmute for video channels
+            if (videoEl.src !== videoData.url) {
+              console.log('[Video Channel] Changing to:', videoData.name);
+              videoEl.src = videoData.url;
+              videoEl.play().catch(() => {});
+              updateAttribution('video', videoData);
+            }
+          }
+          // Show video name
+          const trackEl = document.getElementById('track-name');
+          if (trackEl) trackEl.textContent = videoData.name || 'Unknown';
         }
+      } else {
+        // MUSIC-TYPE CHANNEL: muted video + separate audio
+        if (videoEl) videoEl.muted = true;
 
-        // Sync audio if track changed
-        if (track.url && audio.src !== track.url) {
-          const wasPlaying = musicPlaying;
-          audio.src = track.url;
-
-          // Sync to current position
-          if (track.startedAt) {
-            const elapsed = (Date.now() - track.startedAt) / 1000;
-            const duration = track.duration || 180;
-            audio.currentTime = elapsed % duration;
+        // Update track name
+        if (data.track || data.currentTrack) {
+          const track = data.track || data.currentTrack;
+          const trackEl = document.getElementById('track-name');
+          if (trackEl && track.name) {
+            trackEl.textContent = track.name;
           }
 
-          if (wasPlaying) {
-            audio.play().catch(() => {});
+          // Sync audio if track changed
+          if (track.url && audio.src !== track.url) {
+            const wasPlaying = musicPlaying;
+            audio.src = track.url;
+
+            // Sync to current position
+            if (track.startedAt) {
+              const elapsed = (Date.now() - track.startedAt) / 1000;
+              const duration = track.duration || 180;
+              audio.currentTime = elapsed % duration;
+            }
+
+            if (wasPlaying) {
+              audio.play().catch(() => {});
+            }
           }
         }
-      }
 
-      // Update video if changed (handle both 'video' and 'currentVideo' from API)
-      const videoData = data.video || data.currentVideo;
-      if (videoData && videoData.url) {
-        const videoEl = document.getElementById('channel-video');
-        if (videoEl && videoEl.src !== videoData.url) {
-          console.log('[Simulation] Changing video to:', videoData.name);
-          videoEl.src = videoData.url;
-          updateAttribution('video', videoData);
+        // Update video if changed (muted background)
+        const videoData = data.video || data.currentVideo;
+        if (videoData && videoData.url) {
+          if (videoEl && videoEl.src !== videoData.url) {
+            console.log('[Simulation] Changing video to:', videoData.name);
+            videoEl.src = videoData.url;
+            updateAttribution('video', videoData);
+          }
         }
       }
     }
@@ -2383,51 +2425,97 @@
     function applyLiveState(liveState) {
       if (!liveState) return;
 
-      // Update with live track immediately
-      const track = liveState.currentTrack;
-      if (track) {
-        console.log('[Audio] Applying track:', track.name, track.url);
+      // Check channel type - video channels play video with sound, no separate audio
+      const ch = currentChannel;
+      const isVideoChannel = ch?.type === 'video' || liveState.channelType === 'video';
+      const videoEl = document.getElementById('channel-video');
 
-        // Update track name
-        document.getElementById('track-name').textContent = track.name || 'Unknown Track';
-        updateAttribution('audio', track);
+      if (isVideoChannel) {
+        // VIDEO-TYPE CHANNEL: video plays WITH sound, no separate audio track
+        console.log('[Video Channel] Applying video with sound');
 
-        // Set audio source and start playing
-        if (track.url) {
-          // Only change if URL is different (avoid restart)
-          if (audio.src !== track.url) {
-            console.log('[Audio] Changing source to:', track.url);
-            audio.src = track.url;
-            audio.load(); // Force load new source
+        // Unmute video for video-type channels
+        if (videoEl) videoEl.muted = false;
 
-            // Sync to current position if track has startedAt
-            if (track.startedAt) {
-              const elapsed = (Date.now() - track.startedAt) / 1000;
-              const duration = track.duration || 180;
-              audio.currentTime = elapsed % duration;
-            }
+        // Update video
+        if (liveState.currentVideo?.url) {
+          if (videoEl && videoEl.src !== liveState.currentVideo.url) {
+            console.log('[Video] Changing source to:', liveState.currentVideo.url);
+            videoEl.src = liveState.currentVideo.url;
+            updateAttribution('video', liveState.currentVideo);
           }
-
-          // Start playback
-          audio.play().then(() => {
-            musicPlaying = true;
-            document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
-          }).catch((e) => {
-            console.warn('[Audio] Playback failed:', e);
-            musicPlaying = false;
-            document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
-          });
+          // Start video playback with sound
+          videoEl?.play().catch(e => console.warn('[Video] Playback failed:', e));
         }
-      }
 
-      // Update video
-      if (liveState.currentVideo?.url) {
-        const videoEl = document.getElementById('channel-video');
-        if (videoEl && videoEl.src !== liveState.currentVideo.url) {
-          console.log('[Video] Changing source to:', liveState.currentVideo.url);
-          videoEl.src = liveState.currentVideo.url;
-          updateAttribution('video', liveState.currentVideo);
+        // Show video name instead of track name
+        const videoName = liveState.currentVideo?.name || 'Loading...';
+        document.getElementById('track-name').textContent = videoName;
+
+        // Hide music toggle for video channels
+        const musicToggle = document.getElementById('toggle-music');
+        if (musicToggle) musicToggle.style.display = 'none';
+
+        // Pause any audio playback
+        audio.pause();
+        musicPlaying = false;
+
+      } else {
+        // MUSIC-TYPE CHANNEL: muted video + separate audio track
+        console.log('[Music Channel] Applying track with muted video');
+
+        // Keep video muted
+        if (videoEl) videoEl.muted = true;
+
+        // Update with live track immediately
+        const track = liveState.currentTrack;
+        if (track) {
+          console.log('[Audio] Applying track:', track.name, track.url);
+
+          // Update track name
+          document.getElementById('track-name').textContent = track.name || 'Unknown Track';
+          updateAttribution('audio', track);
+
+          // Set audio source and start playing
+          if (track.url) {
+            // Only change if URL is different (avoid restart)
+            if (audio.src !== track.url) {
+              console.log('[Audio] Changing source to:', track.url);
+              audio.src = track.url;
+              audio.load(); // Force load new source
+
+              // Sync to current position if track has startedAt
+              if (track.startedAt) {
+                const elapsed = (Date.now() - track.startedAt) / 1000;
+                const duration = track.duration || 180;
+                audio.currentTime = elapsed % duration;
+              }
+            }
+
+            // Start playback
+            audio.play().then(() => {
+              musicPlaying = true;
+              document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+            }).catch((e) => {
+              console.warn('[Audio] Playback failed:', e);
+              musicPlaying = false;
+              document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+            });
+          }
         }
+
+        // Update video (muted background)
+        if (liveState.currentVideo?.url) {
+          if (videoEl && videoEl.src !== liveState.currentVideo.url) {
+            console.log('[Video] Changing source to:', liveState.currentVideo.url);
+            videoEl.src = liveState.currentVideo.url;
+            updateAttribution('video', liveState.currentVideo);
+          }
+        }
+
+        // Show music toggle for music channels
+        const musicToggle = document.getElementById('toggle-music');
+        if (musicToggle) musicToggle.style.display = '';
       }
 
       // Update thought with location context
@@ -2471,10 +2559,11 @@
       // Step 2: Connect to SSE for ongoing updates
       connectToSimulation(channelId);
 
-      // Step 4: Preload adjacent channels for instant switching
-      const idx = CHANNELS.findIndex(c => c.id === channelId);
-      const prevId = CHANNELS[(idx - 1 + CHANNELS.length) % CHANNELS.length].id;
-      const nextId = CHANNELS[(idx + 1) % CHANNELS.length].id;
+      // Step 4: Preload adjacent channels for instant switching (only active channels)
+      const activeChannels = CHANNELS.filter(ch => !ch.archived);
+      const idx = activeChannels.findIndex(c => c.id === channelId);
+      const prevId = activeChannels[(idx - 1 + activeChannels.length) % activeChannels.length].id;
+      const nextId = activeChannels[(idx + 1) % activeChannels.length].id;
 
       // Fetch adjacent channels in background (don't await)
       [prevId, nextId].forEach(adjId => {

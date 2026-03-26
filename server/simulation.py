@@ -132,33 +132,33 @@ class SimulationEngine:
         # Each agent has UNIQUE thoughts that match their personality
         # Deep, poetic, philosophical - not about music, about life
         agent_thoughts = {
-            "ch01": [  # Maya - Late Night coder, introverted, insomniac
-                "The code makes more sense at this hour. Fewer distractions. Just you and the screen.",
-                "Some bugs only reveal themselves when the world goes quiet.",
-                "Another commit at an unreasonable hour. The best kind.",
-                "The cursor blinks. The rain falls. The work continues.",
-                "Sleep is for people who aren't debugging.",
-                "3 AM thoughts hit different. Clearer. Sharper. More honest.",
-                "Everyone else is dreaming. I'm building.",
-                "The best ideas come when you stop trying to have them.",
-                "Some nights the screen is the only thing that listens.",
-                "Time moves differently in the dark. I've learned to trust it.",
-                "The world outside is sleeping. In here, we're infinite.",
-                "Loneliness and solitude look the same. They're not.",
+            "ch01": [  # Marcus Cole - Documentary filmmaker, curious, empathetic
+                "Every frame is a window. Every cut is a choice.",
+                "The best stories are the ones we almost missed.",
+                "Nature doesn't perform for the camera. That's what makes it honest.",
+                "I've spent twenty years chasing truth. Sometimes it chases back.",
+                "The world keeps turning whether we document it or not. But someone should.",
+                "Every subject teaches you something you didn't know you needed to learn.",
+                "The lens sees what the eye ignores.",
+                "Some stories take years to understand. I've learned to wait.",
+                "Documentary isn't about showing reality. It's about revealing it.",
+                "The best footage is when people forget the camera is there.",
+                "Every film is a conversation between what was and what we choose to remember.",
+                "Sometimes the most important thing is just to bear witness.",
             ],
-            "ch02": [  # Yuki - Rain Café, jazz lover, nostalgic for old kissaten
-                "Sato-san would have approved of this one. The vinyl crackle is just right.",
-                "Coffee's getting cold. That means I've been lost in the music again.",
-                "Rain and jazz. Some combinations are eternal.",
-                "The best conversations happen when no one's talking.",
-                "This is the hour when the café would be empty. Just me and the music.",
-                "Some records deserve to be played on repeat. This is one.",
-                "Nostalgia isn't about the past. It's about what we wish we'd said.",
-                "The rain knows things. It remembers every conversation this city's had.",
-                "Okaasan always said the best coffee tastes like a memory.",
-                "Some afternoons last forever. I've stopped fighting it.",
-                "The cup is warm. The world outside is cold. Balance.",
-                "We're all just looking for a place that feels like coming home.",
+            "ch02": [  # Eleanor Wright - Historian, scholarly, passionate
+                "Those who forget history are doomed to scroll past it.",
+                "Every archive holds secrets. You just have to know how to listen.",
+                "The past isn't dead. It's just waiting to be understood.",
+                "History isn't about dates. It's about the moments that changed everything.",
+                "I've read the letters they never sent. That's where the truth lives.",
+                "Every generation thinks they're the first. None of them are.",
+                "The footage is grainy but the emotions are crystal clear.",
+                "We stand on the shoulders of giants. We should know their names.",
+                "History doesn't repeat. But it rhymes in ways that still surprise me.",
+                "The best primary sources are the ones nobody thought to keep.",
+                "Every era thinks it's the pinnacle. Every era is wrong.",
+                "The past speaks. We just need to remember how to listen.",
             ],
             "ch03": [  # Vincent - Jazz Noir, ex-detective, world-weary
                 "The truth always sounds better with a saxophone underneath.",
@@ -349,6 +349,7 @@ class SimulationEngine:
         """
         Scheduled content discovery - runs every 30 minutes.
         Each channel agent searches for new videos and audio.
+        Only runs for channels with discovery_enabled=True.
         """
         print(f"[Scheduled] Starting 30-minute content discovery cycle...")
         tick = self.world["tick"]
@@ -356,6 +357,14 @@ class SimulationEngine:
         async def discover_for_channel(channel_id: str):
             channel = CHANNELS.get(channel_id)
             if not channel:
+                return
+
+            # Skip discovery for channels that have it disabled
+            if not channel.get("discovery_enabled", True):
+                return
+
+            # Skip archived channels
+            if channel.get("archived", False):
                 return
 
             agent = self.channel_agents.get(channel_id)
@@ -424,26 +433,41 @@ class SimulationEngine:
         print(f"[Scheduled] Content discovery cycle complete")
 
     async def _process_channel_regions(self, channel_id: str, agent: ChannelAgent):
-        """Process track changes for each region of a channel."""
+        """Process content changes for each region of a channel."""
         channel = CHANNELS.get(channel_id)
         if not channel:
             return
 
         now = int(time.time() * 1000)
+        channel_type = channel.get("type", "music")
 
         for region in REGIONS:
             region_state = agent.get_region_state(region)
 
-            # Check if track has ended for this region
-            if region_state.current_track:
-                elapsed_ms = now - region_state.last_track_change
-                duration_ms = region_state.current_track.get("duration", 180) * 1000
+            # Check if current content has ended for this region
+            if channel_type == "video":
+                # Video channels - check video duration
+                if region_state.current_video:
+                    elapsed_ms = now - region_state.last_track_change
+                    # Videos are typically longer - default 10 minutes
+                    duration_ms = region_state.current_video.get("duration", 600) * 1000
 
-                if elapsed_ms >= duration_ms:
-                    await self._change_track_for_region(channel_id, agent, region)
+                    if elapsed_ms >= duration_ms:
+                        await self._change_video_for_region(channel_id, agent, region)
+                else:
+                    # No video playing, start one
+                    await self._change_video_for_region(channel_id, agent, region)
             else:
-                # No track playing, start one
-                await self._change_track_for_region(channel_id, agent, region)
+                # Music channels - check track duration
+                if region_state.current_track:
+                    elapsed_ms = now - region_state.last_track_change
+                    duration_ms = region_state.current_track.get("duration", 180) * 1000
+
+                    if elapsed_ms >= duration_ms:
+                        await self._change_track_for_region(channel_id, agent, region)
+                else:
+                    # No track playing, start one
+                    await self._change_track_for_region(channel_id, agent, region)
 
     async def _change_track_for_region(self, channel_id: str, agent: ChannelAgent, region: str):
         """Change to next track for a specific region using LLM decision."""
@@ -536,7 +560,8 @@ class SimulationEngine:
 
         # Try proactive discovery occasionally (15% chance) to expand library
         # This runs EVEN IF we have a track, to continuously grow the music library
-        if random.random() < 0.15:
+        # Skip if discovery is disabled for this channel
+        if channel.get("discovery_enabled", True) and random.random() < 0.15:
             period = viewer_context.get("period", "night")
             try:
                 discovered = await asyncio.wait_for(
@@ -643,6 +668,98 @@ class SimulationEngine:
             "video_url": video["url"] if video else None,
             "video_name": video["name"] if video else None,
             "track_started_at": now // 1000,  # Store as seconds
+            "mood": mood,
+        })
+
+    async def _change_video_for_region(self, channel_id: str, agent: ChannelAgent, region: str):
+        """Change to next video for a VIDEO-type channel (plays video with sound)."""
+        channel = CHANNELS.get(channel_id)
+        if not channel:
+            return
+
+        # Get available videos for this channel
+        videos = get_videos_for_channel(channel_id)
+        if not videos:
+            print(f"[{channel_id}:{region}] No videos available for video channel")
+            return
+
+        now = int(time.time() * 1000)
+        new_video = None
+        thought = None
+        mood = agent.get_region_state(region).current_mood
+
+        # Build viewer context for this region
+        region_times = get_region_times()
+        region_info = region_times.get(region, {})
+        viewer_context = {
+            "region": region,
+            "local_time": region_info.get("time", "11:00 PM"),
+            "hour": region_info.get("hour", 23),
+            "period": region_info.get("period", "night"),
+            "weather": agent.get_region_state(region).weather or "clear",
+            "occasion": get_occasion(region),
+        }
+
+        # For video channels, select based on channel type
+        # Simple selection for now - pick a random video that's not current
+        current_video_id = None
+        region_state = agent.get_region_state(region)
+        if region_state.current_video:
+            current_video_id = region_state.current_video.get("id")
+
+        # Filter out current video and pick randomly
+        available_videos = [v for v in videos if v.get("id") != current_video_id]
+        if available_videos:
+            new_video = random.choice(available_videos)
+        elif videos:
+            new_video = random.choice(videos)
+
+        if not new_video:
+            print(f"[{channel_id}:{region}] ERROR: No valid videos available!")
+            return
+
+        # Generate thought for this video
+        thought = self._generate_thought(channel_id, region)
+
+        # Update agent state
+        region_state.current_video = new_video
+        region_state.current_track = None  # Video channels don't have separate audio
+        region_state.current_thought = thought
+        region_state.current_mood = mood
+        region_state.last_track_change = now
+
+        print(f"[{channel_id}:{region}] Now playing video: {new_video.get('name', 'Unknown')}")
+        if thought:
+            print(f"[{channel_id}:{region}] Thought: {thought}")
+
+        # Broadcast update for video channel (video with sound)
+        await self.broadcast(f"{channel_id}:{region}", "channel:update", {
+            "channelId": channel_id,
+            "region": region,
+            "channelType": "video",  # Tell frontend this is video with sound
+            "track": None,  # No separate audio track
+            "video": {
+                "id": new_video["id"],
+                "name": new_video.get("name", "Documentary"),
+                "url": new_video["url"],
+                "duration": new_video.get("duration", 600),
+                "attribution": new_video.get("attribution", ""),
+                "source": new_video.get("source", ""),
+                "withSound": True,  # Video plays WITH sound
+            },
+            "thought": thought,
+            "mood": mood,
+        })
+
+        # Persist channel state
+        save_channel_state(channel_id, region, {
+            "track_id": None,
+            "track_url": None,
+            "track_name": None,
+            "video_id": new_video["id"],
+            "video_url": new_video["url"],
+            "video_name": new_video.get("name", "Documentary"),
+            "track_started_at": now // 1000,
             "mood": mood,
         })
 

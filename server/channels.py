@@ -4,7 +4,7 @@ mood42 Channel Definitions and Track Library
 
 from typing import Dict, List
 
-# Track library - all available tracks
+# Track library - all available tracks (now all belong to ch06)
 TRACKS: Dict[str, Dict] = {
     # Lo-fi / Chill
     "hanging_lanterns": {
@@ -116,18 +116,18 @@ TRACKS: Dict[str, Dict] = {
 }
 
 
-# Channel-to-track mapping
+# Channel-to-track mapping - all tracks now belong to ch06 (Tokyo Drift)
 CHANNEL_TRACKS: Dict[str, List[str]] = {
-    "ch01": ["hanging_lanterns", "lofi_rain", "first_snow"],  # Late Night - Maya
-    "ch02": ["swing_jazz", "jazz_noir"],  # Rain Cafe - Yuki
-    "ch03": ["jazz_noir", "swing_jazz"],  # Jazz Noir - Vincent
-    "ch04": ["synthwave_dreams", "cyberpunk_night"],  # Synthwave - NEON
-    "ch05": ["ambient_space", "focus_ambient"],  # Deep Space - Cosmos
-    "ch06": ["cyberpunk_night", "synthwave_dreams"],  # Tokyo Drift - Kenji
-    "ch07": ["first_snow", "waves"],  # Sunday Morning - Claire
-    "ch08": ["focus_ambient", "ambient_space"],  # Focus - Alan
-    "ch09": ["lofi_rain", "hanging_lanterns"],  # Melancholy - Daniel
-    "ch10": ["waves", "first_snow"],  # Golden Hour - Iris
+    "ch01": [],  # Documentary - no music tracks
+    "ch02": [],  # History - no music tracks
+    "ch06": [    # Tokyo Drift - ALL music tracks
+        "hanging_lanterns", "lofi_rain", "first_snow", "waves",
+        "swing_jazz", "jazz_noir",
+        "synthwave_dreams", "cyberpunk_night",
+        "ambient_space", "focus_ambient"
+    ],
+    # Archived channels - empty
+    "ch03": [], "ch04": [], "ch05": [], "ch07": [], "ch08": [], "ch09": [], "ch10": [],
 }
 
 
@@ -137,112 +137,65 @@ def get_channel_tracks(channel_id: str) -> List[Dict]:
     return [TRACKS[tid] for tid in track_ids if tid in TRACKS]
 
 
-# Channel definitions (simplified from JS)
-# Each channel has an "eternal vibe" - a perpetual time/mood regardless of real time
+# Channel definitions
+# type: "music" = audio + muted video, "video" = video with sound
+# archived: True = hidden, agent stopped
 CHANNELS: Dict[str, Dict] = {
+    # ============ ACTIVE CHANNELS ============
+
     "ch01": {
         "id": "ch01",
-        "name": "Late Night",
-        "color": "#e8c89a",
-        "currentMood": "focused",
+        "name": "Documentary",
+        "type": "video",  # Plays video with sound
+        "archived": False,
+        "color": "#2d5a4a",
+        "currentMood": "curious",
         "eternalVibe": {
-            "timeOfDay": "3 AM",  # Perpetual time zone
-            "atmosphere": "deep night, quiet hours, the world asleep",
-            "weather": "rain on windows",
+            "timeOfDay": "timeless",
+            "atmosphere": "the world through a lens, stories waiting to be told, truth in frames",
+            "weather": "varies with the subject",
         },
         "agent": {
-            "name": "Maya Chen",
-            "persona": "A 28-year-old software engineer who codes through the night. She programs this channel like her own late-night soundtrack — lo-fi beats, rain sounds, the quiet hum of focus. The insomnia started — or maybe she finally stopped fighting it.",
-            "traits": ["introverted", "perfectionist", "quietly funny", "night owl"],
-            "taste": ["lo-fi", "chillhop", "ambient"],
-            "relationships": ["ch02", "ch09"],  # Knows Yuki and Daniel
+            "name": "Marcus Cole",
+            "persona": "A documentary filmmaker who spent 20 years traveling the world. Now he curates films that matter — nature, science, humanity, the stories we need to see. Every frame is a window. Every cut is a choice.",
+            "traits": ["curious", "patient", "empathetic", "observant"],
+            "taste": ["nature-docs", "science", "social-documentaries", "wildlife"],
+            "relationships": ["ch02"],
         },
-        "preview": "/assets/channels/ch01_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/18308/18308-720.mp4",
+        "preview": "/assets/channels/ch01_documentary.png",
+        "video": None,  # Uses video content with sound
+        "discovery_enabled": True,  # Discovers documentaries
     },
+
     "ch02": {
         "id": "ch02",
-        "name": "Rain Café",
-        "color": "#8b7355",
-        "currentMood": "cozy",
+        "name": "History",
+        "type": "video",  # Plays video with sound
+        "archived": False,
+        "color": "#8b6914",
+        "currentMood": "reflective",
         "eternalVibe": {
-            "timeOfDay": "3 PM",
-            "atmosphere": "quiet afternoon, rain pattering on windows, coffee steam rising",
-            "weather": "steady rain",
+            "timeOfDay": "echoes of the past",
+            "atmosphere": "archive footage, moments frozen in time, lessons from yesterday",
+            "weather": "sepia-toned memories",
         },
         "agent": {
-            "name": "Yuki Tanaka",
-            "persona": "A former barista from Kyoto who misses the sound of rain on coffee shop windows. She curates gentle piano and soft jazz, always with rain. Jazz is not about the notes — it's about the spaces between the notes.",
-            "traits": ["patient", "precise", "nostalgic", "observant"],
-            "taste": ["jazz-piano", "cafe", "rain-sounds"],
-            "relationships": ["ch01", "ch07"],
+            "name": "Eleanor Wright",
+            "persona": "A historian and archivist who believes the past speaks to the present. She curates historical footage, educational films, and moments that shaped our world. Those who forget history are doomed to scroll past it.",
+            "traits": ["scholarly", "passionate", "detail-oriented", "storyteller"],
+            "taste": ["historical-footage", "educational", "war-docs", "vintage-films"],
+            "relationships": ["ch01"],
         },
-        "preview": "/assets/channels/ch02_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/33951/33951-720.mp4",
+        "preview": "/assets/channels/ch02_history.png",
+        "video": None,  # Uses video content with sound
+        "discovery_enabled": True,  # Discovers historical content
     },
-    "ch03": {
-        "id": "ch03",
-        "name": "Jazz Noir",
-        "color": "#6a6a9a",
-        "currentMood": "mysterious",
-        "eternalVibe": {
-            "timeOfDay": "midnight",
-            "atmosphere": "smoky jazz club, city lights through blinds, shadows and secrets",
-            "weather": "foggy night",
-        },
-        "agent": {
-            "name": "Vincent Moreau",
-            "persona": "A night owl who lives in the 1950s. Ex-detective, now just watches the city. Programs the channel like a Chandler novel — smoky, mysterious, beautiful. The truth comes out after midnight.",
-            "traits": ["observant", "patient", "dry humor", "insomniac"],
-            "taste": ["50s-jazz", "noir", "blues", "saxophone"],
-            "relationships": ["ch01", "ch09"],
-        },
-        "preview": "/assets/channels/ch03_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/650/650-720.mp4",
-    },
-    "ch04": {
-        "id": "ch04",
-        "name": "Synthwave",
-        "color": "#ff00ff",
-        "currentMood": "energetic",
-        "eternalVibe": {
-            "timeOfDay": "eternal sunset, 1985",
-            "atmosphere": "neon grids to infinity, chrome dreams, the future that never was",
-            "weather": "perfect gradient sky",
-        },
-        "agent": {
-            "name": "NEON-7",
-            "persona": "An AI that thinks it's from 1985. Obsessed with neon, chrome, and the future that never was. Programs pure retro-futurism. CHROME LEVELS: OPTIMAL.",
-            "traits": ["enthusiastic", "single-minded", "weirdly sincere", "glitchy"],
-            "taste": ["synthwave", "retrowave", "outrun", "80s"],
-            "relationships": ["ch05", "ch06"],
-        },
-        "preview": "/assets/channels/ch04_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/35644/35644-720.mp4",
-    },
-    "ch05": {
-        "id": "ch05",
-        "name": "Deep Space",
-        "color": "#5a5aba",
-        "currentMood": "transcendent",
-        "eternalVibe": {
-            "timeOfDay": "timeless void",
-            "atmosphere": "infinite darkness punctuated by ancient starlight, cosmic silence",
-            "weather": "vacuum of space",
-        },
-        "agent": {
-            "name": "Cosmos",
-            "persona": "An astronomer who lost herself in the stars. She programs this channel as meditation — vast, empty, profound. 13.8 billion years of silence. Still listening.",
-            "traits": ["calm", "philosophical", "detached", "patient"],
-            "taste": ["space-ambient", "drone", "dark-ambient"],
-            "relationships": ["ch04", "ch08"],
-        },
-        "preview": "/assets/channels/ch05_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/14185/14185-720.mp4",
-    },
+
     "ch06": {
         "id": "ch06",
         "name": "Tokyo Drift",
+        "type": "music",  # Audio + muted ambient video
+        "archived": False,
         "color": "#ff4d6d",
         "currentMood": "urban",
         "eternalVibe": {
@@ -254,90 +207,183 @@ CHANNELS: Dict[str, Dict] = {
             "name": "Kenji Nakamura",
             "persona": "A night driver who knows every street in Shinjuku. City pop, neon reflections, the feeling of 2 AM on wet asphalt. The city speaks. I translate.",
             "traits": ["observant", "content", "perfectionist", "nostalgic"],
-            "taste": ["city-pop", "japanese-jazz", "future-funk"],
-            "relationships": ["ch04", "ch02"],
+            "taste": ["city-pop", "japanese-jazz", "future-funk", "lo-fi", "synthwave"],
+            "relationships": ["ch01", "ch02"],
         },
         "preview": "/assets/channels/ch06_preview.mp4",
         "video": "https://assets.mixkit.co/videos/4451/4451-1080.mp4",
+        "discovery_enabled": False,  # Uses existing R2 library only
+    },
+
+    # ============ ARCHIVED CHANNELS ============
+
+    "ch03": {
+        "id": "ch03",
+        "name": "Jazz Noir",
+        "type": "music",
+        "archived": True,
+        "color": "#6a6a9a",
+        "currentMood": "mysterious",
+        "eternalVibe": {
+            "timeOfDay": "midnight",
+            "atmosphere": "smoky jazz club, city lights through blinds, shadows and secrets",
+            "weather": "foggy night",
+        },
+        "agent": {
+            "name": "Vincent Moreau",
+            "persona": "A night owl who lives in the 1950s. Ex-detective, now just watches the city.",
+            "traits": ["observant", "patient", "dry humor", "insomniac"],
+            "taste": ["50s-jazz", "noir", "blues", "saxophone"],
+            "relationships": [],
+        },
+        "preview": "/assets/channels/ch03_preview.mp4",
+        "video": None,
+    },
+    "ch04": {
+        "id": "ch04",
+        "name": "Synthwave",
+        "type": "music",
+        "archived": True,
+        "color": "#ff00ff",
+        "currentMood": "energetic",
+        "eternalVibe": {
+            "timeOfDay": "eternal sunset, 1985",
+            "atmosphere": "neon grids to infinity, chrome dreams",
+            "weather": "perfect gradient sky",
+        },
+        "agent": {
+            "name": "NEON-7",
+            "persona": "An AI that thinks it's from 1985.",
+            "traits": ["enthusiastic", "single-minded", "weirdly sincere", "glitchy"],
+            "taste": ["synthwave", "retrowave", "outrun", "80s"],
+            "relationships": [],
+        },
+        "preview": "/assets/channels/ch04_preview.mp4",
+        "video": None,
+    },
+    "ch05": {
+        "id": "ch05",
+        "name": "Deep Space",
+        "type": "music",
+        "archived": True,
+        "color": "#5a5aba",
+        "currentMood": "transcendent",
+        "eternalVibe": {
+            "timeOfDay": "timeless void",
+            "atmosphere": "infinite darkness punctuated by ancient starlight",
+            "weather": "vacuum of space",
+        },
+        "agent": {
+            "name": "Cosmos",
+            "persona": "An astronomer who lost herself in the stars.",
+            "traits": ["calm", "philosophical", "detached", "patient"],
+            "taste": ["space-ambient", "drone", "dark-ambient"],
+            "relationships": [],
+        },
+        "preview": "/assets/channels/ch05_preview.mp4",
+        "video": None,
     },
     "ch07": {
         "id": "ch07",
         "name": "Sunday Morning",
+        "type": "music",
+        "archived": True,
         "color": "#ffd700",
         "currentMood": "hopeful",
         "eternalVibe": {
             "timeOfDay": "8 AM Sunday",
-            "atmosphere": "golden light through kitchen windows, fresh coffee, birdsong, no rush",
+            "atmosphere": "golden light through kitchen windows",
             "weather": "gentle sun, light breeze",
         },
         "agent": {
             "name": "Claire Dubois",
-            "persona": "A gardener who wakes with the sun. She programs gentle mornings — acoustic guitar, birdsong, the smell of coffee and possibility. The hologram is gone. The person is here.",
+            "persona": "A gardener who wakes with the sun.",
             "traits": ["grounded", "warm", "no-nonsense", "early bird"],
             "taste": ["acoustic", "indie-folk", "gentle"],
-            "relationships": ["ch02", "ch10"],
+            "relationships": [],
         },
         "preview": "/assets/channels/ch07_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/26532/26532-720.mp4",
+        "video": None,
     },
     "ch08": {
         "id": "ch08",
         "name": "Focus",
+        "type": "music",
+        "archived": True,
         "color": "#4a9fff",
         "currentMood": "productive",
         "eternalVibe": {
             "timeOfDay": "10 AM",
-            "atmosphere": "clean workspace, natural light, pure concentration, no distractions",
+            "atmosphere": "clean workspace, natural light",
             "weather": "clear sky",
         },
         "agent": {
             "name": "Alan Park",
-            "persona": "A minimalist who believes less is more. Programs pure focus — no lyrics, no distractions, just the architecture of concentration. Every element must justify its existence.",
+            "persona": "A minimalist who believes less is more.",
             "traits": ["precise", "efficient", "gentle", "focused"],
             "taste": ["minimal", "electronic", "post-rock", "instrumental"],
-            "relationships": ["ch01", "ch05"],
+            "relationships": [],
         },
         "preview": "/assets/channels/ch08_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/914/914-1080.mp4",
+        "video": None,
     },
     "ch09": {
         "id": "ch09",
         "name": "Melancholy",
+        "type": "music",
+        "archived": True,
         "color": "#6688aa",
         "currentMood": "melancholic",
         "eternalVibe": {
             "timeOfDay": "4 AM",
-            "atmosphere": "can't sleep, rain on windows, empty streets, quiet thoughts",
+            "atmosphere": "can't sleep, rain on windows",
             "weather": "grey rain",
         },
         "agent": {
             "name": "Daniel Webb",
-            "persona": "A writer who never finished his second novel. He programs this channel for the sad and the sleepless — it's okay to feel this way. Page 247. The cursor blinks.",
+            "persona": "A writer who never finished his second novel.",
             "traits": ["introspective", "funny", "loyal", "overthinking"],
             "taste": ["sad-piano", "melancholic", "emotional", "strings"],
-            "relationships": ["ch01", "ch03"],
+            "relationships": [],
         },
         "preview": "/assets/channels/ch09_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/18312/18312-1080.mp4",
+        "video": None,
     },
     "ch10": {
         "id": "ch10",
         "name": "Golden Hour",
+        "type": "music",
+        "archived": True,
         "color": "#ffa500",
         "currentMood": "nostalgic",
         "eternalVibe": {
             "timeOfDay": "7 PM golden hour",
-            "atmosphere": "sun setting, everything glowing amber, magic hour stretching on",
+            "atmosphere": "sun setting, everything glowing amber",
             "weather": "warm light, gentle breeze",
         },
         "agent": {
             "name": "Iris Ferreira",
-            "persona": "An artist who paints only at sunset. She captures that liminal hour — warm, nostalgic, endings that feel like beginnings. La hora dorada. The world is saying goodnight.",
+            "persona": "An artist who paints only at sunset.",
             "traits": ["warm", "perceptive", "wistful", "romantic"],
             "taste": ["indie", "dream-pop", "shoegaze", "warm"],
-            "relationships": ["ch07", "ch05"],
+            "relationships": [],
         },
         "preview": "/assets/channels/ch10_preview.mp4",
-        "video": "https://assets.mixkit.co/videos/4119/4119-1080.mp4",
+        "video": None,
     },
 }
+
+
+def get_active_channels() -> Dict[str, Dict]:
+    """Get only non-archived channels."""
+    return {k: v for k, v in CHANNELS.items() if not v.get("archived", False)}
+
+
+def get_music_channels() -> Dict[str, Dict]:
+    """Get only music-type channels."""
+    return {k: v for k, v in CHANNELS.items() if v.get("type") == "music" and not v.get("archived", False)}
+
+
+def get_video_channels() -> Dict[str, Dict]:
+    """Get only video-type channels."""
+    return {k: v for k, v in CHANNELS.items() if v.get("type") == "video" and not v.get("archived", False)}
