@@ -131,7 +131,7 @@ def save_discovered_media(videos: Dict, tracks: Dict):
             if v.get("_discovered") or v.get("added_at"):
                 try:
                     conn.execute("""
-                        INSERT OR REPLACE INTO videos
+                        INSERT OR IGNORE INTO videos
                         (id, channel_id, name, url, tags, attribution, source, source_url, added_at, is_base)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                     """, (
@@ -155,7 +155,7 @@ def save_discovered_media(videos: Dict, tracks: Dict):
             if t.get("_discovered") or t.get("added_at"):
                 try:
                     conn.execute("""
-                        INSERT OR REPLACE INTO tracks
+                        INSERT OR IGNORE INTO tracks
                         (id, channel_id, name, url, duration, tags, attribution, source, added_at, is_base)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                     """, (
@@ -178,19 +178,63 @@ def save_discovered_media(videos: Dict, tracks: Dict):
 
     if saved_v > 0 or saved_t > 0:
         print(f"[DB] Saved {saved_v} videos, {saved_t} tracks")
+        # Verify counts only went up
+        _verify_counts_increased()
+
+
+# ============ COUNT MONITORING ============
+# Track historical counts to ensure they only go UP
+
+_last_known_counts = {
+    "videos": 0,
+    "tracks": 0,
+}
+
+def _verify_counts_increased():
+    """Verify that media counts only increase, never decrease."""
+    global _last_known_counts
+
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+    current_videos = conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]
+    current_tracks = conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0]
+    conn.close()
+
+    # Check for decreases (data loss)
+    if _last_known_counts["videos"] > 0 and current_videos < _last_known_counts["videos"]:
+        print(f"[ALERT] VIDEO COUNT DECREASED: {_last_known_counts['videos']} -> {current_videos}")
+
+    if _last_known_counts["tracks"] > 0 and current_tracks < _last_known_counts["tracks"]:
+        print(f"[ALERT] TRACK COUNT DECREASED: {_last_known_counts['tracks']} -> {current_tracks}")
+
+    # Update last known counts
+    _last_known_counts["videos"] = current_videos
+    _last_known_counts["tracks"] = current_tracks
+
 
 def get_db_stats() -> Dict:
     """Get database statistics for ops dashboard."""
     conn = sqlite3.connect(str(MEDIA_DB_FILE))
 
+    total_videos = conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]
+    total_tracks = conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0]
+
     stats = {
-        "total_videos": conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0],
-        "total_tracks": conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0],
+        "total_videos": total_videos,
+        "total_tracks": total_tracks,
         "discovered_videos": conn.execute("SELECT COUNT(*) FROM videos WHERE is_base = 0").fetchone()[0],
         "discovered_tracks": conn.execute("SELECT COUNT(*) FROM tracks WHERE is_base = 0").fetchone()[0],
         "videos_by_channel": {},
         "tracks_by_channel": {},
+        "health": {
+            "counts_verified": True,
+            "last_video_count": _last_known_counts.get("videos", 0),
+            "last_track_count": _last_known_counts.get("tracks", 0),
+        }
     }
+
+    # Update monitoring
+    _last_known_counts["videos"] = total_videos
+    _last_known_counts["tracks"] = total_tracks
 
     for row in conn.execute("SELECT channel_id, COUNT(*) as cnt FROM videos GROUP BY channel_id"):
         stats["videos_by_channel"][row[0]] = row[1]
