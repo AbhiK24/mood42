@@ -423,8 +423,9 @@ class SimulationEngine:
             current_track_id = current_id["id"] if current_id else None
             new_track = await get_validated_track(tracks, exclude_id=current_track_id)
 
-        # Only try proactive discovery occasionally (10% chance) to find new content
-        if not new_track and random.random() < 0.1:
+        # Try proactive discovery occasionally (15% chance) to expand library
+        # This runs EVEN IF we have a track, to continuously grow the music library
+        if random.random() < 0.15:
             period = viewer_context.get("period", "night")
             try:
                 discovered = await asyncio.wait_for(

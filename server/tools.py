@@ -58,6 +58,41 @@ def _init_db():
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_videos_channel ON videos(channel_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_channel ON tracks(channel_id)")
+
+    # ============ MONETIZATION TABLES ============
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS ads (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            audio_url TEXT,
+            duration INTEGER DEFAULT 15,
+            tags TEXT,
+            cpm REAL DEFAULT 5.0,
+            active INTEGER DEFAULT 1
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS impressions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            channel_id TEXT NOT NULL,
+            ad_id TEXT NOT NULL,
+            region TEXT,
+            timestamp INTEGER NOT NULL,
+            revenue REAL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS monetization_insights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            channel_id TEXT,
+            insight TEXT NOT NULL,
+            confidence REAL DEFAULT 0.5,
+            timestamp INTEGER NOT NULL
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_impressions_channel ON impressions(channel_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_impressions_time ON impressions(timestamp)")
+
     conn.commit()
     conn.close()
     print(f"[DB] Initialized media database at {MEDIA_DB_FILE}")
