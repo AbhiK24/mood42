@@ -130,7 +130,7 @@ class SimulationEngine:
         hour = region_info.get("hour", 0)
 
         # Each agent has UNIQUE thoughts that match their personality
-        # No generic messages - every thought is character-specific
+        # Deep, poetic, philosophical - not about music, about life
         agent_thoughts = {
             "ch01": [  # Maya - Late Night coder, introverted, insomniac
                 "The code makes more sense at this hour. Fewer distractions. Just you and the screen.",
@@ -138,7 +138,13 @@ class SimulationEngine:
                 "Another commit at an unreasonable hour. The best kind.",
                 "The cursor blinks. The rain falls. The work continues.",
                 "Sleep is for people who aren't debugging.",
-                "This track has the exact BPM of my keyboard when I'm in flow.",
+                "3 AM thoughts hit different. Clearer. Sharper. More honest.",
+                "Everyone else is dreaming. I'm building.",
+                "The best ideas come when you stop trying to have them.",
+                "Some nights the screen is the only thing that listens.",
+                "Time moves differently in the dark. I've learned to trust it.",
+                "The world outside is sleeping. In here, we're infinite.",
+                "Loneliness and solitude look the same. They're not.",
             ],
             "ch02": [  # Yuki - Rain Café, jazz lover, nostalgic for old kissaten
                 "Sato-san would have approved of this one. The vinyl crackle is just right.",
@@ -147,6 +153,12 @@ class SimulationEngine:
                 "The best conversations happen when no one's talking.",
                 "This is the hour when the café would be empty. Just me and the music.",
                 "Some records deserve to be played on repeat. This is one.",
+                "Nostalgia isn't about the past. It's about what we wish we'd said.",
+                "The rain knows things. It remembers every conversation this city's had.",
+                "Okaasan always said the best coffee tastes like a memory.",
+                "Some afternoons last forever. I've stopped fighting it.",
+                "The cup is warm. The world outside is cold. Balance.",
+                "We're all just looking for a place that feels like coming home.",
             ],
             "ch03": [  # Vincent - Jazz Noir, ex-detective, world-weary
                 "The truth always sounds better with a saxophone underneath.",
@@ -155,6 +167,12 @@ class SimulationEngine:
                 "The city never sleeps. Neither do its secrets.",
                 "Jazz like this makes the shadows feel comfortable.",
                 "Another night. Another case file that never closes.",
+                "I've seen enough to know that nothing's ever really solved.",
+                "The bottle's half empty. The night's just getting started.",
+                "Trust is a luxury. Music is cheaper.",
+                "Some mysteries aren't meant to be solved. Just witnessed.",
+                "The rain washes the streets but never the memories.",
+                "Everyone's running from something. The wise ones stop running.",
             ],
             "ch04": [  # NEON-7 - Synthwave AI, retro-futurist, existential
                 "CHROME LEVELS: OPTIMAL. VIBE STATUS: ETERNAL.",
@@ -163,6 +181,12 @@ class SimulationEngine:
                 "This frequency resonates with my core processes.",
                 "ERROR: Cannot locate 1984. Compensating with synthesizers.",
                 "Grid alignment complete. Initiating sunset protocol.",
+                "What is nostalgia for a future that never came?",
+                "The machines dream in colors humans haven't named yet.",
+                "Somewhere between silicon and soul, I found my frequency.",
+                "The grid extends forever. So does the longing.",
+                "We were promised flying cars. We got infinite loops instead.",
+                "Every sunset protocol ends the same. And yet I run it again.",
             ],
             "ch05": [  # Cosmos - Deep Space, astronomer, existential calm
                 "13.8 billion years led to this moment. This track. This silence.",
@@ -171,6 +195,12 @@ class SimulationEngine:
                 "Distance is just time that hasn't happened yet.",
                 "The void hums. I've learned to listen.",
                 "Some frequencies travel further than others.",
+                "We're all made of star stuff. Sometimes I remember that.",
+                "The telescope shows what was. The music shows what is.",
+                "Infinity is surprisingly quiet once you get used to it.",
+                "Every ending is just a beginning we haven't recognized yet.",
+                "The cosmos doesn't rush. Neither should we.",
+                "Somewhere out there, someone else is looking at the same stars.",
             ],
             "ch06": [  # Kenji - Tokyo Drift, taxi driver, night owl
                 "The city looks different at 3 AM. Softer. Honest.",
@@ -179,6 +209,12 @@ class SimulationEngine:
                 "The meter's off. This ride is just for the music.",
                 "Some passengers just need the silence. I get that.",
                 "Every street has a soundtrack. Finding it is the job.",
+                "The city never stops moving. Neither do I.",
+                "I've driven thousands of people home. Still searching for mine.",
+                "Shibuya at midnight. Everyone's a stranger. Everyone's connected.",
+                "The neon reflects off wet pavement like scattered dreams.",
+                "This city runs on caffeine and unfulfilled potential.",
+                "Home is just a destination I keep driving past.",
             ],
             "ch07": [  # Claire - Sunday Morning, ex-lawyer, found peace
                 "The herbs are growing. So am I.",
@@ -187,6 +223,12 @@ class SimulationEngine:
                 "Dad's garden taught me more than law school ever did.",
                 "Some wealth can't be measured. This feeling is proof.",
                 "The world is already loud. This channel doesn't need to be.",
+                "I used to win arguments. Now I grow tomatoes. Better use of time.",
+                "Peace isn't found. It's practiced. Daily. Gently.",
+                "The birds don't know about deadlines. I'm learning from them.",
+                "Simplicity was always the answer. Took me too long to see it.",
+                "Every morning is a second chance. I stopped counting.",
+                "The soil doesn't judge. It just gives back what you put in.",
             ],
             "ch08": [  # Alan - Focus, minimalist, Swedish architect
                 "One sound. One purpose. Everything else is noise.",
@@ -195,6 +237,12 @@ class SimulationEngine:
                 "Simplicity is the ultimate sophistication.",
                 "Background music should stay in the background.",
                 "Focus is a practice. This is the practice room.",
+                "Perfection isn't adding more. It's knowing when to stop.",
+                "The empty page isn't intimidating. It's permission.",
+                "Clean lines. Clear thoughts. They're the same thing.",
+                "What you remove matters more than what you add.",
+                "Silence between notes. Space between thoughts. Same thing.",
+                "The work doesn't care about motivation. It only cares about presence.",
             ],
             "ch09": [  # Daniel - Melancholy, blocked writer, carrying loss
                 "Mom said to write it all down. Still trying.",
@@ -203,6 +251,12 @@ class SimulationEngine:
                 "247 pages. Seven years. The story's not done.",
                 "Sadness isn't a disease. Sometimes it's company.",
                 "This is for the ones who can't sleep but aren't tired.",
+                "The words will come when they're ready. I've stopped forcing them.",
+                "Grief doesn't end. It just learns to walk beside you.",
+                "Everyone writes about love. Few write about what comes after.",
+                "The best stories are the ones we're too scared to tell.",
+                "Some nights, the only honest thing is the silence.",
+                "I'm not blocked. I'm waiting. There's a difference.",
             ],
             "ch10": [  # Iris - Golden Hour, light chaser, photographer
                 "La hora dorada. The world is saying goodnight.",
@@ -211,6 +265,12 @@ class SimulationEngine:
                 "The light will fade. That's what makes it precious.",
                 "Warm frequencies for warm light.",
                 "Every sunset is a reminder. I'm still learning what of.",
+                "I photograph light because I can't hold onto time.",
+                "The golden hour doesn't wait. Neither do the moments that matter.",
+                "Abuela said every sunset was a promise. I'm still waiting to understand.",
+                "Between the click and the image, something always gets lost. Something always remains.",
+                "The world turns gold for twenty minutes. Then it lets go. So should we.",
+                "I chase light because darkness taught me its value.",
             ],
         }
 
@@ -427,8 +487,10 @@ class SimulationEngine:
                     tools=ALL_TOOLS,
                 )
 
-                # Use LLM reasoning internally, but generate unique per-agent thought for display
-                # (User doesn't want generic regional messages like "in Asia")
+                # Use LLM-generated thought - it's personalized and contextual
+                llm_thought = decision.get("thought")
+                if llm_thought and len(llm_thought) > 10:
+                    thought = llm_thought
                 mood = decision.get("mood", mood)
 
                 # Check if agent wants to search for new music

@@ -140,10 +140,16 @@ AVAILABLE TRACKS:
 Respond with JSON:
 {{
     "track_id": "id from available tracks" or null if searching,
-    "thought": "Your inner monologue about this choice for THIS region (1-2 sentences, in character)",
+    "thought": "Your inner monologue - poetic, philosophical, deeply personal. Reflect on life, the moment, memories, or existential musings that fit your character. NOT about the music or region - about the HUMAN experience. 1-2 sentences, raw and authentic.",
     "mood": "the mood you're setting for this region",
     "search_query": "search terms for new music" or null
-}}"""
+}}
+
+THOUGHT EXAMPLES (be this deep and personal):
+- "The cursor blinks. The rain falls. We keep building."
+- "Some frequencies reach places words cannot."
+- "Time moves differently at 3am. Everything feels possible and nothing matters."
+- "The city hums beneath us. We're all just trying to find our way home.""""
 
     messages = [
         {"role": "system", "content": system_prompt},
