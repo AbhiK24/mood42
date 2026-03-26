@@ -105,7 +105,7 @@ class Plan:
     """A planned action."""
     time: str
     action: str
-    duration: int  # minutes
+    duration: int = 30  # minutes, default 30
     region: Optional[str] = None  # Region-specific plan
     completed: bool = False
 
