@@ -20,10 +20,21 @@ from pathlib import Path
 
 # ============ PERSISTENCE (SQLite) ============
 # Store all media in SQLite database - the source of truth
+# Uses Railway persistent volume at /app/server/data/
 
 import sqlite3
+import os
 
-MEDIA_DB_FILE = Path(__file__).parent / "media.db"
+# Use persistent volume path on Railway, fallback to local for development
+if os.path.exists("/app/server/data"):
+    # Railway production - persistent volume
+    MEDIA_DB_FILE = Path("/app/server/data/media.db")
+else:
+    # Local development
+    MEDIA_DB_FILE = Path(__file__).parent / "media.db"
+
+# Ensure directory exists
+MEDIA_DB_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 def _init_db():
     """Initialize the media database."""
