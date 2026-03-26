@@ -288,8 +288,8 @@ class SimulationEngine:
             except Exception as e:
                 print(f"[{channel_id}] Scheduled discovery error: {e}")
 
-        # Run discovery for all channels in parallel (with limit)
-        tasks = [discover_for_channel(ch_id) for ch_id in list(CHANNELS.keys())[:5]]  # Limit to 5 at a time
+        # Run discovery for all 10 channels in parallel
+        tasks = [discover_for_channel(ch_id) for ch_id in CHANNELS.keys()]
         await asyncio.gather(*tasks)
 
         print(f"[Scheduled] Content discovery cycle complete")
