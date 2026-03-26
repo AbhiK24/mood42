@@ -1739,13 +1739,23 @@
       fetchLiveChannelPreviews();
     }
 
+    // Cache for live channel data - instant channel switching
+    let liveChannelCache = {};
+    let lastCacheUpdate = 0;
+
     // Fetch live channel data and update preview videos to show actual live content
     async function fetchLiveChannelPreviews() {
       try {
-        const response = await fetch('/api/channels');
+        const response = await fetch('/api/channels?t=' + Date.now()); // Cache bust
         if (!response.ok) return;
         const data = await response.json();
         const channels = data.channels || [];
+
+        // Update cache
+        channels.forEach(ch => {
+          liveChannelCache[ch.id] = ch;
+        });
+        lastCacheUpdate = Date.now();
 
         channels.forEach(ch => {
           // Update the preview video to show the actual live video
@@ -1768,8 +1778,11 @@
       }
     }
 
-    // Refresh previews periodically
-    setInterval(fetchLiveChannelPreviews, 30000);
+    // Fetch immediately on page load
+    fetchLiveChannelPreviews();
+
+    // Refresh previews more frequently (every 10s)
+    setInterval(fetchLiveChannelPreviews, 10000);
 
     // Open channel
     function openChannel(channelId) {
@@ -1796,10 +1809,16 @@
       document.getElementById('ch-avatar').style.setProperty('--agent-color', ch.color);
 
       document.getElementById('ch-desc').textContent = ch.desc;
-      // Don't set video from static data - wait for live state from server
-      // document.getElementById('channel-video').src = ch.video;
-      // Show "loading" until we get live data from server
-      document.getElementById('track-name').textContent = 'Connecting...';
+
+      // Use cached live data IMMEDIATELY if available (no flash of old content)
+      const cached = liveChannelCache[channelId];
+      if (cached && cached.currentVideo?.url) {
+        document.getElementById('channel-video').src = cached.currentVideo.url;
+        document.getElementById('track-name').textContent = cached.currentTrack?.name || 'Loading...';
+      } else {
+        // No cache - show placeholder, will be updated by patched openChannel
+        document.getElementById('track-name').textContent = 'Tuning in...';
+      }
 
       // Start info fade cycle
       startInfoFadeCycle();
@@ -1808,25 +1827,17 @@
       landing.classList.add('hidden');
       channelPage.classList.add('active');
 
-      // NOTE: Don't start static music here - wait for live state from server
-      // The patched openChannel() will fetch live track and start playback
-
-      // Fallback: if server doesn't respond in 3s, use static track/video
+      // Fallback: if no live data in 2s, use static content
       setTimeout(() => {
-        if (document.getElementById('track-name').textContent === 'Connecting...') {
-          console.log('[Fallback] Server slow, using static track/video');
-          document.getElementById('track-name').textContent = ch.trackName;
+        const trackName = document.getElementById('track-name').textContent;
+        if (trackName === 'Tuning in...' || trackName === 'Loading...') {
+          console.log('[Fallback] Server slow, using static content');
+          document.getElementById('track-name').textContent = ch.trackName || 'Unknown';
           document.getElementById('channel-video').src = ch.video;
           audio.src = ch.music;
-          audio.play().then(() => {
-            musicPlaying = true;
-            document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
-          }).catch(() => {
-            musicPlaying = false;
-            document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
-          });
+          audio.play().catch(() => {});
         }
-      }, 3000);
+      }, 2000);
 
       // Update title
       document.title = `${ch.name} — mood42`;
@@ -2368,70 +2379,103 @@
       }
     }
 
-    // Patch openChannel to fetch LIVE state from server first
+    // Apply live state to channel UI
+    function applyLiveState(liveState) {
+      if (!liveState) return;
+
+      // Update with live track immediately
+      if (liveState.currentTrack) {
+        const track = liveState.currentTrack;
+
+        // Update track name
+        document.getElementById('track-name').textContent = track.name || 'Unknown Track';
+        updateAttribution('audio', track);
+
+        // Set audio source and start playing
+        if (track.url) {
+          audio.src = track.url;
+
+          // Sync to current position if track has startedAt
+          if (track.startedAt) {
+            const elapsed = (Date.now() - track.startedAt) / 1000;
+            const duration = track.duration || 180;
+            audio.currentTime = elapsed % duration;
+          }
+
+          // Start playback
+          audio.play().then(() => {
+            musicPlaying = true;
+            document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
+          }).catch(() => {
+            musicPlaying = false;
+            document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
+          });
+        }
+      }
+
+      // Update video
+      if (liveState.currentVideo?.url) {
+        const videoEl = document.getElementById('channel-video');
+        if (videoEl) {
+          videoEl.src = liveState.currentVideo.url;
+          updateAttribution('video', liveState.currentVideo);
+        }
+      }
+
+      // Update thought with location context
+      if (liveState.agent?.thought) {
+        const thoughtEl = document.getElementById('agent-thought');
+        if (thoughtEl) thoughtEl.textContent = formatThought(liveState.agent.thought);
+      }
+    }
+
+    // Patch openChannel to use cached data for INSTANT switching
     const originalOpenChannel = openChannel;
     openChannel = async function(channelId) {
-      // Call original to set up UI
+      // Call original to set up UI (channel name, colors, etc.)
       originalOpenChannel(channelId);
 
-      // Immediately fetch current state from server (don't wait for SSE)
+      // Step 1: Use cached live data for INSTANT content (no lag)
+      const cached = liveChannelCache[channelId];
+      if (cached && (Date.now() - lastCacheUpdate < 15000)) {
+        console.log('[Simulation] Using cached live state (instant)');
+        applyLiveState(cached);
+      }
+
+      // Step 2: Fetch fresh state in background (updates if different)
       try {
-        const response = await fetch(apiUrl(`/api/channels/${channelId}`));
+        const response = await fetch(apiUrl(`/api/channels/${channelId}?t=${Date.now()}`));
         if (response.ok) {
           const liveState = await response.json();
-          console.log('[Simulation] Got live state:', liveState);
+          console.log('[Simulation] Got fresh live state');
 
-          // Update with live track immediately
-          if (liveState.currentTrack) {
-            const track = liveState.currentTrack;
+          // Update cache
+          liveChannelCache[channelId] = liveState;
 
-            // Update track name
-            document.getElementById('track-name').textContent = track.name || 'Unknown Track';
-            updateAttribution('audio', track);
-
-            // Set audio source and start playing
-            if (track.url) {
-              audio.src = track.url;
-
-              // Sync to current position if track has startedAt
-              if (track.startedAt) {
-                const elapsed = (Date.now() - track.startedAt) / 1000;
-                const duration = track.duration || 180;
-                audio.currentTime = elapsed % duration;
-              }
-
-              // Start playback
-              audio.play().then(() => {
-                musicPlaying = true;
-                document.getElementById('toggle-music').textContent = '♪ MUSIC ON';
-              }).catch(() => {
-                musicPlaying = false;
-                document.getElementById('toggle-music').textContent = '♪ MUSIC OFF';
-              });
-            }
-
-            // Update video
-            if (liveState.currentVideo?.url) {
-              const videoEl = document.getElementById('channel-video');
-              if (videoEl) {
-                videoEl.src = liveState.currentVideo.url;
-                updateAttribution('video', liveState.currentVideo);
-              }
-            }
-
-            // Update thought with location context
-            if (liveState.agent?.thought) {
-              const thoughtEl = document.getElementById('agent-thought');
-              if (thoughtEl) thoughtEl.textContent = formatThought(liveState.agent.thought);
-            }
-          }
+          // Apply fresh state (will update if different from cache)
+          applyLiveState(liveState);
         }
       } catch (err) {
         console.warn('[Simulation] Failed to fetch live state:', err);
       }
 
-      // Then connect to SSE for ongoing updates
+      // Step 3: Connect to SSE for ongoing updates
       connectToSimulation(channelId);
+
+      // Step 4: Preload adjacent channels for instant switching
+      const idx = CHANNELS.findIndex(c => c.id === channelId);
+      const prevId = CHANNELS[(idx - 1 + CHANNELS.length) % CHANNELS.length].id;
+      const nextId = CHANNELS[(idx + 1) % CHANNELS.length].id;
+
+      // Fetch adjacent channels in background (don't await)
+      [prevId, nextId].forEach(adjId => {
+        if (!liveChannelCache[adjId] || (Date.now() - lastCacheUpdate > 10000)) {
+          fetch(apiUrl(`/api/channels/${adjId}?t=${Date.now()}`))
+            .then(r => r.json())
+            .then(data => { liveChannelCache[adjId] = data; })
+            .catch(() => {});
+        }
+      });
     };
 
     // Patch closeChannel to disconnect
