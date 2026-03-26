@@ -2,32 +2,24 @@
 mood42 Simulation Server
 FastAPI + SSE for real-time agent broadcasting
 Now with geo-awareness: personalized content by viewer timezone
-v2.2 - Debug startup
 """
 
-print("[Startup] main.py loading...")
 import asyncio
 import json
 import os
 from datetime import datetime
 from typing import Dict, Set, Optional
 from contextlib import asynccontextmanager
-print("[Startup] stdlib imports done")
 
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-print("[Startup] fastapi imports done")
 
 from server.simulation import SimulationEngine
-print("[Startup] simulation imported")
 from server.channels import CHANNELS, TRACKS
-print("[Startup] channels imported")
 from server.geo import get_region_from_offset, get_viewer_context, REGIONS
-print("[Startup] geo imported")
 from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS, get_db_stats, scan_r2_rebuild_db
-print("[Startup] tools imported")
 
 
 # SSE client connections - now keyed by channel:region
