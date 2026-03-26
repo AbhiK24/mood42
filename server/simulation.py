@@ -24,6 +24,7 @@ from server.tools import (
     validate_track,
     CHANNEL_VIDEOS,
     CHANNEL_TRACKS,
+    save_discovered_media,
 )
 from server.llm import (
     generate_programming_decision,
@@ -260,7 +261,9 @@ class SimulationEngine:
                 if video:
                     if channel_id not in CHANNEL_VIDEOS:
                         CHANNEL_VIDEOS[channel_id] = []
+                    video["_discovered"] = True
                     CHANNEL_VIDEOS[channel_id].append(video)
+                    save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
                     print(f"[{channel_id}] Scheduled: found video '{video.get('name', 'unknown')}'")
                     if agent:
                         agent.add_memory(
@@ -283,10 +286,12 @@ class SimulationEngine:
                     for track in found_tracks:
                         if track.get("url") and track.get("url") not in existing_urls:
                             track["_verified"] = True
+                            track["_discovered"] = True
                             CHANNEL_TRACKS[channel_id].append(track)
                             existing_urls.add(track.get("url"))
                             added += 1
                     if added > 0:
+                        save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
                         print(f"[{channel_id}] Scheduled: added {added} new tracks to library")
                         if agent:
                             agent.add_memory(
@@ -392,7 +397,9 @@ class SimulationEngine:
                                 existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
                                 if result.get("url") not in existing_urls:
                                     result["_verified"] = True
+                                    result["_discovered"] = True
                                     CHANNEL_TRACKS[channel_id].append(result)
+                                    save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
                                     print(f"[{channel_id}] Added new track to library: {result.get('name', 'unknown')}")
                                 break
 
@@ -431,7 +438,9 @@ class SimulationEngine:
                     existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
                     if discovered.get("url") not in existing_urls:
                         discovered["_verified"] = True
+                        discovered["_discovered"] = True
                         CHANNEL_TRACKS[channel_id].append(discovered)
+                        save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
                         print(f"[{channel_id}] Added discovered track to library: {discovered.get('name', 'unknown')}")
             except asyncio.TimeoutError:
                 pass  # Skip discovery if too slow
@@ -463,7 +472,9 @@ class SimulationEngine:
                     # Add to channel's video library
                     if channel_id not in CHANNEL_VIDEOS:
                         CHANNEL_VIDEOS[channel_id] = []
+                    discovered["_discovered"] = True
                     CHANNEL_VIDEOS[channel_id].append(discovered)
+                    save_discovered_media(CHANNEL_VIDEOS, CHANNEL_TRACKS)
                     video = discovered  # Use the newly discovered video
                     print(f"[{channel_id}] Discovered new video: {discovered['name']}")
             except asyncio.TimeoutError:

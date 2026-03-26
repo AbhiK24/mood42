@@ -11,8 +11,58 @@ import asyncio
 import random
 import re
 import time
+import json
+import os
 from typing import List, Dict, Optional, Tuple
 from urllib.parse import quote_plus, quote
+from pathlib import Path
+
+
+# ============ PERSISTENCE ============
+# Store discovered media in a JSON file so it survives restarts
+
+DISCOVERED_MEDIA_FILE = Path(__file__).parent / "discovered_media.json"
+
+def load_discovered_media() -> Dict:
+    """Load discovered media from disk."""
+    if DISCOVERED_MEDIA_FILE.exists():
+        try:
+            with open(DISCOVERED_MEDIA_FILE, "r") as f:
+                data = json.load(f)
+                print(f"[Persistence] Loaded {sum(len(v) for v in data.get('videos', {}).values())} discovered videos")
+                print(f"[Persistence] Loaded {sum(len(v) for v in data.get('tracks', {}).values())} discovered tracks")
+                return data
+        except Exception as e:
+            print(f"[Persistence] Error loading discovered media: {e}")
+    return {"videos": {}, "tracks": {}}
+
+def save_discovered_media(videos: Dict, tracks: Dict):
+    """Save discovered media to disk."""
+    try:
+        # Only save discovered items (those with _discovered flag or added_at timestamp)
+        discovered_videos = {}
+        discovered_tracks = {}
+
+        for ch_id, ch_videos in videos.items():
+            discovered = [v for v in ch_videos if v.get("_discovered") or v.get("added_at")]
+            if discovered:
+                discovered_videos[ch_id] = discovered
+
+        for ch_id, ch_tracks in tracks.items():
+            discovered = [t for t in ch_tracks if t.get("_discovered") or t.get("added_at")]
+            if discovered:
+                discovered_tracks[ch_id] = discovered
+
+        data = {"videos": discovered_videos, "tracks": discovered_tracks}
+        with open(DISCOVERED_MEDIA_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+
+        total_v = sum(len(v) for v in discovered_videos.values())
+        total_t = sum(len(t) for t in discovered_tracks.values())
+        if total_v > 0 or total_t > 0:
+            print(f"[Persistence] Saved {total_v} videos, {total_t} tracks")
+    except Exception as e:
+        print(f"[Persistence] Error saving: {e}")
 
 
 # ============ URL VALIDATION ============
@@ -1071,6 +1121,44 @@ CHANNEL_VIDEOS = {
         {"id": "ch10_v5", "name": "Misty Mountains", "url": "https://assets.mixkit.co/videos/3569/3569-720.mp4", "tags": ["mountains", "mist", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
 }
+
+
+# ============ LOAD DISCOVERED MEDIA ON STARTUP ============
+# Merge any previously discovered media into the base libraries
+
+def _merge_discovered_media():
+    """Load and merge discovered media into CHANNEL_VIDEOS and CHANNEL_TRACKS."""
+    discovered = load_discovered_media()
+
+    # Merge discovered videos
+    for ch_id, videos in discovered.get("videos", {}).items():
+        if ch_id not in CHANNEL_VIDEOS:
+            CHANNEL_VIDEOS[ch_id] = []
+        existing_urls = {v.get("url") for v in CHANNEL_VIDEOS[ch_id]}
+        for video in videos:
+            if video.get("url") and video.get("url") not in existing_urls:
+                video["_discovered"] = True
+                CHANNEL_VIDEOS[ch_id].append(video)
+                existing_urls.add(video.get("url"))
+
+    # Merge discovered tracks
+    for ch_id, tracks in discovered.get("tracks", {}).items():
+        if ch_id not in CHANNEL_TRACKS:
+            CHANNEL_TRACKS[ch_id] = []
+        existing_urls = {t.get("url") for t in CHANNEL_TRACKS[ch_id]}
+        for track in tracks:
+            if track.get("url") and track.get("url") not in existing_urls:
+                track["_discovered"] = True
+                CHANNEL_TRACKS[ch_id].append(track)
+                existing_urls.add(track.get("url"))
+
+    total_v = sum(len(v) for v in discovered.get("videos", {}).values())
+    total_t = sum(len(t) for t in discovered.get("tracks", {}).values())
+    if total_v > 0 or total_t > 0:
+        print(f"[Persistence] Merged {total_v} discovered videos, {total_t} discovered tracks")
+
+# Run on module load
+_merge_discovered_media()
 
 
 # ============ VIDEO SOURCES ============
