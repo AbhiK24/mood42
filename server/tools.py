@@ -998,47 +998,77 @@ def extract_genres_from_query(query: str) -> List[str]:
 # Each channel has unique videos that NO other channel uses
 # 12 unique videos distributed across 10 channels
 CHANNEL_VIDEOS = {
-    # CH01: Maya - city timelapse (exclusive)
+    # CH01: Maya - lo-fi city vibes (expanded library)
     "ch01": [
         {"id": "ch01_v1", "name": "City Timelapse", "url": f"{R2_BASE}/video/ch01_city_timelapse.mp4", "tags": ["city", "night", "lo-fi"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch01_v2", "name": "City Night Traffic", "url": "https://assets.mixkit.co/videos/4484/4484-720.mp4", "tags": ["city", "night", "traffic"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch01_v3", "name": "City Skyline", "url": "https://assets.mixkit.co/videos/4063/4063-720.mp4", "tags": ["city", "skyline", "sunset"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch01_v4", "name": "Street Lights", "url": "https://assets.mixkit.co/videos/4636/4636-720.mp4", "tags": ["city", "lights", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH02: Yuki - rain cafe cozy (exclusive)
+    # CH02: Yuki - rainy cozy vibes (expanded library)
     "ch02": [
         {"id": "ch02_v1", "name": "Rain Cafe", "url": f"{R2_BASE}/video/ch02_rain_cafe.mp4", "tags": ["rain", "cozy", "cafe"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch02_v2", "name": "Rain Drops", "url": "https://assets.mixkit.co/videos/4271/4271-720.mp4", "tags": ["rain", "drops", "macro"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch02_v3", "name": "Rain Puddles", "url": "https://assets.mixkit.co/videos/4278/4278-720.mp4", "tags": ["rain", "puddles", "street"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch02_v4", "name": "Cozy Fireplace", "url": "https://assets.mixkit.co/videos/3455/3455-720.mp4", "tags": ["cozy", "fire", "warm"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH03: Vincent - jazz noir city (exclusive)
+    # CH03: Vincent - jazz noir city (expanded library)
     "ch03": [
         {"id": "ch03_v1", "name": "Jazz Noir", "url": f"{R2_BASE}/video/ch03_jazz_noir.mp4", "tags": ["jazz", "noir", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch03_v2", "name": "City Noir Night", "url": "https://assets.mixkit.co/videos/4633/4633-720.mp4", "tags": ["city", "noir", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch03_v3", "name": "Night Drive", "url": "https://assets.mixkit.co/videos/4358/4358-720.mp4", "tags": ["drive", "night", "city"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch03_v4", "name": "Bar Atmosphere", "url": "https://assets.mixkit.co/videos/3457/3457-720.mp4", "tags": ["bar", "cozy", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH04: NEON-7 - galaxy travel synthwave (exclusive)
+    # CH04: NEON-7 - synthwave space (expanded library)
     "ch04": [
         {"id": "ch04_v1", "name": "Galaxy Travel", "url": f"{R2_BASE}/video/ch04_galaxy_travel.mp4", "tags": ["galaxy", "synthwave", "neon"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch04_v2", "name": "Neon Tunnel", "url": "https://assets.mixkit.co/videos/4696/4696-720.mp4", "tags": ["neon", "tunnel", "abstract"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch04_v3", "name": "Digital Grid", "url": "https://assets.mixkit.co/videos/4694/4694-720.mp4", "tags": ["grid", "digital", "retro"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch04_v4", "name": "Space Nebula", "url": "https://assets.mixkit.co/videos/9797/9797-720.mp4", "tags": ["space", "nebula", "cosmic"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH05: Cosmos - cosmic eclipse + aurora (exclusive, 2 videos)
+    # CH05: Cosmos - cosmic space exploration (expanded library)
     "ch05": [
         {"id": "ch05_v1", "name": "Eclipse Cosmic", "url": f"{R2_BASE}/video/ch05_cosmic.mp4", "tags": ["cosmic", "space", "eclipse"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
         {"id": "ch05_v2", "name": "Aurora Stars", "url": f"{R2_BASE}/video/ch05_stars.mp4", "tags": ["stars", "aurora", "infinite"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch05_v3", "name": "Deep Space", "url": "https://assets.mixkit.co/videos/9799/9799-720.mp4", "tags": ["space", "stars", "deep"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch05_v4", "name": "Galaxy Drift", "url": "https://assets.mixkit.co/videos/9798/9798-720.mp4", "tags": ["galaxy", "drift", "cosmic"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH06: Kenji - tokyo night drive (exclusive)
+    # CH06: Kenji - city pop night drive (expanded library)
     "ch06": [
         {"id": "ch06_v1", "name": "Tokyo Night", "url": f"{R2_BASE}/video/ch06_tokyo_night.mp4", "tags": ["tokyo", "neon", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch06_v2", "name": "City Drive", "url": "https://assets.mixkit.co/videos/4359/4359-720.mp4", "tags": ["drive", "city", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch06_v3", "name": "Neon Streets", "url": "https://assets.mixkit.co/videos/4635/4635-720.mp4", "tags": ["neon", "city", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch06_v4", "name": "Downtown Lights", "url": "https://assets.mixkit.co/videos/4637/4637-720.mp4", "tags": ["downtown", "lights", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH07: Claire - sunday morning nature (exclusive)
+    # CH07: Claire - sunday morning nature (expanded library)
     "ch07": [
         {"id": "ch07_v1", "name": "Sunday Nature", "url": f"{R2_BASE}/video/ch07_sunday_nature.mp4", "tags": ["nature", "morning", "peaceful"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch07_v2", "name": "Morning Meadow", "url": "https://assets.mixkit.co/videos/3123/3123-720.mp4", "tags": ["meadow", "morning", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch07_v3", "name": "Peaceful Lake", "url": "https://assets.mixkit.co/videos/4266/4266-720.mp4", "tags": ["lake", "peaceful", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch07_v4", "name": "Gentle Breeze", "url": "https://assets.mixkit.co/videos/3124/3124-720.mp4", "tags": ["breeze", "grass", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH08: Alan - abstract focus + minimal (exclusive, 2 videos)
+    # CH08: Alan - abstract focus minimal (expanded library)
     "ch08": [
         {"id": "ch08_v1", "name": "Abstract Lines", "url": f"{R2_BASE}/video/ch08_abstract.mp4", "tags": ["abstract", "focus", "lines"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
         {"id": "ch08_v2", "name": "Minimal Motion", "url": f"{R2_BASE}/video/ch08_minimal.mp4", "tags": ["minimal", "clean", "simple"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch08_v3", "name": "Geometric Flow", "url": "https://assets.mixkit.co/videos/4695/4695-720.mp4", "tags": ["geometric", "abstract", "flow"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch08_v4", "name": "Particle Motion", "url": "https://assets.mixkit.co/videos/4693/4693-720.mp4", "tags": ["particles", "motion", "abstract"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH09: Daniel - ocean waves melancholy (exclusive)
+    # CH09: Daniel - melancholy ocean/rain/city vibes (expanded library)
     "ch09": [
         {"id": "ch09_v1", "name": "Ocean Waves", "url": f"{R2_BASE}/video/ch09_ocean.mp4", "tags": ["ocean", "waves", "melancholy"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch09_v2", "name": "Rain on Window", "url": "https://assets.mixkit.co/videos/18308/18308-720.mp4", "tags": ["rain", "window", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch09_v3", "name": "Rainy Street", "url": "https://assets.mixkit.co/videos/33951/33951-720.mp4", "tags": ["rain", "street", "city"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch09_v4", "name": "City in Rain", "url": "https://assets.mixkit.co/videos/4634/4634-720.mp4", "tags": ["rain", "city", "night"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch09_v5", "name": "Foggy Forest", "url": "https://assets.mixkit.co/videos/3572/3572-720.mp4", "tags": ["forest", "fog", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
-    # CH10: Iris - golden moon light (exclusive)
+    # CH10: Iris - dreamy golden/sunset/nature vibes (expanded library)
     "ch10": [
         {"id": "ch10_v1", "name": "Golden Moon", "url": f"{R2_BASE}/video/ch10_golden_light.mp4", "tags": ["golden", "moon", "sunset"], "attribution": "Video from Archive.org (Public Domain)", "source": "archive.org"},
+        {"id": "ch10_v2", "name": "Sunset Clouds", "url": "https://assets.mixkit.co/videos/4064/4064-720.mp4", "tags": ["sunset", "clouds", "sky"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch10_v3", "name": "Golden Hour Field", "url": "https://assets.mixkit.co/videos/3122/3122-720.mp4", "tags": ["golden", "field", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch10_v4", "name": "Forest Stream", "url": "https://assets.mixkit.co/videos/42757/42757-720.mp4", "tags": ["forest", "stream", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
+        {"id": "ch10_v5", "name": "Misty Mountains", "url": "https://assets.mixkit.co/videos/3569/3569-720.mp4", "tags": ["mountains", "mist", "nature"], "attribution": "Video from Mixkit (Free License)", "source": "mixkit"},
     ],
 }
 
