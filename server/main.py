@@ -233,6 +233,17 @@ async def test_url(url: str):
     }
 
 
+@app.post("/api/ops/discover")
+async def trigger_discovery():
+    """Manually trigger content discovery for all channels."""
+    await sim._scheduled_content_discovery()
+    stats = get_db_stats()
+    return {
+        "status": "discovery_triggered",
+        "database": stats,
+    }
+
+
 @app.get("/api/ops/media")
 async def media_database():
     """Get complete media database for all channels."""
