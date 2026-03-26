@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.simulation import SimulationEngine
 from server.channels import CHANNELS, TRACKS
 from server.geo import get_region_from_offset, get_viewer_context, REGIONS
-from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS
+from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS, get_db_stats
 
 
 # SSE client connections - now keyed by channel:region
@@ -214,6 +214,9 @@ async def ops_dashboard():
         "verified_urls": list(_verified_urls)[:10],  # Show first 10
         "broken_urls": list(_broken_urls.keys())[:10],
     }
+
+    # Database stats (source of truth)
+    ops_data["database"] = get_db_stats()
 
     return ops_data
 

@@ -18,51 +18,188 @@ from urllib.parse import quote_plus, quote
 from pathlib import Path
 
 
-# ============ PERSISTENCE ============
-# Store discovered media in a JSON file so it survives restarts
+# ============ PERSISTENCE (SQLite) ============
+# Store all media in SQLite database - the source of truth
 
-DISCOVERED_MEDIA_FILE = Path(__file__).parent / "discovered_media.json"
+import sqlite3
+
+MEDIA_DB_FILE = Path(__file__).parent / "media.db"
+
+def _init_db():
+    """Initialize the media database."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS videos (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            tags TEXT,
+            attribution TEXT,
+            source TEXT,
+            source_url TEXT,
+            added_at INTEGER,
+            is_base INTEGER DEFAULT 0
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS tracks (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            duration INTEGER,
+            tags TEXT,
+            attribution TEXT,
+            source TEXT,
+            added_at INTEGER,
+            is_base INTEGER DEFAULT 0
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_videos_channel ON videos(channel_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_channel ON tracks(channel_id)")
+    conn.commit()
+    conn.close()
+    print(f"[DB] Initialized media database at {MEDIA_DB_FILE}")
+
+# Initialize on module load
+_init_db()
 
 def load_discovered_media() -> Dict:
-    """Load discovered media from disk."""
-    if DISCOVERED_MEDIA_FILE.exists():
-        try:
-            with open(DISCOVERED_MEDIA_FILE, "r") as f:
-                data = json.load(f)
-                print(f"[Persistence] Loaded {sum(len(v) for v in data.get('videos', {}).values())} discovered videos")
-                print(f"[Persistence] Loaded {sum(len(v) for v in data.get('tracks', {}).values())} discovered tracks")
-                return data
-        except Exception as e:
-            print(f"[Persistence] Error loading discovered media: {e}")
-    return {"videos": {}, "tracks": {}}
+    """Load discovered (non-base) media from database."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+    conn.row_factory = sqlite3.Row
+
+    videos = {}
+    tracks = {}
+
+    # Load discovered videos
+    for row in conn.execute("SELECT * FROM videos WHERE is_base = 0"):
+        ch_id = row["channel_id"]
+        if ch_id not in videos:
+            videos[ch_id] = []
+        videos[ch_id].append({
+            "id": row["id"],
+            "name": row["name"],
+            "url": row["url"],
+            "tags": json.loads(row["tags"]) if row["tags"] else [],
+            "attribution": row["attribution"],
+            "source": row["source"],
+            "source_url": row["source_url"],
+            "added_at": row["added_at"],
+            "_discovered": True,
+            "_verified": True,
+        })
+
+    # Load discovered tracks
+    for row in conn.execute("SELECT * FROM tracks WHERE is_base = 0"):
+        ch_id = row["channel_id"]
+        if ch_id not in tracks:
+            tracks[ch_id] = []
+        tracks[ch_id].append({
+            "id": row["id"],
+            "name": row["name"],
+            "url": row["url"],
+            "duration": row["duration"],
+            "tags": json.loads(row["tags"]) if row["tags"] else [],
+            "attribution": row["attribution"],
+            "source": row["source"],
+            "added_at": row["added_at"],
+            "_discovered": True,
+            "_verified": True,
+        })
+
+    conn.close()
+
+    total_v = sum(len(v) for v in videos.values())
+    total_t = sum(len(t) for t in tracks.values())
+    if total_v > 0 or total_t > 0:
+        print(f"[DB] Loaded {total_v} discovered videos, {total_t} discovered tracks")
+
+    return {"videos": videos, "tracks": tracks}
 
 def save_discovered_media(videos: Dict, tracks: Dict):
-    """Save discovered media to disk."""
-    try:
-        # Only save discovered items (those with _discovered flag or added_at timestamp)
-        discovered_videos = {}
-        discovered_tracks = {}
+    """Save discovered media to database."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
 
-        for ch_id, ch_videos in videos.items():
-            discovered = [v for v in ch_videos if v.get("_discovered") or v.get("added_at")]
-            if discovered:
-                discovered_videos[ch_id] = discovered
+    saved_v = 0
+    saved_t = 0
 
-        for ch_id, ch_tracks in tracks.items():
-            discovered = [t for t in ch_tracks if t.get("_discovered") or t.get("added_at")]
-            if discovered:
-                discovered_tracks[ch_id] = discovered
+    # Save discovered videos
+    for ch_id, ch_videos in videos.items():
+        for v in ch_videos:
+            if v.get("_discovered") or v.get("added_at"):
+                try:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO videos
+                        (id, channel_id, name, url, tags, attribution, source, source_url, added_at, is_base)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    """, (
+                        v.get("id", f"{ch_id}_v_{int(time.time())}"),
+                        ch_id,
+                        v.get("name", "Unknown"),
+                        v.get("url"),
+                        json.dumps(v.get("tags", [])),
+                        v.get("attribution"),
+                        v.get("source"),
+                        v.get("source_url"),
+                        v.get("added_at", int(time.time())),
+                    ))
+                    saved_v += 1
+                except sqlite3.IntegrityError:
+                    pass  # URL already exists
 
-        data = {"videos": discovered_videos, "tracks": discovered_tracks}
-        with open(DISCOVERED_MEDIA_FILE, "w") as f:
-            json.dump(data, f, indent=2)
+    # Save discovered tracks
+    for ch_id, ch_tracks in tracks.items():
+        for t in ch_tracks:
+            if t.get("_discovered") or t.get("added_at"):
+                try:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO tracks
+                        (id, channel_id, name, url, duration, tags, attribution, source, added_at, is_base)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    """, (
+                        t.get("id", f"{ch_id}_t_{int(time.time())}"),
+                        ch_id,
+                        t.get("name", "Unknown"),
+                        t.get("url"),
+                        t.get("duration", 180),
+                        json.dumps(t.get("tags", [])),
+                        t.get("attribution"),
+                        t.get("source"),
+                        t.get("added_at", int(time.time())),
+                    ))
+                    saved_t += 1
+                except sqlite3.IntegrityError:
+                    pass  # URL already exists
 
-        total_v = sum(len(v) for v in discovered_videos.values())
-        total_t = sum(len(t) for t in discovered_tracks.values())
-        if total_v > 0 or total_t > 0:
-            print(f"[Persistence] Saved {total_v} videos, {total_t} tracks")
-    except Exception as e:
-        print(f"[Persistence] Error saving: {e}")
+    conn.commit()
+    conn.close()
+
+    if saved_v > 0 or saved_t > 0:
+        print(f"[DB] Saved {saved_v} videos, {saved_t} tracks")
+
+def get_db_stats() -> Dict:
+    """Get database statistics for ops dashboard."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+
+    stats = {
+        "total_videos": conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0],
+        "total_tracks": conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0],
+        "discovered_videos": conn.execute("SELECT COUNT(*) FROM videos WHERE is_base = 0").fetchone()[0],
+        "discovered_tracks": conn.execute("SELECT COUNT(*) FROM tracks WHERE is_base = 0").fetchone()[0],
+        "videos_by_channel": {},
+        "tracks_by_channel": {},
+    }
+
+    for row in conn.execute("SELECT channel_id, COUNT(*) as cnt FROM videos GROUP BY channel_id"):
+        stats["videos_by_channel"][row[0]] = row[1]
+
+    for row in conn.execute("SELECT channel_id, COUNT(*) as cnt FROM tracks GROUP BY channel_id"):
+        stats["tracks_by_channel"][row[0]] = row[1]
+
+    conn.close()
+    return stats
 
 
 # ============ URL VALIDATION ============
@@ -1126,8 +1263,74 @@ CHANNEL_VIDEOS = {
 # ============ LOAD DISCOVERED MEDIA ON STARTUP ============
 # Merge any previously discovered media into the base libraries
 
+def _seed_base_media_to_db():
+    """Seed base videos and tracks to database (one-time)."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+
+    # Check if already seeded
+    count = conn.execute("SELECT COUNT(*) FROM videos WHERE is_base = 1").fetchone()[0]
+    if count > 0:
+        conn.close()
+        return  # Already seeded
+
+    print("[DB] Seeding base media to database...")
+
+    # Seed base videos
+    for ch_id, videos in CHANNEL_VIDEOS.items():
+        for v in videos:
+            try:
+                conn.execute("""
+                    INSERT OR IGNORE INTO videos
+                    (id, channel_id, name, url, tags, attribution, source, source_url, added_at, is_base)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """, (
+                    v.get("id"),
+                    ch_id,
+                    v.get("name"),
+                    v.get("url"),
+                    json.dumps(v.get("tags", [])),
+                    v.get("attribution"),
+                    v.get("source"),
+                    v.get("source_url"),
+                    int(time.time()),
+                ))
+            except Exception as e:
+                print(f"[DB] Error seeding video: {e}")
+
+    # Seed base tracks
+    for ch_id, tracks in CHANNEL_TRACKS.items():
+        for t in tracks:
+            try:
+                conn.execute("""
+                    INSERT OR IGNORE INTO tracks
+                    (id, channel_id, name, url, duration, tags, attribution, source, added_at, is_base)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """, (
+                    t.get("id"),
+                    ch_id,
+                    t.get("name"),
+                    t.get("url"),
+                    t.get("duration", 180),
+                    json.dumps(t.get("tags", [])),
+                    t.get("attribution"),
+                    t.get("source"),
+                    int(time.time()),
+                ))
+            except Exception as e:
+                print(f"[DB] Error seeding track: {e}")
+
+    conn.commit()
+    conn.close()
+
+    stats = get_db_stats()
+    print(f"[DB] Seeded {stats['total_videos']} videos, {stats['total_tracks']} tracks")
+
 def _merge_discovered_media():
     """Load and merge discovered media into CHANNEL_VIDEOS and CHANNEL_TRACKS."""
+    # First seed base media to DB
+    _seed_base_media_to_db()
+
+    # Then load discovered media from DB
     discovered = load_discovered_media()
 
     # Merge discovered videos
@@ -1155,7 +1358,7 @@ def _merge_discovered_media():
     total_v = sum(len(v) for v in discovered.get("videos", {}).values())
     total_t = sum(len(t) for t in discovered.get("tracks", {}).values())
     if total_v > 0 or total_t > 0:
-        print(f"[Persistence] Merged {total_v} discovered videos, {total_t} discovered tracks")
+        print(f"[DB] Merged {total_v} discovered videos, {total_t} discovered tracks")
 
 # Run on module load
 _merge_discovered_media()
