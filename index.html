@@ -1939,7 +1939,8 @@
 
         // Fetch memory data
         try {
-          const url = `/api/channels/${currentChannel.id}/memory?tz=${viewerTZ}`;
+          const tz = -(new Date().getTimezoneOffset() / 60);
+          const url = `/api/channels/${currentChannel.id}/memory?tz=${tz}`;
           console.log('[Memory] Fetching:', url);
           const response = await fetch(url);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
