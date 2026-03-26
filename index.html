@@ -1969,8 +1969,8 @@
 
     function renderMemory(data) {
       // Update stats
-      document.getElementById('memory-count').textContent = `${data.total_memories} memories`;
-      document.getElementById('memory-reflections').textContent = `${data.reflections_made} reflections`;
+      document.getElementById('memory-count').textContent = `${data.total_memories || 0} memories`;
+      document.getElementById('memory-reflections').textContent = `${data.reflections_made || 0} reflections`;
 
       // Render memories (most recent first)
       const memoryList = document.getElementById('memory-list');
@@ -1978,10 +1978,10 @@
         memoryList.innerHTML = data.memories.slice().reverse().slice(0, 20).map(m => `
           <div class="memory-item">
             <div class="memory-meta">
-              <span class="memory-type">${m.type.replace('_', ' ')}</span>
+              <span class="memory-type">${(m.type || 'memory').replace('_', ' ')}</span>
               <span class="memory-time">${formatMemoryTime(m.timestamp)}</span>
             </div>
-            <div class="memory-text">${m.text}</div>
+            <div class="memory-text">${m.text || ''}</div>
           </div>
         `).join('');
       } else {
@@ -1996,7 +1996,7 @@
             <div class="memory-meta">
               <span class="memory-time">${formatMemoryTime(r.timestamp)}</span>
             </div>
-            <div class="memory-text">${r.text}</div>
+            <div class="memory-text">${r.text || ''}</div>
           </div>
         `).join('');
       } else {
@@ -2008,8 +2008,8 @@
       if (data.plans && data.plans.length > 0) {
         planList.innerHTML = data.plans.map(p => `
           <div class="memory-item plan">
-            <span class="plan-time">${p.time}</span>
-            <span class="plan-action">${p.action}</span>
+            <span class="plan-time">${p.time || ''}</span>
+            <span class="plan-action">${p.action || ''}</span>
             ${p.completed ? '<span class="plan-done">done</span>' : ''}
           </div>
         `).join('');
