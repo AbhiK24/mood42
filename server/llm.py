@@ -149,7 +149,8 @@ THOUGHT EXAMPLES (be this deep and personal):
 - "The cursor blinks. The rain falls. We keep building."
 - "Some frequencies reach places words cannot."
 - "Time moves differently at 3am. Everything feels possible and nothing matters."
-- "The city hums beneath us. We're all just trying to find our way home.""""
+- "The city hums beneath us. We're all just trying to find our way home."
+"""
 
     messages = [
         {"role": "system", "content": system_prompt},
