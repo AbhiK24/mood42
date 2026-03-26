@@ -112,3 +112,49 @@ def get_public_url(key: str) -> str:
 def is_configured() -> bool:
     """Check if R2 credentials are configured."""
     return bool(R2_ACCOUNT_ID and R2_ACCESS_KEY and R2_SECRET_KEY)
+
+
+def list_objects(prefix: str = "") -> list:
+    """
+    List all objects in R2 bucket with given prefix.
+    Returns list of dicts with key, size, last_modified.
+    """
+    client = get_r2_client()
+    if not client:
+        return []
+
+    objects = []
+    try:
+        paginator = client.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=R2_BUCKET, Prefix=prefix):
+            for obj in page.get('Contents', []):
+                objects.append({
+                    'key': obj['Key'],
+                    'size': obj['Size'],
+                    'last_modified': obj['LastModified'],
+                    'url': f"{R2_PUBLIC_URL}/{obj['Key']}"
+                })
+        print(f"[R2] Listed {len(objects)} objects with prefix '{prefix}'")
+    except Exception as e:
+        print(f"[R2] List failed: {e}")
+
+    return objects
+
+
+def get_object_metadata(key: str) -> Optional[Dict]:
+    """Get metadata for an R2 object."""
+    client = get_r2_client()
+    if not client:
+        return None
+
+    try:
+        response = client.head_object(Bucket=R2_BUCKET, Key=key)
+        return {
+            'content_type': response.get('ContentType'),
+            'size': response.get('ContentLength'),
+            'metadata': response.get('Metadata', {}),
+            'last_modified': response.get('LastModified'),
+        }
+    except Exception as e:
+        print(f"[R2] Get metadata failed for {key}: {e}")
+        return None

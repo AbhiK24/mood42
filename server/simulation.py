@@ -26,6 +26,8 @@ from server.tools import (
     CHANNEL_TRACKS,
     save_discovered_media,
     download_and_upload_audio_to_r2,
+    save_channel_state,
+    load_channel_states,
 )
 from server.llm import (
     generate_programming_decision,
@@ -66,8 +68,55 @@ class SimulationEngine:
         # Per-region state cache for quick lookups
         self.region_states: Dict[str, Dict] = {region: {} for region in REGIONS}
 
+        # Restore channel states from persistent storage
+        self._restore_channel_states()
+
         print(f"[Simulation] Initialized {len(self.channel_agents)} channel agents with geo-awareness")
         print(f"[Simulation] Serving {len(REGIONS)} regions: {', '.join(REGIONS)}")
+
+    def _restore_channel_states(self):
+        """Restore channel states from database after deploy."""
+        saved_states = load_channel_states()
+        restored = 0
+
+        for channel_id, regions in saved_states.items():
+            agent = self.channel_agents.get(channel_id)
+            if not agent:
+                continue
+
+            for region, state in regions.items():
+                # Check if state is recent enough (within 1 hour)
+                updated_at = state.get("updated_at", 0)
+                if time.time() - updated_at > 3600:
+                    continue  # State too old, let it restart fresh
+
+                # Restore track
+                if state.get("track_url"):
+                    track = {
+                        "id": state.get("track_id"),
+                        "name": state.get("track_name"),
+                        "url": state.get("track_url"),
+                        "_verified": True,
+                    }
+                    # Calculate elapsed time
+                    started_at = state.get("track_started_at", 0)
+                    if started_at:
+                        elapsed_ms = int((time.time() - started_at) * 1000)
+                    else:
+                        elapsed_ms = 0
+
+                    agent.set_region_state(
+                        region,
+                        track,
+                        state.get("video_url"),
+                        state.get("mood", "focused"),
+                        state.get("video_name", ""),
+                        started_at * 1000 if started_at else int(time.time() * 1000) - elapsed_ms
+                    )
+                    restored += 1
+
+        if restored > 0:
+            print(f"[Simulation] Restored {restored} channel-region states from database")
 
     def _generate_thought(self, channel_id: str, region: str, context: str = "track_change") -> str:
         """Generate agent thought - each agent has their own unique voice."""
@@ -520,6 +569,18 @@ class SimulationEngine:
                 "source": video.get("source", ""),
             } if video else None,
             "thought": thought,
+            "mood": mood,
+        })
+
+        # Persist channel state to survive deploys
+        save_channel_state(channel_id, region, {
+            "track_id": new_track["id"],
+            "track_url": new_track["url"],
+            "track_name": new_track["name"],
+            "video_id": video["id"] if video else None,
+            "video_url": video["url"] if video else None,
+            "video_name": video["name"] if video else None,
+            "track_started_at": now // 1000,  # Store as seconds
             "mood": mood,
         })
 

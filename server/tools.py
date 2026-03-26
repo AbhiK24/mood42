@@ -104,6 +104,25 @@ def _init_db():
     conn.execute("CREATE INDEX IF NOT EXISTS idx_impressions_channel ON impressions(channel_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_impressions_time ON impressions(timestamp)")
 
+    # ============ CHANNEL STATE TABLE ============
+    # Persist channel state across deploys (current track, video, position)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS channel_state (
+            channel_id TEXT NOT NULL,
+            region TEXT NOT NULL,
+            track_id TEXT,
+            track_url TEXT,
+            track_name TEXT,
+            video_id TEXT,
+            video_url TEXT,
+            video_name TEXT,
+            track_started_at INTEGER,
+            mood TEXT,
+            updated_at INTEGER,
+            PRIMARY KEY (channel_id, region)
+        )
+    """)
+
     conn.commit()
     conn.close()
     print(f"[DB] Initialized media database at {MEDIA_DB_FILE}")
@@ -163,6 +182,196 @@ def load_discovered_media() -> Dict:
         print(f"[DB] Loaded {total_v} discovered videos, {total_t} discovered tracks")
 
     return {"videos": videos, "tracks": tracks}
+
+
+def scan_r2_rebuild_db():
+    """
+    Scan R2 bucket and rebuild database from existing files.
+    This recovers metadata after a deploy wipes the DB.
+    Files are named like: ch01_track_name_timestamp.mp3
+    """
+    from server.r2 import list_objects, get_object_metadata, R2_PUBLIC_URL, is_configured
+
+    if not is_configured():
+        print("[R2 Scan] R2 not configured, skipping scan")
+        return {"videos": 0, "tracks": 0}
+
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+    added_videos = 0
+    added_tracks = 0
+
+    # Channel list for round-robin assignment of orphaned files
+    channels = [f"ch{i:02d}" for i in range(1, 11)]
+    orphan_idx = 0
+
+    # Scan audio files
+    print("[R2 Scan] Scanning audio files...")
+    audio_files = list_objects("audio/")
+    for obj in audio_files:
+        key = obj['key']
+        url = obj['url']
+        filename = key.replace("audio/", "")
+
+        # Check if already in DB
+        exists = conn.execute("SELECT 1 FROM tracks WHERE url = ?", (url,)).fetchone()
+        if exists:
+            continue
+
+        # Parse channel from filename (ch01_name_timestamp.mp3)
+        channel_id = None
+        if filename.startswith("ch") and "_" in filename:
+            parts = filename.split("_")
+            if len(parts[0]) == 4 and parts[0][:2] == "ch":
+                channel_id = parts[0]
+
+        # Assign orphaned files round-robin
+        if not channel_id or channel_id not in channels:
+            channel_id = channels[orphan_idx % len(channels)]
+            orphan_idx += 1
+
+        # Extract name from filename
+        name_part = filename.replace(".mp3", "").replace(".ogg", "").replace(".flac", "")
+        if name_part.startswith(channel_id + "_"):
+            name_part = name_part[len(channel_id) + 1:]
+        # Remove timestamp suffix if present
+        parts = name_part.rsplit("_", 1)
+        if len(parts) == 2 and parts[1].isdigit() and len(parts[1]) > 8:
+            name_part = parts[0]
+        name = name_part.replace("_", " ").title()
+
+        # Insert into DB
+        track_id = f"{channel_id}_r2scan_{int(time.time())}_{added_tracks}"
+        try:
+            conn.execute("""
+                INSERT OR IGNORE INTO tracks
+                (id, channel_id, name, url, duration, tags, attribution, source, added_at, is_base)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """, (
+                track_id, channel_id, name, url, 180,
+                "[]", f"Recovered from R2", "r2_scan", int(time.time())
+            ))
+            added_tracks += 1
+        except:
+            pass
+
+    # Scan video files
+    print("[R2 Scan] Scanning video files...")
+    video_files = list_objects("video/")
+    for obj in video_files:
+        key = obj['key']
+        url = obj['url']
+        filename = key.replace("video/", "")
+
+        # Check if already in DB
+        exists = conn.execute("SELECT 1 FROM videos WHERE url = ?", (url,)).fetchone()
+        if exists:
+            continue
+
+        # Parse channel from filename
+        channel_id = None
+        if filename.startswith("ch") and "_" in filename:
+            parts = filename.split("_")
+            if len(parts[0]) == 4 and parts[0][:2] == "ch":
+                channel_id = parts[0]
+
+        # Assign orphaned files round-robin
+        if not channel_id or channel_id not in channels:
+            channel_id = channels[orphan_idx % len(channels)]
+            orphan_idx += 1
+
+        # Extract name from filename
+        name_part = filename.replace(".mp4", "").replace(".webm", "")
+        if name_part.startswith(channel_id + "_"):
+            name_part = name_part[len(channel_id) + 1:]
+        # Remove timestamp suffix if present
+        parts = name_part.rsplit("_", 1)
+        if len(parts) == 2 and parts[1].isdigit() and len(parts[1]) > 8:
+            name_part = parts[0]
+        name = name_part.replace("_", " ").title()
+
+        # Insert into DB
+        video_id = f"{channel_id}_r2scan_{int(time.time())}_{added_videos}"
+        try:
+            conn.execute("""
+                INSERT OR IGNORE INTO videos
+                (id, channel_id, name, url, tags, attribution, source, source_url, added_at, is_base)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """, (
+                video_id, channel_id, name, url,
+                "[]", f"Recovered from R2", "r2_scan", url, int(time.time())
+            ))
+            added_videos += 1
+        except:
+            pass
+
+    conn.commit()
+    conn.close()
+
+    print(f"[R2 Scan] Recovered {added_tracks} tracks, {added_videos} videos from R2")
+    return {"videos": added_videos, "tracks": added_tracks}
+
+
+# ============ CHANNEL STATE PERSISTENCE ============
+
+def save_channel_state(channel_id: str, region: str, state: dict):
+    """Save channel state to database for persistence across deploys."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+    try:
+        conn.execute("""
+            INSERT OR REPLACE INTO channel_state
+            (channel_id, region, track_id, track_url, track_name, video_id, video_url, video_name, track_started_at, mood, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            channel_id,
+            region,
+            state.get("track_id"),
+            state.get("track_url"),
+            state.get("track_name"),
+            state.get("video_id"),
+            state.get("video_url"),
+            state.get("video_name"),
+            state.get("track_started_at"),
+            state.get("mood"),
+            int(time.time())
+        ))
+        conn.commit()
+    except Exception as e:
+        print(f"[DB] Error saving channel state: {e}")
+    finally:
+        conn.close()
+
+
+def load_channel_states() -> dict:
+    """Load all channel states from database."""
+    conn = sqlite3.connect(str(MEDIA_DB_FILE))
+    conn.row_factory = sqlite3.Row
+
+    states = {}
+    try:
+        for row in conn.execute("SELECT * FROM channel_state"):
+            ch_id = row["channel_id"]
+            region = row["region"]
+            if ch_id not in states:
+                states[ch_id] = {}
+            states[ch_id][region] = {
+                "track_id": row["track_id"],
+                "track_url": row["track_url"],
+                "track_name": row["track_name"],
+                "video_id": row["video_id"],
+                "video_url": row["video_url"],
+                "video_name": row["video_name"],
+                "track_started_at": row["track_started_at"],
+                "mood": row["mood"],
+                "updated_at": row["updated_at"],
+            }
+    except Exception as e:
+        print(f"[DB] Error loading channel states: {e}")
+    finally:
+        conn.close()
+
+    if states:
+        print(f"[DB] Loaded channel states for {len(states)} channels")
+    return states
 
 def save_discovered_media(videos: Dict, tracks: Dict):
     """Save discovered media to database."""
@@ -1523,6 +1732,9 @@ def _merge_discovered_media():
     """Load and merge discovered media into CHANNEL_VIDEOS and CHANNEL_TRACKS."""
     # First seed base media to DB
     _seed_base_media_to_db()
+
+    # Scan R2 to recover any media not in DB (e.g., after deploy wipe)
+    scan_r2_rebuild_db()
 
     # Then load discovered media from DB
     discovered = load_discovered_media()

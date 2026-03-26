@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.simulation import SimulationEngine
 from server.channels import CHANNELS, TRACKS
 from server.geo import get_region_from_offset, get_viewer_context, REGIONS
-from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS, get_db_stats
+from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS, get_db_stats, scan_r2_rebuild_db
 
 
 # SSE client connections - now keyed by channel:region
@@ -240,6 +240,18 @@ async def trigger_discovery():
     stats = get_db_stats()
     return {
         "status": "discovery_triggered",
+        "database": stats,
+    }
+
+
+@app.post("/api/ops/r2scan")
+async def trigger_r2_scan():
+    """Scan R2 bucket and rebuild database from existing files."""
+    result = scan_r2_rebuild_db()
+    stats = get_db_stats()
+    return {
+        "status": "r2_scan_complete",
+        "recovered": result,
         "database": stats,
     }
 
