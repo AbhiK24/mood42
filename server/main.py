@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.simulation import SimulationEngine
-from server.channels import CHANNELS, TRACKS
+from server.channels import CHANNELS, TRACKS, get_active_channels
 from server.geo import get_region_from_offset, get_viewer_context, REGIONS
 from server.tools import _verified_urls, _broken_urls, check_url_health, CHANNEL_TRACKS, CHANNEL_VIDEOS, get_db_stats, scan_r2_rebuild_db
 
@@ -258,7 +258,7 @@ async def trigger_r2_scan(force: bool = False):
 
 @app.get("/api/ops/media")
 async def media_database():
-    """Get complete media database for all channels."""
+    """Get complete media database for active channels only."""
     media_data = {
         "channels": {},
         "summary": {
@@ -269,10 +269,11 @@ async def media_database():
         }
     }
 
-    # Build per-channel media info
+    # Build per-channel media info (active channels only)
     video_url_to_channels = {}  # Track which channels use each video URL
+    active_channels = get_active_channels()
 
-    for ch_id in CHANNELS.keys():
+    for ch_id in active_channels.keys():
         tracks = CHANNEL_TRACKS.get(ch_id, [])
         videos = CHANNEL_VIDEOS.get(ch_id, [])
 
