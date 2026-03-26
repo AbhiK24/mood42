@@ -1918,12 +1918,16 @@
     const memoryToggle = document.getElementById('memory-toggle');
     const memoryPanel = document.getElementById('memory-panel');
 
-    memoryToggle.addEventListener('click', async () => {
+    memoryToggle.addEventListener('click', async (e) => {
+      e.stopPropagation(); // Prevent event bubbling
       memoryToggle.classList.toggle('active');
       memoryPanel.classList.toggle('show');
 
+      console.log('[Memory] Toggle clicked, panel show:', memoryPanel.classList.contains('show'), 'channel:', currentChannel?.id);
+
       if (memoryPanel.classList.contains('show')) {
         if (!currentChannel || !currentChannel.id) {
+          console.log('[Memory] No channel selected');
           document.getElementById('memory-list').innerHTML = '<div class="memory-empty">No channel selected</div>';
           return;
         }
@@ -1936,9 +1940,11 @@
         // Fetch memory data
         try {
           const url = `/api/channels/${currentChannel.id}/memory?tz=${viewerTZ}`;
+          console.log('[Memory] Fetching:', url);
           const response = await fetch(url);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const data = await response.json();
+          console.log('[Memory] Got data:', data.total_memories, 'memories');
           renderMemory(data);
         } catch (e) {
           console.error('[Memory] Failed to fetch:', e);
