@@ -23,6 +23,7 @@ from server.tools import (
     get_validated_video,
     validate_track,
     CHANNEL_VIDEOS,
+    CHANNEL_TRACKS,
 )
 from server.llm import (
     generate_programming_decision,
@@ -272,16 +273,28 @@ class SimulationEngine:
                 # Audio discovery
                 print(f"[{channel_id}] Scheduled audio discovery...")
                 taste_query = " ".join(taste[:3]) if taste else "ambient chill"
-                tracks = await search_music(taste_query, mood="focused")
-                if tracks:
-                    print(f"[{channel_id}] Scheduled: found {len(tracks)} audio tracks")
-                    if agent:
-                        agent.add_memory(
-                            f"Scheduled discovery: found {len(tracks)} new audio tracks",
-                            MemoryType.ACTION,
-                            importance=5,
-                            tick=tick,
-                        )
+                found_tracks = await search_music(taste_query, mood="focused")
+                if found_tracks:
+                    # Add to channel's permanent library
+                    if channel_id not in CHANNEL_TRACKS:
+                        CHANNEL_TRACKS[channel_id] = []
+                    existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
+                    added = 0
+                    for track in found_tracks:
+                        if track.get("url") and track.get("url") not in existing_urls:
+                            track["_verified"] = True
+                            CHANNEL_TRACKS[channel_id].append(track)
+                            existing_urls.add(track.get("url"))
+                            added += 1
+                    if added > 0:
+                        print(f"[{channel_id}] Scheduled: added {added} new tracks to library")
+                        if agent:
+                            agent.add_memory(
+                                f"Scheduled discovery: added {added} new tracks to library",
+                                MemoryType.ACTION,
+                                importance=5,
+                                tick=tick,
+                            )
 
             except asyncio.TimeoutError:
                 print(f"[{channel_id}] Scheduled discovery timeout")
@@ -372,6 +385,15 @@ class SimulationEngine:
                         for result in search_results:
                             if await validate_track(result):
                                 new_track = result
+                                # ADD to channel's permanent library
+                                if channel_id not in CHANNEL_TRACKS:
+                                    CHANNEL_TRACKS[channel_id] = []
+                                # Avoid duplicates by checking URL
+                                existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
+                                if result.get("url") not in existing_urls:
+                                    result["_verified"] = True
+                                    CHANNEL_TRACKS[channel_id].append(result)
+                                    print(f"[{channel_id}] Added new track to library: {result.get('name', 'unknown')}")
                                 break
 
                 # Otherwise use selected track_id (skip validation for pre-verified)
@@ -403,7 +425,14 @@ class SimulationEngine:
                 if discovered and await validate_track(discovered):
                     new_track = discovered
                     thought = f"Found something fresh: {discovered['name']}"
-                    print(f"[{channel_id}:{region}] Proactive discovery: {discovered['name']}")
+                    # ADD to channel's permanent library
+                    if channel_id not in CHANNEL_TRACKS:
+                        CHANNEL_TRACKS[channel_id] = []
+                    existing_urls = {t.get("url") for t in CHANNEL_TRACKS[channel_id]}
+                    if discovered.get("url") not in existing_urls:
+                        discovered["_verified"] = True
+                        CHANNEL_TRACKS[channel_id].append(discovered)
+                        print(f"[{channel_id}] Added discovered track to library: {discovered.get('name', 'unknown')}")
             except asyncio.TimeoutError:
                 pass  # Skip discovery if too slow
 
