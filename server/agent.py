@@ -367,7 +367,16 @@ class ChannelAgent:
 
     def record_plan(self, plans: List[Dict], tick: int):
         """Record new plans."""
-        self.plans = [Plan(**p) for p in plans]
+        valid_plans = []
+        for p in plans:
+            # Ensure duration has a default
+            if 'duration' not in p:
+                p['duration'] = 30
+            try:
+                valid_plans.append(Plan(**p))
+            except Exception:
+                pass  # Skip invalid plans
+        self.plans = valid_plans
         self.last_plan_tick = tick
 
         plan_summary = ", ".join([p["action"] for p in plans[:3]])
