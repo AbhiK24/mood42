@@ -184,11 +184,15 @@ def load_discovered_media() -> Dict:
     return {"videos": videos, "tracks": tracks}
 
 
-def scan_r2_rebuild_db():
+def scan_r2_rebuild_db(force: bool = False):
     """
     Scan R2 bucket and rebuild database from existing files.
     This recovers metadata after a deploy wipes the DB.
     Files are named like: ch01_track_name_timestamp.mp3
+
+    Only runs if:
+    - force=True, OR
+    - DB has 0 discovered media (fresh DB after wipe)
     """
     from server.r2 import list_objects, get_object_metadata, R2_PUBLIC_URL, is_configured
 
@@ -197,6 +201,15 @@ def scan_r2_rebuild_db():
         return {"videos": 0, "tracks": 0}
 
     conn = sqlite3.connect(str(MEDIA_DB_FILE))
+
+    # Check if scan is needed - skip if DB already has discovered content
+    if not force:
+        discovered_tracks = conn.execute("SELECT COUNT(*) FROM tracks WHERE is_base = 0").fetchone()[0]
+        discovered_videos = conn.execute("SELECT COUNT(*) FROM videos WHERE is_base = 0").fetchone()[0]
+        if discovered_tracks > 5 or discovered_videos > 20:
+            print(f"[R2 Scan] DB already has {discovered_tracks} tracks, {discovered_videos} videos - skipping scan")
+            conn.close()
+            return {"videos": 0, "tracks": 0, "skipped": True}
     added_videos = 0
     added_tracks = 0
 

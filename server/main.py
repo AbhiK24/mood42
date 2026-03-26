@@ -245,12 +245,12 @@ async def trigger_discovery():
 
 
 @app.post("/api/ops/r2scan")
-async def trigger_r2_scan():
-    """Scan R2 bucket and rebuild database from existing files."""
-    result = scan_r2_rebuild_db()
+async def trigger_r2_scan(force: bool = False):
+    """Scan R2 bucket and rebuild database from existing files. Use ?force=true to force rescan."""
+    result = scan_r2_rebuild_db(force=force)
     stats = get_db_stats()
     return {
-        "status": "r2_scan_complete",
+        "status": "r2_scan_complete" if not result.get("skipped") else "r2_scan_skipped",
         "recovered": result,
         "database": stats,
     }

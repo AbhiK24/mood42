@@ -191,6 +191,17 @@ class ChannelAgent:
             self.regions[region] = RegionState(region=region)
         return self.regions[region]
 
+    def set_region_state(self, region: str, track: Dict, video_url: str, mood: str, video_name: str, started_at: int):
+        """Set state for a region - used for restoring state after deploy."""
+        import time as time_module
+        state = self.get_region_state(region)
+        state.current_track = track
+        state.current_video = {"url": video_url, "name": video_name, "id": f"restored_{region}"} if video_url else None
+        state.current_mood = mood
+        # Set to NOW so track doesn't immediately expire (pretend it just started)
+        state.last_track_change = int(time_module.time() * 1000)
+        print(f"[{self.channel_id}:{region}] Restored: {track.get('name', 'unknown')[:30]}")
+
     def add_memory(
         self,
         text: str,
