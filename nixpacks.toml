@@ -1,5 +1,6 @@
 # mood42 build configuration for Railway
 # Python-only: FastAPI serves everything
+# Build trigger: 1774546800
 
 providers = ["python"]
 
