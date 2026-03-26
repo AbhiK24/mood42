@@ -1922,15 +1922,27 @@
       memoryToggle.classList.toggle('active');
       memoryPanel.classList.toggle('show');
 
-      if (memoryPanel.classList.contains('show') && currentChannel) {
+      if (memoryPanel.classList.contains('show')) {
+        if (!currentChannel || !currentChannel.id) {
+          document.getElementById('memory-list').innerHTML = '<div class="memory-empty">No channel selected</div>';
+          return;
+        }
+
+        // Show loading state
+        document.getElementById('memory-list').innerHTML = '<div class="memory-empty">Loading...</div>';
+        document.getElementById('reflection-list').innerHTML = '';
+        document.getElementById('plan-list').innerHTML = '';
+
         // Fetch memory data
         try {
-          const response = await fetch(`/api/channels/${currentChannel.id}/memory?tz=${viewerTZ}`);
+          const url = `/api/channels/${currentChannel.id}/memory?tz=${viewerTZ}`;
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const data = await response.json();
           renderMemory(data);
         } catch (e) {
           console.error('[Memory] Failed to fetch:', e);
-          document.getElementById('memory-list').innerHTML = '<div class="memory-empty">Failed to load memory</div>';
+          document.getElementById('memory-list').innerHTML = '<div class="memory-empty">Failed to load</div>';
         }
       }
     });
