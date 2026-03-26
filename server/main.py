@@ -2,6 +2,7 @@
 mood42 Simulation Server
 FastAPI + SSE for real-time agent broadcasting
 Now with geo-awareness: personalized content by viewer timezone
+v2.1 - Stable deploy
 """
 
 import asyncio
